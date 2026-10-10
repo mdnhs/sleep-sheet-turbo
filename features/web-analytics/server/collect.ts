@@ -1,4 +1,4 @@
-import { Hono } from "hono";
+import { Hono, type Context } from "hono";
 import { rateLimit } from "@/lib/rate-limit";
 import { parseUserAgent } from "@/lib/user-agent-parser";
 import { sweepRetention } from "@/lib/data-retention";
@@ -16,13 +16,17 @@ export interface CollectDeps {
 // A beacon from our own pages carries an Origin (or, in a few browsers, only
 // a Referer) on the same host the request was sent to. Comparing against the
 // request's own host works on the dev port and in production alike.
-function isSameOrigin(source: string | undefined, host: string): boolean {
+export function isSameOrigin(source: string | undefined, host: string): boolean {
   if (!source) return false;
   try {
     return new URL(source).host === host;
   } catch {
     return false;
   }
+}
+
+export function requestHost(c: Context): string {
+  return c.req.header("x-forwarded-host")?.split(",")[0]?.trim() || c.req.header("host") || new URL(c.req.url).host;
 }
 
 /**
@@ -34,9 +38,7 @@ export function createCollectRoute(deps: CollectDeps) {
   return new Hono().post("/", rateLimit("collect", 120, 60_000), async (c) => {
     const done = () => c.body(null, 204);
     try {
-      const host =
-        c.req.header("x-forwarded-host")?.split(",")[0]?.trim() || c.req.header("host") || new URL(c.req.url).host;
-      if (!isSameOrigin(c.req.header("origin") || c.req.header("referer"), host)) return done();
+      if (!isSameOrigin(c.req.header("origin") || c.req.header("referer"), requestHost(c))) return done();
       if (Number(c.req.header("content-length") ?? 0) > MAX_BODY_BYTES) return done();
 
       const payload = parseCollectBody(await c.req.text());

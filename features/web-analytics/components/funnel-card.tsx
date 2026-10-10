@@ -1,6 +1,6 @@
 "use client";
 
-import { CreditCard, Eye, PackageCheck, ShoppingCart, Users, type LucideIcon } from "lucide-react";
+import { CreditCard, Eye, MapPin, PackageCheck, Phone, ShoppingCart, User, Users, type LucideIcon } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useWaFunnel, type WaQuery } from "../api/use-web-analytics";
@@ -12,6 +12,9 @@ const STEPS: { key: keyof Funnel; label: string; icon: LucideIcon }[] = [
   { key: "viewedProduct", label: "Viewed a product", icon: Eye },
   { key: "addedToCart", label: "Added to cart / Buy now", icon: ShoppingCart },
   { key: "startedCheckout", label: "Started checkout", icon: CreditCard },
+  { key: "enteredName", label: "Entered name", icon: User },
+  { key: "enteredPhone", label: "Entered phone", icon: Phone },
+  { key: "enteredAddress", label: "Entered address", icon: MapPin },
   { key: "ordered", label: "Placed an order", icon: PackageCheck },
 ];
 

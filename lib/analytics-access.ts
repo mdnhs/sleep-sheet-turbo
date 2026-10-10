@@ -23,3 +23,11 @@ import { can, isAllowed } from "@/lib/permissions";
 export function canViewAnalytics(user: Parameters<typeof can>[0]): boolean {
   return isAllowed(user, "dashboard", "read", ["MODERATOR"]) || can(user, "reports", "read");
 }
+
+/**
+ * Incomplete checkouts carry customers' names, phones and addresses, so on
+ * top of analytics access they need what reading orders needs.
+ */
+export function canViewCheckoutDrafts(user: Parameters<typeof can>[0]): boolean {
+  return canViewAnalytics(user) && isAllowed(user, "orders", "read", ["MODERATOR"]);
+}

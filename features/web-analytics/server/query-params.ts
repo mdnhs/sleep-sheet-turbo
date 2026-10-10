@@ -26,6 +26,13 @@ export const productsQuerySchema = rangeQuerySchema.extend({
   offset: z.coerce.number().int().min(0).max(10_000).default(0),
 });
 
+export const draftsQuerySchema = z.object({
+  limit: z.coerce.number().int().min(1).max(50).default(10),
+  offset: z.coerce.number().int().min(0).max(10_000).default(0),
+});
+
+export const draftIdSchema = z.object({ id: z.coerce.number().int().positive() });
+
 export type RangeQuery = z.infer<typeof rangeQuerySchema>;
 
 export function toRangeAndFilters(q: RangeQuery): { range: Range; filters: Filters } | null {

@@ -23,6 +23,7 @@ import { isBkashAvailable } from "@/lib/bkash";
 import { expireStaleBkashOrders, failBkashOrder, startBkashPayment } from "@/lib/bkash-orders";
 import { after } from "next/server";
 import { analyticsIdSchema, recordOrderEvent } from "@/features/web-analytics/server/record-order-event";
+import { markDraftConverted } from "@/features/web-analytics/server/drafts";
 
 // Mirrors features/checkout/schema.ts (client-side form validation) so the
 // server never trusts shippingInfo/paymentInfo/guestItems shape or content
@@ -297,6 +298,7 @@ const app = new Hono()
           headers: analyticsHeaders,
         }),
       );
+      after(() => markDraftConverted({ orderId: order.id, sessionId: analyticsSessionId, phone: shippingInfo.phone }));
 
       // bKash: the order is only reserved. The customer pays on bKash's page
       // and the callback (features/bkash) confirms it, notifies n8n and
@@ -497,6 +499,7 @@ const app = new Hono()
         headers: analyticsHeaders,
       }),
     );
+    after(() => markDraftConverted({ orderId: order.id, sessionId: analyticsSessionId, phone: shippingInfo.phone }));
 
     // See the logged-in branch: bKash orders wait for the payment callback.
     if (isBkash) {

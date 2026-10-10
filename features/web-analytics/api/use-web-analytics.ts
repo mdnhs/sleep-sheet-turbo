@@ -1,9 +1,17 @@
 "use client";
 
-import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { client } from "@/lib/rpc";
 import type { Dimension, Filters } from "../lib/dimensions";
-import type { BreakdownRow, Funnel, LiveSnapshot, OverviewResponse, ProductRow } from "../lib/types";
+import type {
+  BreakdownRow,
+  CheckoutDraftRow,
+  DraftSummary,
+  Funnel,
+  LiveSnapshot,
+  OverviewResponse,
+  ProductRow,
+} from "../lib/types";
 
 export interface WaQuery {
   from: string;
@@ -82,3 +90,32 @@ export const useWaLive = () =>
     refetchInterval: 30_000,
     refetchIntervalInBackground: false,
   });
+
+export const DRAFTS_PAGE_SIZE = 10;
+
+export const useWaDrafts = (page: number) =>
+  useQuery({
+    queryKey: ["web-analytics", "drafts", page],
+    queryFn: async () => {
+      const res = await api.drafts.$get({
+        query: { limit: String(DRAFTS_PAGE_SIZE), offset: String(page * DRAFTS_PAGE_SIZE) },
+      });
+      if (res.status === 403) return null;
+      if (!res.ok) throw new Error("Failed to load incomplete checkouts");
+      return (await res.json()) as Paged<CheckoutDraftRow> & { summary: DraftSummary };
+    },
+    placeholderData: keepPreviousData,
+    refetchInterval: 60_000,
+    refetchIntervalInBackground: false,
+  });
+
+export const useDismissDraft = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: number) => {
+      const res = await api.drafts[":id"].dismiss.$post({ param: { id: String(id) } });
+      if (!res.ok) throw new Error("Failed to dismiss");
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["web-analytics", "drafts"] }),
+  });
+};

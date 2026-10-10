@@ -239,6 +239,13 @@
       "when": 1791658299507,
       "tag": "0033_user_token_version",
       "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1791660932585,
+      "tag": "0034_checkout_drafts",
+      "breakpoints": true
     }
   ]
 }

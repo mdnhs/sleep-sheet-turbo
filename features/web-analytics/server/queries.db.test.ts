@@ -40,6 +40,7 @@ function ev(e: {
   referrerHost?: string | null;
   productId?: string;
   orderId?: string;
+  label?: string;
 }): NewAnalyticsEvent {
   const path = e.path ?? "/";
   return {
@@ -52,6 +53,7 @@ function ev(e: {
     referrerHost: e.referrerHost ?? null,
     productId: e.productId ?? null,
     orderId: e.orderId ?? null,
+    label: e.label ?? null,
     country: "BD",
     device: "Mobile",
     browser: "Chrome 141",
@@ -103,6 +105,8 @@ async function seedScenario(tx: Transaction): Promise<{ productId: string }> {
     ev({ type: "page_view", session: "wa-s2", visitor: "wa-v2", at: "2001-03-10T11:00:00+06:00", path: "/" }),
     ev({ type: "page_view", session: "wa-s3", visitor: "wa-v1", at: "2001-03-11T09:00:00+06:00", path: "/shop/a", referrerHost: yt }),
     ev({ type: "checkout_start", session: "wa-s3", visitor: "wa-v1", at: "2001-03-11T09:05:00+06:00", path: "/checkout", referrerHost: yt }),
+    ev({ type: "checkout_field", session: "wa-s3", visitor: "wa-v1", at: "2001-03-11T09:06:00+06:00", path: "/checkout", referrerHost: yt, label: "fullName" }),
+    ev({ type: "checkout_field", session: "wa-s3", visitor: "wa-v1", at: "2001-03-11T09:07:00+06:00", path: "/checkout", referrerHost: yt, label: "phone" }),
     ev({ type: "order_complete", session: "wa-s3", visitor: "wa-v1", at: "2001-03-11T09:10:00+06:00", path: "/checkout", referrerHost: yt, orderId: "wa-ord-1" }),
     ev({ type: "order_complete", session: "wa-s3", visitor: "wa-v1", at: "2001-03-11T09:11:00+06:00", path: "/checkout", referrerHost: yt, orderId: "wa-ord-1" }),
   ]);
@@ -247,6 +251,9 @@ describe.skipIf(!RUN)("web analytics queries (database)", () => {
         viewedProduct: 1,
         addedToCart: 1,
         startedCheckout: 1,
+        enteredName: 1,
+        enteredPhone: 1,
+        enteredAddress: 0,
         ordered: 1,
       });
       expect(await getFunnel(tx, DAY_RANGE, { referrer: NONE })).toEqual({
@@ -254,6 +261,9 @@ describe.skipIf(!RUN)("web analytics queries (database)", () => {
         viewedProduct: 0,
         addedToCart: 0,
         startedCheckout: 0,
+        enteredName: 0,
+        enteredPhone: 0,
+        enteredAddress: 0,
         ordered: 0,
       });
     });

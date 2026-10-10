@@ -1,11 +1,19 @@
 import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
 import { sessionMiddleware } from "@/lib/session-middleware";
-import { canViewAnalytics } from "@/lib/analytics-access";
+import { canViewAnalytics, canViewCheckoutDrafts } from "@/lib/analytics-access";
 import { getPreviousRange } from "@/lib/date-utils";
 import { bucketUnit } from "../lib/buckets";
+import { dismissDraft, listOpenDrafts, summarizeOpenDrafts } from "./drafts";
 import { getBreakdown, getFunnel, getKpis, getLive, getProducts, getSeries } from "./queries";
-import { breakdownQuerySchema, productsQuerySchema, rangeQuerySchema, toRangeAndFilters } from "./query-params";
+import {
+  breakdownQuerySchema,
+  draftIdSchema,
+  draftsQuerySchema,
+  productsQuerySchema,
+  rangeQuerySchema,
+  toRangeAndFilters,
+} from "./query-params";
 import { runAnalyticsQuery } from "./runner";
 
 const unauthorized = { error: "Unauthorized" } as const;
@@ -80,6 +88,27 @@ const app = new Hono()
       return c.json(await runAnalyticsQuery((tx) => getLive(tx)));
     } catch (err) {
       console.error("Web analytics live failed:", err);
+      return c.json(failed, 500);
+    }
+  })
+  .get("/drafts", sessionMiddleware, zValidator("query", draftsQuerySchema), async (c) => {
+    if (!canViewCheckoutDrafts(c.get("user"))) return c.json(unauthorized, 403);
+    const { limit, offset } = c.req.valid("query");
+    try {
+      const [rows, summary] = await Promise.all([listOpenDrafts(limit + 1, offset), summarizeOpenDrafts()]);
+      return c.json({ rows: rows.slice(0, limit), hasMore: rows.length > limit, summary });
+    } catch (err) {
+      console.error("Web analytics drafts failed:", err);
+      return c.json(failed, 500);
+    }
+  })
+  .post("/drafts/:id/dismiss", sessionMiddleware, zValidator("param", draftIdSchema), async (c) => {
+    if (!canViewCheckoutDrafts(c.get("user"))) return c.json(unauthorized, 403);
+    try {
+      const ok = await dismissDraft(c.req.valid("param").id);
+      return ok ? c.json({ ok: true }) : c.json({ error: "Not found" }, 404);
+    } catch (err) {
+      console.error("Web analytics draft dismiss failed:", err);
       return c.json(failed, 500);
     }
   });

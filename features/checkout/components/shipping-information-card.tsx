@@ -30,6 +30,7 @@ import { toast } from "sonner";
 import { normalizeBdPhone } from "@/features/fraud-checker/phone";
 import { primeGtmIdentity } from "@/lib/gtm";
 import { triggerHaptic } from "@/lib/haptics";
+import { useCheckoutDraft } from "@/features/web-analytics/lib/checkout-draft";
 
 function scheduleGtmIdentity(data: { phone?: string; email?: string }) {
   if (typeof window !== "undefined" && "requestIdleCallback" in window) {
@@ -106,6 +107,19 @@ function ShippingInformationCard({ initialSettings }: ShippingInformationCardPro
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Abandoned-checkout autosave: contact fields only, never card details.
+  const [draftName, draftPhone, draftEmail, draftAddress, draftZone] = useWatch({
+    control: form.control,
+    name: ["fullName", "phone", "email", "address", "shippingZone"],
+  });
+  const cartItems = useCartStore((state) => state.items);
+  const guestCartItems = useCartStore((state) => state.guestItems);
+  const draftItems = useMemo(() => [...cartItems, ...guestCartItems], [cartItems, guestCartItems]);
+  const draft = useCheckoutDraft(
+    { fullName: draftName, phone: draftPhone, email: draftEmail, address: draftAddress, shippingZone: draftZone },
+    draftItems,
+  );
+
   const selectedPaymentMethod = useWatch({
     control: form.control,
     name: "paymentMethod",
@@ -137,6 +151,7 @@ function ShippingInformationCard({ initialSettings }: ShippingInformationCardPro
 
   const onSubmit = (values: DeliveryAndPaymentFormValues) => {
     triggerHaptic("medium");
+    draft.pause();
     const basePaymentInfo = { paymentMethod: values.paymentMethod };
     const paymentPayload =
       values.paymentMethod !== "card"
@@ -162,7 +177,7 @@ function ShippingInformationCard({ initialSettings }: ShippingInformationCardPro
       },
       paymentMethod: values.paymentMethod,
       paymentInfo: paymentPayload,
-    });
+    }, { onError: draft.resume });
   };
 
   const onInvalid = () => {
@@ -254,6 +269,7 @@ function ShippingInformationCard({ initialSettings }: ShippingInformationCardPro
                   <FormMessage />
                 </FormItem>
               )} />
+              <p className="text-[11px] leading-snug text-muted-foreground">{t("checkoutDraftNotice")}</p>
 
               <FormField name="shippingZone" control={form.control} render={({ field }) => {
                 const zoneError = form.formState.errors.shippingZone;

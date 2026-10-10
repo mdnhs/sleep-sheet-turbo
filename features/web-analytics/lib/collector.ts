@@ -21,6 +21,10 @@ export function setCollectorEnabled(value: boolean): void {
   enabled = value;
 }
 
+export function isCollectorEnabled(): boolean {
+  return enabled;
+}
+
 function storage(): Storage | null {
   try {
     return window.localStorage;

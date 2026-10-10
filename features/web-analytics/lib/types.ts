@@ -4,7 +4,11 @@ import type { BucketUnit } from "./buckets";
 
 
 /** Events the browser sends. order_complete is written by the server only. */
-export const COLLECT_TYPES = ["page_view", "product_view", "add_to_cart", "buy_now", "checkout_start"] as const;
+export const COLLECT_TYPES = ["page_view", "product_view", "add_to_cart", "buy_now", "checkout_start", "checkout_field"] as const;
+
+/** Checkout form fields reported (label of a checkout_field event) once filled. Never their values. */
+export const CHECKOUT_FIELDS = ["fullName", "phone", "address"] as const;
+export type CheckoutField = (typeof CHECKOUT_FIELDS)[number];
 export type CollectType = (typeof COLLECT_TYPES)[number];
 export type AnalyticsEventType = CollectType | "order_complete";
 
@@ -67,7 +71,29 @@ export interface Funnel {
   viewedProduct: number;
   addedToCart: number;
   startedCheckout: number;
+  enteredName: number;
+  enteredPhone: number;
+  enteredAddress: number;
   ordered: number;
+}
+
+export interface CheckoutDraftRow {
+  id: number;
+  fullName: string | null;
+  phone: string;
+  email: string | null;
+  address: string | null;
+  shippingZone: string | null;
+  items: { productId: string; name: string; quantity: number; price: number; size?: string | null; color?: string | null }[];
+  value: number;
+  referrerHost: string | null;
+  utmSource: string | null;
+  updatedAt: string;
+}
+
+export interface DraftSummary {
+  open: number;
+  value: number;
 }
 
 export interface ProductRow {

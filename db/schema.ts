@@ -8,6 +8,7 @@ import {
   doublePrecision,
   numeric,
   json,
+  jsonb,
   pgEnum,
   unique,
   index,
@@ -932,6 +933,42 @@ export const analyticsEvents = pgTable("analytics_events", {
   index("analytics_events_session_id_idx").on(table.sessionId),
   index("analytics_events_order_id_idx").on(table.orderId).where(sql`${table.orderId} IS NOT NULL`),
 ]);
+
+// Checkout forms a visitor filled in (at least a valid phone) but never
+// submitted, so staff can call and recover the order. One row per analytics
+// session, upserted while the customer types; a placed order flips it to
+// "converted". Card details are never stored. Kept 30 days
+// (lib/data-retention.ts).
+export const checkoutDrafts = pgTable("checkout_drafts", {
+  id: bigint("id", { mode: "number" }).primaryKey().generatedAlwaysAsIdentity(),
+  sessionId: text("session_id").notNull().unique(),
+  visitorId: text("visitor_id").notNull(),
+  fullName: text("full_name"),
+  phone: text("phone").notNull(),
+  email: text("email"),
+  address: text("address"),
+  shippingZone: text("shipping_zone"),
+  items: jsonb("items").$type<CheckoutDraftItem[]>().notNull(),
+  value: money("value").notNull(),
+  referrerHost: text("referrer_host"),
+  utmSource: text("utm_source"),
+  status: text("status").$type<"open" | "converted" | "dismissed">().default("open").notNull(),
+  orderId: text("order_id"),
+  createdAt: timestamp("created_at", { withTimezone: true, precision: 3 }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true, precision: 3 }).defaultNow().notNull(),
+}, (table) => [
+  index("checkout_drafts_status_updated_idx").on(table.status, table.updatedAt),
+  index("checkout_drafts_phone_idx").on(table.phone),
+]);
+
+export interface CheckoutDraftItem {
+  productId: string;
+  name: string;
+  quantity: number;
+  price: number;
+  size?: string | null;
+  color?: string | null;
+}
 
 // Fraud control: IPs barred from placing orders. Populated from the order
 // action menu ("Block Customer IP") and checked at checkout before any order

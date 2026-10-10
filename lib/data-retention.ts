@@ -1,6 +1,7 @@
 import { db } from "@/db";
 import { activityLogs, analyticsEvents } from "@/db/schema";
 import { lt } from "drizzle-orm";
+import { purgeOldDrafts } from "@/features/web-analytics/server/drafts";
 
 // Activity rows are append-only and were never pruned, so the table grew
 // forever. A bigger table means slower scans (more compute time) and more
@@ -42,8 +43,9 @@ export async function purgeOldAnalyticsEvents(): Promise<void> {
  * Fire-and-forget hourly sweep. Never awaited by request handlers and never
  * throws — a failed cleanup must not fail the request that triggered it.
  */
-export function sweepRetention(kind: "activity" | "analytics"): void {
+export function sweepRetention(kind: "activity" | "analytics" | "drafts"): void {
   if (!due(kind)) return;
-  const purge = kind === "activity" ? purgeOldActivityLogs : purgeOldAnalyticsEvents;
+  const purge =
+    kind === "activity" ? purgeOldActivityLogs : kind === "analytics" ? purgeOldAnalyticsEvents : purgeOldDrafts;
   void purge().catch((err) => console.error(`Retention sweep (${kind}) failed:`, err));
 }

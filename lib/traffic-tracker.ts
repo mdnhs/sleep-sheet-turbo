@@ -20,7 +20,7 @@ export type TrafficEventType =
 // be impossible on serverless Neon, where a write per page view kept the
 // compute awake around the clock (the old traffic_events table, dropped in
 // migration 0013). order_complete is recorded by the checkout route instead.
-const isCollectType = (type: TrafficEventType): type is CollectType =>
+const isCollectType = (type: TrafficEventType): type is TrafficEventType & CollectType =>
   (COLLECT_TYPES as readonly string[]).includes(type);
 
 export function toCollectExtra(

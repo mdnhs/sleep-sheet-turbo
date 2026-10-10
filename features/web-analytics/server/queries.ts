@@ -193,11 +193,14 @@ export async function getFunnel(ex: Db, r: Range, f: Filters): Promise<Funnel> {
     viewed_product: string;
     added_to_cart: string;
     started_checkout: string;
+    entered_name: string;
+    entered_phone: string;
+    entered_address: string;
     ordered: string;
   }>(sql`
     WITH ${qualifyingCte(r, f)}
     ev AS (
-      SELECT e.session_id, e.type, e.order_id FROM analytics_events e
+      SELECT e.session_id, e.type, e.label, e.order_id FROM analytics_events e
       WHERE ${inRange(r, sql`e.ts`)} ${sessionFilter(sql`e.session_id`, f)}
     )
     SELECT
@@ -205,6 +208,9 @@ export async function getFunnel(ex: Db, r: Range, f: Filters): Promise<Funnel> {
       count(DISTINCT session_id) FILTER (WHERE type = 'product_view') AS viewed_product,
       count(DISTINCT session_id) FILTER (WHERE type IN ('add_to_cart', 'buy_now')) AS added_to_cart,
       count(DISTINCT session_id) FILTER (WHERE type = 'checkout_start') AS started_checkout,
+      count(DISTINCT session_id) FILTER (WHERE type = 'checkout_field' AND label = 'fullName') AS entered_name,
+      count(DISTINCT session_id) FILTER (WHERE type = 'checkout_field' AND label = 'phone') AS entered_phone,
+      count(DISTINCT session_id) FILTER (WHERE type = 'checkout_field' AND label = 'address') AS entered_address,
       (
         SELECT count(DISTINCT ev.session_id) FROM ev JOIN orders ord ON ord.id = ev.order_id
         WHERE ev.type = 'order_complete' AND ${VALID_ORDER}
@@ -217,6 +223,9 @@ export async function getFunnel(ex: Db, r: Range, f: Filters): Promise<Funnel> {
     viewedProduct: num(row?.viewed_product),
     addedToCart: num(row?.added_to_cart),
     startedCheckout: num(row?.started_checkout),
+    enteredName: num(row?.entered_name),
+    enteredPhone: num(row?.entered_phone),
+    enteredAddress: num(row?.entered_address),
     ordered: num(row?.ordered),
   };
 }

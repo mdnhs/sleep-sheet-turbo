@@ -12,6 +12,7 @@ import { METRICS, RANGE_PRESETS, presetRange, type Metric, type RangePreset } fr
 import { BreakdownPanel } from "./breakdown-panel";
 import { FilterChips } from "./filter-chips";
 import { FunnelCard } from "./funnel-card";
+import { IncompleteCheckouts } from "./incomplete-checkouts";
 import { KpiCards } from "./kpi-cards";
 import { LiveBadge } from "./live-badge";
 import { ProductsTable } from "./products-table";
@@ -131,6 +132,7 @@ export function WebAnalyticsDashboard() {
         <FunnelCard q={q} />
         <ProductsTable q={q} />
       </div>
+      <IncompleteCheckouts />
     </div>
   );
 }
