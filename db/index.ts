@@ -12,10 +12,10 @@ const pool =
   globalForDb.pgPool ??
   new Pool({
     connectionString: process.env.DATABASE_URL!,
-    // A Vercel function instance serves a handful of concurrent requests at
-    // most; PgBouncer in front of Postgres absorbs the fan-out across
-    // instances, so each instance keeps its own pool small.
-    max: 5,
+    // One long-lived container on the VPS serves every request (storefront,
+    // checkout, dashboard, /api/t beacons), so it needs more than the 5 a
+    // Vercel function instance got. Postgres allows 100; DB_POOL_MAX overrides.
+    max: Number(process.env.DB_POOL_MAX) || 15,
     // Close idle connections quickly so a suspended function doesn't hold
     // slots it no longer uses.
     idleTimeoutMillis: 5_000,
