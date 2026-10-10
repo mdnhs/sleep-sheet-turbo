@@ -1,5 +1,5 @@
 import { db } from "@/db";
-import { activityLogs } from "@/db/schema";
+import { activityLogs, analyticsEvents } from "@/db/schema";
 import { lt } from "drizzle-orm";
 
 // Activity rows are append-only and were never pruned, so the table grew
@@ -10,6 +10,7 @@ import { lt } from "drizzle-orm";
 // call it, and it actually runs at most once per SWEEP_INTERVAL_MS per server
 // instance. Deletes are indexed on createdAt, so a no-op sweep is cheap.
 export const ACTIVITY_RETENTION_DAYS = 90;
+export const ANALYTICS_RETENTION_DAYS = 365;
 
 const SWEEP_INTERVAL_MS = 60 * 60 * 1000; // once an hour per instance
 
@@ -32,13 +33,17 @@ export async function purgeOldActivityLogs(): Promise<void> {
   await db.delete(activityLogs).where(lt(activityLogs.createdAt, cutoff(ACTIVITY_RETENTION_DAYS)));
 }
 
+/** Delete web analytics events older than the retention window. */
+export async function purgeOldAnalyticsEvents(): Promise<void> {
+  await db.delete(analyticsEvents).where(lt(analyticsEvents.ts, cutoff(ANALYTICS_RETENTION_DAYS)));
+}
+
 /**
  * Fire-and-forget hourly sweep. Never awaited by request handlers and never
  * throws — a failed cleanup must not fail the request that triggered it.
  */
-export function sweepRetention(kind: "activity"): void {
+export function sweepRetention(kind: "activity" | "analytics"): void {
   if (!due(kind)) return;
-  void purgeOldActivityLogs().catch((err) =>
-    console.error(`Retention sweep (${kind}) failed:`, err)
-  );
+  const purge = kind === "activity" ? purgeOldActivityLogs : purgeOldAnalyticsEvents;
+  void purge().catch((err) => console.error(`Retention sweep (${kind}) failed:`, err));
 }

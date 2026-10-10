@@ -123,6 +123,7 @@ export function useUpdateSettings() {
       social_youtube?: string;
       social_tiktok?: string;
       footer_copyright?: string;
+      analytics_enabled?: "true" | "false";
     }) => {
       const res = await client.api.settings.$patch({ json: data });
       if (!res.ok) throw new Error("Failed to save settings");

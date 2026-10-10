@@ -171,6 +171,9 @@ const app = new Hono()
         gtm_web_id: z.string().optional(),
         gtm_server_id: z.string().optional(),
         gtm_server_url: z.string().optional(),
+        // First-party web analytics on/off (features/web-analytics). Missing
+        // means on; only "false" stops /api/t and order attribution.
+        analytics_enabled: z.enum(["true", "false"]).optional(),
         seo_twitter_handle: z.string().optional(),
         seo_robots_ai_block: z.enum(["true", "false"]).optional(),
         cloudinary_cloud_name: z.string().optional(),
