@@ -12,7 +12,6 @@ import { getPublicSettings } from "@/lib/prefetch-home";
 import GoogleAnalytics from "@/components/google-analytics";
 import ConsentDefaultScript from "@/components/consent-default-script";
 import SeoVerification from "@/components/seo-verification";
-import VercelAnalytics from "@/components/vercel-analytics";
 import PreconnectLinks from "@/components/preconnect";
 
 // Only two fonts are on the storefront critical path: Figtree (body) and
@@ -197,7 +196,6 @@ export default async function RootLayout({
             </NuqsAdapter>
           </QueryProvider>
         </ThemeProvider>
-        <VercelAnalytics />
       </body>
     </html>
   );

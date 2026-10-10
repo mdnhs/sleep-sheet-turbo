@@ -36,6 +36,11 @@ jobs:
           context: .
           file: Dockerfile
           push: true
+          # Becomes next.config's deploymentId. Without it the build ran with
+          # an empty id, so half the chunk URLs carried "?dpl=" and half didn't
+          # and the browser downloaded every chunk twice.
+          build-args: |
+            DEPLOYMENT_VERSION=${{ github.sha }}
           tags: |
             ghcr.io/mdnhs/sleep-sheet-turbo:latest
             ghcr.io/mdnhs/sleep-sheet-turbo:stage
