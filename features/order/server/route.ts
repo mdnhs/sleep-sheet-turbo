@@ -10,7 +10,7 @@ import { isAllowed } from "@/lib/permissions";
 import { rateLimit } from "@/lib/rate-limit";
 import { totalAfterSubtotalChange } from "@/lib/order-totals";
 import { sameOrderNumber, toOrderSummary } from "@/features/order/server/track-order";
-import { withoutCostPrices } from "@/features/order/server/customer-order";
+import { toCustomerOrder } from "@/features/order/server/customer-order";
 import { setActivityMeta, summarizeNames, titleCase, type ActivityChange } from "@/features/activity/server/log-activity";
 import {
   isPendingSql,
@@ -830,8 +830,13 @@ const app = new Hono()
   try{
     const order = await db.query.orders.findMany({
       where: eq(orders.userId, user.id),
+      // `reference` holds a pending bKash paymentID, which the bKash callback
+      // accepts as proof of payment state; the account page never renders it.
+      columns: { reference: false },
       with: {
         items: {
+          // costPrice is what the store paid: staff-only, same as GET /:id.
+          columns: { costPrice: false },
           // This is the account page's order summary list — it renders
           // order.items.length and never reads a product field directly
           // (the order detail page fetches the full row separately via
@@ -868,10 +873,12 @@ const app = new Hono()
 // Making it public trades one boundary for another: phone number is a much
 // weaker secret than an order id (10-11 digits, guessable), so this can't
 // return the same staff-shaped row the way GET /:id does for its id-only
-// callers. `columns` below is deny-by-default — only the fields the
-// track-order page actually renders (status, totals, address, items) come
-// back; fraud/device metadata (ipAddress, userAgent, fbc, gclid, utm*,
-// idempotencyKey), the linked account, and the internal timeline never do.
+// callers. Two tiers, both deny-by-default via `columns` below (fraud/device
+// metadata, the linked account and the internal timeline never come back):
+//   - phone alone: toOrderSummary per order, i.e. what it is and where it
+//     stands, with no name, address, note, id, order number or tracking number.
+//   - phone + order number: that one order in full (address, items, totals),
+//     because knowing both is what the invoice page needs.
 // rateLimit bounds how fast one IP can enumerate phone numbers against it.
 .get("/by-phone", rateLimit("orders-by-phone", 20, 5 * 60_000), async (c) => {
   const { phone, order: orderNumber } = c.req.query();
@@ -978,30 +985,7 @@ const app = new Hono()
       return c.json({ order });
     }
 
-    // Blanked rather than deleted, so the response keeps one shape whoever
-    // asks for it — the RPC client types off this handler, and a union of
-    // two shapes would push `order.user?` checks onto the dashboard, which
-    // always has the real values anyway.
-    return c.json({
-      order: {
-        ...withoutCostPrices(order),
-        shippingCost: order.deliveryCharge,
-        ipAddress: null,
-        userAgent: null,
-        deviceOs: null,
-        browserName: null,
-        fbc: null,
-        gclid: null,
-        utmSource: null,
-        utmMedium: null,
-        utmCampaign: null,
-        landingReferrer: null,
-        landingSource: null,
-        idempotencyKey: null,
-        user: null,
-        OrderTimelineEvent: [],
-      },
-    });
+    return c.json({ order: toCustomerOrder(order) });
   } catch (error) {
     console.error("Failed to fetch order:", error);
     return c.json({ error: "Failed to fetch order" }, 500);

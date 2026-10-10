@@ -28,3 +28,39 @@ export function withoutCostPrices<T extends { items: ItemLike[] }>(order: T): T 
     })),
   } as T;
 }
+
+/**
+ * GET /orders/:id for anyone without orders:read. Blanked rather than deleted,
+ * so the response keeps one shape whoever asks for it (the RPC client types
+ * off the handler). `reference` goes too: for a pending bKash order it holds
+ * the paymentID, which is what /api/bkash/callback checks, so it must not ride
+ * along on a link a customer can forward.
+ */
+const BLANKED = {
+  reference: null,
+  ipAddress: null,
+  userAgent: null,
+  deviceOs: null,
+  browserName: null,
+  fbc: null,
+  gclid: null,
+  utmSource: null,
+  utmMedium: null,
+  utmCampaign: null,
+  landingReferrer: null,
+  landingSource: null,
+  idempotencyKey: null,
+  user: null,
+  OrderTimelineEvent: [] as never[],
+};
+
+export function toCustomerOrder<T extends { items: ItemLike[]; deliveryCharge: number }>(
+  order: T
+): Omit<T, keyof typeof BLANKED> & typeof BLANKED & { shippingCost: number } {
+  return {
+    ...withoutCostPrices(order),
+    ...BLANKED,
+    OrderTimelineEvent: [],
+    shippingCost: order.deliveryCharge,
+  };
+}
