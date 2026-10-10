@@ -9,9 +9,12 @@ import { DateRangePicker } from "@/components/ui/date-range-picker";
 import type { WaQuery } from "../api/use-web-analytics";
 import { DIMENSION_KEYS, type Dimension, type Filters } from "../lib/dimensions";
 import { METRICS, RANGE_PRESETS, presetRange, type Metric, type RangePreset } from "../lib/format";
+import { BreakdownPanel } from "./breakdown-panel";
 import { FilterChips } from "./filter-chips";
+import { FunnelCard } from "./funnel-card";
 import { KpiCards } from "./kpi-cards";
 import { LiveBadge } from "./live-badge";
+import { ProductsTable } from "./products-table";
 import { TrackingOffBanner, TrackingToggle } from "./tracking-toggle";
 import { TrendChart } from "./trend-chart";
 
@@ -71,8 +74,7 @@ export function WebAnalyticsDashboard() {
   // A computed key widens to an index signature; the cast restores the
   // per-dimension shape useQueryStates expects.
   type FilterPatch = Partial<Record<Dimension, string | null>>;
-  // Used by the breakdown panels (Task 11).
-  const _addFilter = (dim: Dimension, value: string) => void setFilterValues({ [dim]: value } as FilterPatch);
+  const addFilter = (dim: Dimension, value: string) => void setFilterValues({ [dim]: value } as FilterPatch);
   const removeFilter = (dim: Dimension) => void setFilterValues({ [dim]: null } as FilterPatch);
 
   return (
@@ -93,6 +95,42 @@ export function WebAnalyticsDashboard() {
       <FilterChips filters={filters} onRemove={removeFilter} />
       <KpiCards q={q} metric={metric} onSelect={(m) => void setMetric(m)} />
       <TrendChart q={q} metric={metric} />
+      <div className="grid gap-4 lg:grid-cols-2">
+        <BreakdownPanel
+          q={q}
+          tabs={[
+            { dim: "path", label: "Pages" },
+            { dim: "route", label: "Routes" },
+            { dim: "hostname", label: "Hostnames" },
+          ]}
+          onSelect={addFilter}
+        />
+        <BreakdownPanel
+          q={q}
+          tabs={[
+            { dim: "referrer", label: "Referrers" },
+            { dim: "utmSource", label: "UTM Source" },
+            { dim: "utmMedium", label: "Medium" },
+            { dim: "utmCampaign", label: "Campaign" },
+          ]}
+          showOrders
+          onSelect={addFilter}
+        />
+        <BreakdownPanel q={q} tabs={[{ dim: "country", label: "Countries" }]} onSelect={addFilter} />
+        <BreakdownPanel
+          q={q}
+          tabs={[
+            { dim: "device", label: "Devices" },
+            { dim: "browser", label: "Browsers" },
+            { dim: "os", label: "OS" },
+          ]}
+          onSelect={addFilter}
+        />
+      </div>
+      <div className="grid gap-4 lg:grid-cols-2">
+        <FunnelCard q={q} />
+        <ProductsTable q={q} />
+      </div>
     </div>
   );
 }
