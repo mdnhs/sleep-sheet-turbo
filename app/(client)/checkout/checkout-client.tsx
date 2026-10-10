@@ -6,6 +6,7 @@ import { useCartStore } from "@/features/cart/state/use-cart-store";
 import React, { useEffect, useRef } from "react";
 import { getOrCreateCheckoutIdempotencyKey } from "@/lib/checkout-idempotency";
 import { trackGtmBeginCheckout } from "@/lib/gtm";
+import { collect } from "@/features/web-analytics/lib/collector";
 
 interface CheckoutClientProps {
   initialSettings?: Record<string, string> | null;
@@ -45,6 +46,11 @@ function CheckoutClient({ initialSettings }: CheckoutClientProps) {
           index: idx + 1,
         })),
       });
+
+      // First-party funnel step. Sent straight to the collector, not through
+      // trackEvent, so GA4 gets no extra custom event (GTM already sends
+      // begin_checkout).
+      collect("checkout_start", "/checkout", { value: totalValue });
     };
 
     if (typeof window !== "undefined" && "requestIdleCallback" in window) {
