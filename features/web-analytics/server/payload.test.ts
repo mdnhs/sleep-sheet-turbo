@@ -47,4 +47,20 @@ describe("parseCollectBody", () => {
   it("rejects bodies over the size cap", () => {
     expect(parseCollectBody(JSON.stringify({ ...valid, label: "x" }).padEnd(MAX_BODY_BYTES + 1, " "))).toBeNull();
   });
+
+  it("counts the size cap in UTF-8 bytes, not characters", () => {
+    const body = JSON.stringify({ ...valid, label: "x" });
+    // Multi-byte padding: well under the cap in characters, over it in bytes.
+    const padding = "\u09E6".repeat(Math.ceil((MAX_BODY_BYTES - body.length) / 3) + 1);
+    const raw = body.slice(0, -1) + `,"pad":"${padding}"}`;
+    expect(raw.length).toBeLessThan(MAX_BODY_BYTES);
+    expect(parseCollectBody(raw)).toBeNull();
+  });
+
+  it("accepts a 300-character Bengali label", () => {
+    const label = "স".repeat(300);
+    const raw = JSON.stringify({ ...valid, label });
+    expect(new TextEncoder().encode(raw).length).toBeGreaterThan(raw.length); // multi-byte
+    expect(parseCollectBody(raw)?.label).toBe(label);
+  });
 });

@@ -13,6 +13,9 @@ const SESSION_KEY = "ss_session";
 let enabled = true;
 // Fallback when localStorage is blocked: one session per page lifetime.
 let memorySession: StoredSession | null = null;
+// document.referrer only describes the page load, so credit it to the first
+// event of the page lifetime; a session rolling over mid-SPA must not re-credit it.
+let referrerUsed = false;
 
 export function setCollectorEnabled(value: boolean): void {
   enabled = value;
@@ -34,7 +37,8 @@ function newId(): string {
 function currentSession(now: number): StoredSession {
   const store = storage();
   const prev = loadSession(store, SESSION_KEY) ?? memorySession;
-  const next = resolveSession(prev, now, window.location.href, document.referrer, newId);
+  const next = resolveSession(prev, now, window.location.href, referrerUsed ? "" : document.referrer, newId);
+  referrerUsed = true;
   memorySession = next;
   saveSession(store, SESSION_KEY, next);
   return next;
@@ -76,7 +80,12 @@ export function collect(type: CollectType, path: string, extra?: CollectExtra): 
     const body = JSON.stringify(
       buildPayload(type, path, currentSession(Date.now()), getVisitorId(), window.location.hostname, extra),
     );
-    if (navigator.sendBeacon?.(ENDPOINT, new Blob([body], { type: "application/json" }))) return;
+    try {
+      // text/plain is CORS-safelisted (no preflight); the server reads the body as text.
+      if (navigator.sendBeacon?.(ENDPOINT, new Blob([body], { type: "text/plain;charset=UTF-8" }))) return;
+    } catch {
+      // Fall through to fetch.
+    }
     void fetch(ENDPOINT, {
       method: "POST",
       body,

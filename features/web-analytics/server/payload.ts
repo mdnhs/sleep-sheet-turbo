@@ -1,7 +1,8 @@
 import { z } from "zod";
 import { COLLECT_TYPES, type CollectPayload } from "../lib/types";
 
-export const MAX_BODY_BYTES = 2048;
+// UTF-8 bytes, not characters: Bengali labels are 3 bytes per character (the client caps characters).
+export const MAX_BODY_BYTES = 4096;
 
 // Optional text: trimmed, length-capped, blank or missing becomes null.
 const text = (max: number) =>
@@ -43,7 +44,7 @@ export const collectPayloadSchema = z.object({
 
 /** The beacon body as a validated payload, or null for anything else. */
 export function parseCollectBody(raw: string): CollectPayload | null {
-  if (raw.length > MAX_BODY_BYTES) return null;
+  if (new TextEncoder().encode(raw).length > MAX_BODY_BYTES) return null;
   let json: unknown;
   try {
     json = JSON.parse(raw);

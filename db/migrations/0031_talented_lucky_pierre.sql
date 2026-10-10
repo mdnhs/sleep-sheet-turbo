@@ -28,3 +28,5 @@ CREATE INDEX IF NOT EXISTS "analytics_events_ts_idx" ON "analytics_events" USING
 CREATE INDEX IF NOT EXISTS "analytics_events_type_ts_idx" ON "analytics_events" USING btree ("type","ts");--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "analytics_events_session_id_idx" ON "analytics_events" USING btree ("session_id");--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "analytics_events_order_id_idx" ON "analytics_events" USING btree ("order_id") WHERE "analytics_events"."order_id" IS NOT NULL;
+--> statement-breakpoint
+ALTER TABLE "api_keys" ADD COLUMN IF NOT EXISTS "rawKey" text;

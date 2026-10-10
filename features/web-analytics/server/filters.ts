@@ -24,6 +24,20 @@ export function qualifyingSessions(r: Range, f: Filters): SQL {
   return sql`SELECT DISTINCT session_id FROM analytics_events WHERE ${inRange(r)} ${filterSql(f)}`;
 }
 
+/**
+ * The `q AS (...),` CTE (note the trailing comma, so follow it with the next CTE),
+ * emitted only when filters are active. Unfiltered, every session with an event in
+ * range qualifies, so the DISTINCT scan over the whole range is skipped.
+ */
+export function qualifyingCte(r: Range, f: Filters): SQL {
+  return activeFilters(f).length ? sql`q AS (${qualifyingSessions(r, f)}),` : sql``;
+}
+
+/** `AND <column> IN (SELECT session_id FROM q)` when filters are active, else nothing. Pairs with qualifyingCte. */
+export function sessionFilter(column: SQL, f: Filters): SQL {
+  return activeFilters(f).length ? sql`AND ${column} IN (SELECT session_id FROM q)` : sql``;
+}
+
 // Same revenue rule as /analytics/sales-overview. Both expect `orders` aliased `ord`.
 export const VALID_ORDER = sql.raw(`ord.status NOT IN ('CANCELLED', 'REFUNDED')`);
 export const ORDER_AMOUNT = sql.raw(`ord."totalAmount" - COALESCE(ord."refundedAmount", 0)`);

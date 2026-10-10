@@ -37,13 +37,15 @@ export function BreakdownPanel({
       <CardHeader className="pb-2">
         {tabs.length > 1 ? (
           <Tabs value={active} onValueChange={(value) => setActive(value as Dimension)}>
-            <TabsList>
-              {tabs.map((tab) => (
-                <TabsTrigger key={tab.dim} value={tab.dim}>
-                  {tab.label}
-                </TabsTrigger>
-              ))}
-            </TabsList>
+            <div className="-mx-1 overflow-x-auto px-1">
+              <TabsList>
+                {tabs.map((tab) => (
+                  <TabsTrigger key={tab.dim} value={tab.dim}>
+                    {tab.label}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+            </div>
           </Tabs>
         ) : (
           <span className="text-sm font-medium">{activeLabel}</span>

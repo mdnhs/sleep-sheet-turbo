@@ -39,13 +39,13 @@ export function FunnelCard({ q }: { q: WaQuery }) {
                       <span className="font-medium">{formatCount(value)}</span>
                       {i > 0 && (
                         <span className="ml-2 text-muted-foreground">
-                          {formatPercent(prev ? value / prev : 0)} of previous · {formatCount(Math.max(0, prev - value))} dropped
+                          {formatPercent(prev ? Math.min(1, value / prev) : 0)} of previous · {formatCount(Math.max(0, prev - value))} dropped
                         </span>
                       )}
                     </span>
                   </div>
                   <div className="h-2 rounded-full bg-muted">
-                    <div className="h-2 rounded-full bg-primary" style={{ width: `${top ? (value / top) * 100 : 0}%` }} />
+                    <div className="h-2 rounded-full bg-primary" style={{ width: `${top ? Math.min(100, (value / top) * 100) : 0}%` }} />
                   </div>
                 </li>
               );

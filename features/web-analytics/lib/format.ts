@@ -1,4 +1,4 @@
-import { endOfDay, startOfDay, subDays } from "date-fns";
+import { startOfDay, subDays } from "date-fns";
 import type { BucketUnit } from "./buckets";
 import { NONE, type Dimension } from "./dimensions";
 import type { Kpis, SeriesPoint } from "./types";
@@ -15,11 +15,15 @@ export const RANGE_PRESETS: { value: FixedPreset; label: string }[] = [
 
 const PRESET_DAYS: Record<FixedPreset, number> = { today: 0, "7d": 6, "30d": 29, "90d": 89 };
 
-/** Local (browser) day boundaries; the admin's browser runs on Dhaka time. */
+/**
+ * Local (browser) day starts; the admin's browser runs on Dhaka time. Every
+ * preset ends at `now`, so the previous-period comparison covers the same
+ * elapsed span ("Today" at 10:00 compares with yesterday 00:00-10:00).
+ */
 export function presetRange(preset: FixedPreset, now: Date): { from: string; to: string } {
   return {
     from: startOfDay(subDays(now, PRESET_DAYS[preset])).toISOString(),
-    to: endOfDay(now).toISOString(),
+    to: now.toISOString(),
   };
 }
 

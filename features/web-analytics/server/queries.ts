@@ -3,7 +3,7 @@ import type { db, Transaction } from "@/db";
 import { ANALYTICS_TZ, type BucketUnit } from "../lib/buckets";
 import { DIMENSIONS, type Dimension, type Filters } from "../lib/dimensions";
 import type { BreakdownRow, Funnel, Kpis, LiveSnapshot, ProductRow, SeriesPoint } from "../lib/types";
-import { filterSql, inRange, ORDER_AMOUNT, qualifyingSessions, VALID_ORDER, type Range } from "./filters";
+import { filterSql, inRange, ORDER_AMOUNT, qualifyingCte, sessionFilter, VALID_ORDER, type Range } from "./filters";
 
 /** The app's db, or a transaction (the DB tests run every query inside one and roll it back). */
 export type Db = typeof db | Transaction;
@@ -19,7 +19,7 @@ export async function getKpis(ex: Db, r: Range, f: Filters): Promise<Kpis> {
     orders: string;
     revenue: string | null;
   }>(sql`
-    WITH q AS (${qualifyingSessions(r, f)}),
+    WITH ${qualifyingCte(r, f)}
     pv AS (
       SELECT visitor_id, session_id FROM analytics_events
       WHERE type = 'page_view' AND ${inRange(r)} ${filterSql(f)}
@@ -34,7 +34,7 @@ export async function getKpis(ex: Db, r: Range, f: Filters): Promise<Kpis> {
       SELECT DISTINCT ord.id, ${ORDER_AMOUNT} AS amount
       FROM analytics_events e JOIN orders ord ON ord.id = e.order_id
       WHERE e.type = 'order_complete' AND ${inRange(r, sql`e.ts`)}
-        AND e.session_id IN (SELECT session_id FROM q) AND ${VALID_ORDER}
+        ${sessionFilter(sql`e.session_id`, f)} AND ${VALID_ORDER}
     )
     SELECT
       (SELECT count(DISTINCT visitor_id) FROM pv) AS visitors,
@@ -75,7 +75,7 @@ export async function getSeries(ex: Db, r: Range, f: Filters, unit: BucketUnit):
     orders: string;
     revenue: string | null;
   }>(sql`
-    WITH q AS (${qualifyingSessions(r, f)}),
+    WITH ${qualifyingCte(r, f)}
     buckets AS (
       SELECT g AT TIME ZONE ${ANALYTICS_TZ} AS bucket
       FROM generate_series(
@@ -113,7 +113,7 @@ export async function getSeries(ex: Db, r: Range, f: Filters, unit: BucketUnit):
         SELECT ord.id, min(e.ts) AS first_ts, min(${ORDER_AMOUNT}) AS amount
         FROM analytics_events e JOIN orders ord ON ord.id = e.order_id
         WHERE e.type = 'order_complete' AND ${inRange(r, sql`e.ts`)}
-          AND e.session_id IN (SELECT session_id FROM q) AND ${VALID_ORDER}
+          ${sessionFilter(sql`e.session_id`, f)} AND ${VALID_ORDER}
         GROUP BY ord.id
       ) per_order
       GROUP BY 1
@@ -155,7 +155,7 @@ export async function getBreakdown(
   // Order events carry the session's landing attributes, so grouping them by
   // the same column attributes each order to its referrer / campaign.
   const { rows } = await ex.execute<{ key: string | null; visitors: string; orders: string; revenue: string | null }>(sql`
-    WITH q AS (${qualifyingSessions(r, f)}),
+    WITH ${qualifyingCte(r, f)}
     v AS (
       SELECT ${column} AS key, count(DISTINCT visitor_id) AS visitors
       FROM analytics_events
@@ -168,7 +168,7 @@ export async function getBreakdown(
         SELECT DISTINCT ON (ord.id) e.${column} AS key, ${ORDER_AMOUNT} AS amount
         FROM analytics_events e JOIN orders ord ON ord.id = e.order_id
         WHERE e.type = 'order_complete' AND ${inRange(r, sql`e.ts`)}
-          AND e.session_id IN (SELECT session_id FROM q) AND ${VALID_ORDER}
+          ${sessionFilter(sql`e.session_id`, f)} AND ${VALID_ORDER}
         ORDER BY ord.id, e.ts
       ) per_order
       GROUP BY 1
@@ -194,10 +194,10 @@ export async function getFunnel(ex: Db, r: Range, f: Filters): Promise<Funnel> {
     started_checkout: string;
     ordered: string;
   }>(sql`
-    WITH q AS (${qualifyingSessions(r, f)}),
+    WITH ${qualifyingCte(r, f)}
     ev AS (
       SELECT e.session_id, e.type, e.order_id FROM analytics_events e
-      WHERE ${inRange(r, sql`e.ts`)} AND e.session_id IN (SELECT session_id FROM q)
+      WHERE ${inRange(r, sql`e.ts`)} ${sessionFilter(sql`e.session_id`, f)}
     )
     SELECT
       count(DISTINCT session_id) FILTER (WHERE type = 'page_view') AS visited,
@@ -222,7 +222,7 @@ export async function getFunnel(ex: Db, r: Range, f: Filters): Promise<Funnel> {
 
 export async function getProducts(ex: Db, r: Range, f: Filters, limit: number): Promise<ProductRow[]> {
   const { rows } = await ex.execute<{ product_id: string; name: string; views: string; added: string; orders: string }>(sql`
-    WITH q AS (${qualifyingSessions(r, f)}),
+    WITH ${qualifyingCte(r, f)}
     a AS (
       SELECT product_id,
         count(DISTINCT session_id) FILTER (WHERE type = 'product_view') AS views,
@@ -230,7 +230,7 @@ export async function getProducts(ex: Db, r: Range, f: Filters, limit: number): 
       FROM analytics_events
       WHERE ${inRange(r)} AND product_id IS NOT NULL
         AND type IN ('product_view', 'add_to_cart', 'buy_now')
-        AND session_id IN (SELECT session_id FROM q)
+        ${sessionFilter(sql`session_id`, f)}
       GROUP BY product_id
     ),
     b AS (
@@ -239,7 +239,7 @@ export async function getProducts(ex: Db, r: Range, f: Filters, limit: number): 
       JOIN orders ord ON ord.id = e.order_id
       JOIN order_items oi ON oi."orderId" = ord.id
       WHERE e.type = 'order_complete' AND ${inRange(r, sql`e.ts`)}
-        AND e.session_id IN (SELECT session_id FROM q) AND ${VALID_ORDER}
+        ${sessionFilter(sql`e.session_id`, f)} AND ${VALID_ORDER}
       GROUP BY 1
     )
     SELECT a.product_id, p."productName" AS name, a.views, a.added, COALESCE(b.orders, 0) AS orders

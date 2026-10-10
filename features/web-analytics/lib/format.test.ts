@@ -14,16 +14,22 @@ import type { SeriesPoint } from "./types";
 describe("presetRange", () => {
   const now = new Date(2026, 9, 10, 15, 30); // local time, Oct 10 15:30
 
-  it("covers today from local midnight to the end of the day", () => {
+  it("covers today from local midnight to now", () => {
     expect(presetRange("today", now)).toEqual({
       from: new Date(2026, 9, 10, 0, 0, 0, 0).toISOString(),
-      to: new Date(2026, 9, 10, 23, 59, 59, 999).toISOString(),
+      to: now.toISOString(),
     });
   });
 
   it("counts today as one of the last 7 days", () => {
     expect(presetRange("7d", now).from).toBe(new Date(2026, 9, 4, 0, 0, 0, 0).toISOString());
     expect(presetRange("90d", now).from).toBe(new Date(2026, 6, 13, 0, 0, 0, 0).toISOString());
+  });
+
+  it("ends every preset at now so the previous period spans the same time", () => {
+    for (const preset of ["today", "7d", "30d", "90d"] as const) {
+      expect(presetRange(preset, now).to).toBe(now.toISOString());
+    }
   });
 });
 

@@ -4,8 +4,8 @@ import { rateLimit } from "@/lib/rate-limit";
 // Minimal fake matching just the shape rate-limit.ts's middleware reads off
 // a Hono Context: c.req.header() and c.json(). Enough to exercise the
 // middleware without pulling in a real Hono app/request.
-function fakeContext(ip: string) {
-  const headers: Record<string, string> = { "x-forwarded-for": ip };
+function fakeContext(ip: string, extraHeaders: Record<string, string> = {}) {
+  const headers: Record<string, string> = { "x-forwarded-for": ip, ...extraHeaders };
   return {
     req: { header: (name: string) => headers[name] },
     json: (body: unknown, status: number) => ({ body, status }),
@@ -47,5 +47,19 @@ describe("rateLimit", () => {
 
     expect(first).toBeUndefined();
     expect(second).toBeUndefined();
+  });
+
+  it("prefers cf-connecting-ip over x-forwarded-for", async () => {
+    const middleware = rateLimit(`test-${Math.random()}`, 1, 60_000);
+    const next = async () => {};
+
+    // Same x-forwarded-for (a shared Cloudflare edge IP), different real clients.
+    const first = await middleware(fakeContext("5.5.5.5", { "cf-connecting-ip": "10.0.0.1" }) as never, next);
+    const second = await middleware(fakeContext("5.5.5.5", { "cf-connecting-ip": "10.0.0.2" }) as never, next);
+    const repeat = await middleware(fakeContext("5.5.5.5", { "cf-connecting-ip": "10.0.0.1" }) as never, next);
+
+    expect(first).toBeUndefined();
+    expect(second).toBeUndefined();
+    expect(repeat).toEqual({ body: { message: expect.any(String) }, status: 429 });
   });
 });
