@@ -95,17 +95,25 @@ export const BUSINESS_RULE_SECTIONS: SettingsSection[] = [
  * returns only stored rows and the server validates every submitted value, so
  * sending untouched blanks would reject the whole save (or save a coerced 0).
  */
+export function changedSettings(
+  keys: readonly string[],
+  values: Record<string, string | undefined>,
+  stored: Record<string, string | undefined> = {},
+): Record<string, string> {
+  const patch: Record<string, string> = {};
+  for (const key of keys) {
+    const next = (values[key] ?? "").trim();
+    if (next !== (stored[key] ?? "").trim()) patch[key] = next;
+  }
+  return patch;
+}
+
 export function toSettingsPatch(
   fields: readonly SettingsField[],
   values: Record<string, string>,
   stored: Record<string, string | undefined> = {},
 ): Record<string, string> {
-  const patch: Record<string, string> = {};
-  for (const field of fields) {
-    const next = (values[field.key] ?? "").trim();
-    if (next !== (stored[field.key] ?? "").trim()) patch[field.key] = next;
-  }
-  return patch;
+  return changedSettings(fields.map((field) => field.key), values, stored);
 }
 
 /** Keys in a patch that clear a field which cannot be empty. */

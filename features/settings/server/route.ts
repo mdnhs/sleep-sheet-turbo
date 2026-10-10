@@ -91,17 +91,19 @@ const app = new Hono()
     const plan = planSettingsWrite(body, user, before, getSettingsKey());
     if (!plan.ok) return c.json(plan.body, plan.status);
 
+    // Nothing changed: no write, no activity-log entry, no revalidation, and
+    // above all no whole-CDN purge.
+    if (plan.rows.length === 0) return c.json({ success: true });
+
     // All upserts in one transaction, so a failure saves none of them.
-    if (plan.rows.length > 0) {
-      await batch((tx) =>
-        plan.rows.map(({ key, value }) =>
-          tx
-            .insert(siteSettings)
-            .values({ key, value })
-            .onConflictDoUpdate({ target: siteSettings.key, set: { value, updatedAt: new Date() } }),
-        ),
-      );
-    }
+    await batch((tx) =>
+      plan.rows.map(({ key, value }) =>
+        tx
+          .insert(siteSettings)
+          .values({ key, value })
+          .onConflictDoUpdate({ target: siteSettings.key, set: { value, updatedAt: new Date() } }),
+      ),
+    );
 
     invalidateStoredSettings();
     // A changed credential/mode must not keep serving the old bKash token.

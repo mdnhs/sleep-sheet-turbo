@@ -56,7 +56,8 @@ export function SeoForm() {
       seo_google_verification: values.seo_google_verification || undefined,
       seo_bing_verification: values.seo_bing_verification || undefined,
       gtm_web_id: values.gtm_web_id?.trim() || undefined,
-      gtm_server_url: values.gtm_server_url?.trim() || undefined,
+      // "" (not undefined) so clearing the field falls back to the default host.
+      gtm_server_url: values.gtm_server_url?.trim() ?? "",
       seo_twitter_handle: values.seo_twitter_handle || undefined,
       seo_robots_ai_block: values.seo_robots_ai_block ? "true" : "false",
     });

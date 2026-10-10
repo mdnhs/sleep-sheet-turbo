@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { SEO_DEFAULTS } from "@/lib/settings/defaults";
+import { SEO_DEFAULTS, SEO_KEYWORDS } from "@/lib/settings/defaults";
 import type { SiteSeo, StoreProfile } from "@/lib/settings/store-profile";
 
 /**
@@ -23,7 +23,7 @@ export function buildRootMetadata(
     metadataBase: new URL(baseUrl),
     title: { default: seo.title, template: `%s | ${store.name}` },
     description: seo.description,
-    keywords: [...SEO_DEFAULTS.keywords],
+    keywords: [...SEO_KEYWORDS],
     robots: {
       index: true,
       follow: true,

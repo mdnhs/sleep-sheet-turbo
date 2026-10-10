@@ -13,7 +13,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader2 } from "lucide-react";
+import { toast } from "sonner";
 import type { SettingsPatch } from "@/lib/settings/registry";
+import { changedSettings } from "@/features/settings/settings-fields";
 import { HeroSlidesManager } from "./hero-slides-manager";
 import { PromoBannersManager } from "./promo-banners-manager";
 
@@ -113,13 +115,19 @@ function SaveSectionButton({
   section: SectionKey;
 }) {
   const { mutate, isPending } = useUpdateSettings();
+  const { data: stored } = useSettings();
 
   const handleSave = async () => {
     const fields = SECTION_FIELDS[section];
     const valid = await form.trigger(fields);
     if (!valid) return;
     const values = form.getValues();
-    const payload = Object.fromEntries(fields.map((f) => [f, values[f]]));
+    // Only what changed: unsaved keys are pre-filled "" and must not be written back as "".
+    const payload = changedSettings(fields, values, stored);
+    if (Object.keys(payload).length === 0) {
+      toast.info("No changes to save");
+      return;
+    }
     mutate(payload as SettingsPatch);
   };
 

@@ -5,6 +5,7 @@ import {
   BUSINESS_RULE_SECTIONS,
   STORE_PROFILE_SECTIONS,
   blankRequiredKeys,
+  changedSettings,
   toSettingsPatch,
 } from "@/features/settings/settings-fields";
 
@@ -68,6 +69,25 @@ describe("toSettingsPatch", () => {
     const fields = [{ key: "store_city" as const, label: "City" }];
     expect(toSettingsPatch(fields, { store_city: "Dhaka " }, { store_city: "Dhaka" })).toEqual({});
     expect(toSettingsPatch(fields, { store_city: "" }, { store_city: "Dhaka" })).toEqual({ store_city: "" });
+  });
+});
+
+describe("changedSettings", () => {
+  const footerKeys = ["footer_phone", "footer_address", "social_facebook", "social_instagram"];
+
+  it("from empty settings, sends only the one field that was changed", () => {
+    const values = { footer_phone: "01700", footer_address: "", social_facebook: "", social_instagram: "" };
+    expect(changedSettings(footerKeys, values, {})).toEqual({ footer_phone: "01700" });
+  });
+
+  it("never blanks a stored key the form did not touch, but does send an explicit clear", () => {
+    const stored = { footer_phone: "01700", footer_address: "Road 2" };
+    const values = { footer_phone: "01800", footer_address: "Road 2", social_facebook: "", social_instagram: "" };
+    expect(changedSettings(footerKeys, values, stored)).toEqual({ footer_phone: "01800" });
+    expect(changedSettings(footerKeys, { ...values, footer_address: "" }, stored)).toEqual({
+      footer_phone: "01800",
+      footer_address: "",
+    });
   });
 });
 
