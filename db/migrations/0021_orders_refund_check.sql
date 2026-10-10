@@ -1,0 +1,16 @@
+-- Backstop for the refund route's application-level guard (BAD-3 / audit
+-- 2026-09-21): makes it impossible for `refundedAmount` to exceed
+-- `totalAmount` even if the route's conditional-update guard is ever
+-- bypassed or a future code path writes the column directly.
+--
+-- Added NOT VALID: this only enforces on rows written from now on. Adding a
+-- CHECK the normal way re-scans and validates every existing row inside the
+-- same transaction, which would fail the whole migration if any historical
+-- order (e.g. one whose totalAmount was reduced via an order edit after a
+-- refund was already recorded) happens to violate it, and would hold a lock
+-- on `orders` for the scan on a table this size. NOT VALID skips that scan;
+-- the constraint is live for every write going forward regardless. Run
+-- `ALTER TABLE orders VALIDATE CONSTRAINT orders_refunded_amount_within_total;`
+-- separately (it takes a lighter lock) once any pre-existing violations, if
+-- found, are reconciled.
+ALTER TABLE "orders" ADD CONSTRAINT "orders_refunded_amount_within_total" CHECK ("orders"."refundedAmount" <= "orders"."totalAmount") NOT VALID;

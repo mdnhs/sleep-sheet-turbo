@@ -1,0 +1,59 @@
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# dependencies
+/node_modules
+/.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
+# testing
+/coverage
+
+# next.js
+/.next/
+/out/
+
+# production
+/build
+
+# misc
+.DS_Store
+*.pem
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# env files (can opt-in for committing if needed)
+.env*
+!.env.example
+
+# local MCP server config — holds live API keys/credentials per developer,
+# never commit (see .mcp.json.example for the shape)
+.mcp.json
+
+# local-only credentials (service account keys, etc.) — never commit, and
+# never put these under public/ since anything there ships to the deployed
+# site's static assets
+/credentials/
+*.csv
+
+# vercel
+.vercel
+
+# Prisma was replaced by Drizzle + Neon (see db/schema.ts, db/index.ts) —
+# `generated/prisma` is stale codegen output from before the switch, and
+# *.sqlite/*.db are leftover local dev databases from before Neon.
+/generated/prisma
+*.sqlite
+*.db
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts

@@ -1,0 +1,163 @@
+{
+  "products": [
+    {
+      "id": "1",
+      "name": "Wireless Noise-Canceling Headphones",
+      "price": 199.99,
+      "description": "Premium over-ear headphones with active noise cancellation and 30-hour battery life.",
+      "features": ["Active noise cancellation", "Bluetooth 5.2", "Quick charge", "Voice assistant compatible"],
+      "images": [
+        "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?q=80&w=3540",
+        "https://images.unsplash.com/photo-1491927570842-0261e477d937?q=80&w=3687",
+        "https://images.unsplash.com/photo-1545127398-14699f92334b?q=80&w=2868"
+      ],
+      "colors": ["Black", "Silver"],
+      "sizes": [],
+      "inStock": true,
+      "rating": 4.7,
+      "reviewCount": 112,
+      "category": "Electronics",
+      "sku": "WH-1000XM4",
+      "material": "Plastic, Synthetic Leather",
+      "care": "Wipe with a dry cloth",
+      "specifications": {
+        "Material": "Plastic, Synthetic Leather",
+        "Weight": "254g",
+        "Care": "Wipe with a dry cloth",
+        "Origin": "Made in Japan",
+        "Fit": "Over-ear"
+      },
+    "reviews": [
+  {
+    "id": "rev1",
+    "name": "TechLover22",
+    "rating": 5,
+    "date": "2024-09-15",
+    "comment": "Best headphones I've ever owned!",
+    "verified": true
+  }
+]
+
+    },
+    {
+      "id": "2",
+      "name": "Premium Coffee Maker",
+      "price": 89.99,
+      "description": "Smart coffee maker with built-in grinder and app control.",
+      "features": ["12-cup capacity", "Programmable timer", "Auto-clean function"],
+      "images": [
+        "https://images.unsplash.com/photo-1565452344518-47faca79dc69?q=80&w=3435",
+        "https://images.unsplash.com/photo-1593369196682-6d8ec9ff3ae0?q=80&w=3540",
+        "https://images.unsplash.com/photo-1581701663554-291c6c9e56d2?q=80&w=2380"
+      ],
+      "colors": ["Black", "White"],
+      "sizes": [],
+      "inStock": true,
+      "rating": 4.5,
+      "reviewCount": 76,
+      "category": "Home & Kitchen",
+      "sku": "CM-2025",
+      "material": "Stainless Steel, Plastic",
+      "care": "Hand wash parts, wipe body",
+      "specifications": {
+        "Material": "Stainless Steel, Plastic",
+        "Weight": "3.5kg",
+        "Care": "Hand wash parts, wipe body",
+        "Origin": "Made in Germany",
+        "Fit": "Countertop"
+      },
+   "reviews": [
+  {
+    "id": "rev1",
+    "name": "TechLover22",
+    "rating": 5,
+    "date": "2024-09-15",
+    "comment": "Best headphones I've ever owned!",
+    "verified": true
+  }
+]
+
+    },
+    {
+      "id": "3",
+      "name": "Waterproof Hiking Backpack",
+      "price": 79.99,
+      "description": "35L weather-resistant backpack with ergonomic design.",
+      "features": ["Waterproof fabric", "Multiple compartments", "Hydration compatible"],
+      "images": [
+      
+        "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?q=80&w=3687",
+        "https://images.unsplash.com/photo-1622560480605-d83c853bc5c3?q=80&w=3688"
+      ],
+      "colors": ["Green", "Black", "Blue"],
+      "sizes": ["One Size"],
+      "inStock": true,
+      "rating": 4.9,
+      "reviewCount": 59,
+      "category": "Outdoor",
+      "sku": "BP-800",
+      "material": "Ripstop Nylon",
+      "care": "Hand wash only",
+      "specifications": {
+        "Material": "Ripstop Nylon",
+        "Weight": "1.2kg",
+        "Care": "Hand wash only",
+        "Origin": "Made in Vietnam",
+        "Fit": "Adjustable straps"
+      },
+      "reviews": [
+  {
+    "id": "rev2",
+    "name": "CoffeeMaster",
+    "rating": 4,
+    "date": "2024-08-10",
+    "comment": "Great machine, but app could be better",
+    "verified": true
+  }
+]
+
+    },
+    {
+      "id": "4",
+      "name": "Smart Yoga Mat",
+      "price": 49.99,
+      "description": "Eco-friendly mat with posture tracking sensors.",
+      "features": ["7mm thickness", "Non-slip surface", "App integration"],
+      "images": [
+        "https://images.unsplash.com/photo-1601925260368-ae2f83cf8b7f?q=80&w=3133",
+        "https://images.unsplash.com/photo-1592432678016-e910b452f9a2?q=80&w=2624",
+        "https://images.unsplash.com/photo-1591291621164-2c6367723315?q=80&w=3542"
+      ],
+      "colors": ["Purple", "Gray"],
+      "sizes": ["Standard"],
+      "inStock": true,
+      "rating": 4.4,
+      "reviewCount": 34,
+      "category": "Fitness",
+      "sku": "YM-700",
+      "material": "Natural Rubber",
+      "care": "Wipe with damp cloth",
+      "specifications": {
+        "Material": "Natural Rubber",
+        "Weight": "2.5kg",
+        "Care": "Wipe with damp cloth",
+        "Origin": "Made in India",
+        "Fit": "Standard mat size"
+      },
+    "reviews": [
+  {
+    "id": "rev4",
+    "name": "YogaPro",
+    "rating": 4,
+    "date": "2024-06-20",
+    "comment": "Good mat, app needs improvement",
+    "verified": true
+  }
+]
+
+    }
+  ],
+  "total": 4,
+  "limit": 10,
+  "skip": 0
+}

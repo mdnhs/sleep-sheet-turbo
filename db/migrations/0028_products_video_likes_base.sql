@@ -1,0 +1,1 @@
+ALTER TABLE "products" ADD COLUMN "productVideoLikesBase" integer DEFAULT 0 NOT NULL;

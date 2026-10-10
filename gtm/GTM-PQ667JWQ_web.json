@@ -1,0 +1,1762 @@
+{
+  "exportFormatVersion": 2,
+  "exportTime": "2026-09-19 12:31:32",
+  "containerVersion": {
+    "path": "accounts/6316985283/containers/232168102/versions/0",
+    "accountId": "6316985283",
+    "containerId": "232168102",
+    "containerVersionId": "0",
+    "container": {
+      "path": "accounts/6316985283/containers/232168102",
+      "accountId": "6316985283",
+      "containerId": "232168102",
+      "name": "sleepsheetbd.com",
+      "publicId": "GTM-PQ667JWQ",
+      "usageContext": [
+        "WEB"
+      ],
+      "fingerprint": "1784464526245",
+      "tagManagerUrl": "https://tagmanager.google.com/#/container/accounts/6316985283/containers/232168102/workspaces?apiLink=container",
+      "features": {
+        "supportUserPermissions": true,
+        "supportEnvironments": true,
+        "supportWorkspaces": true,
+        "supportGtagConfigs": false,
+        "supportBuiltInVariables": true,
+        "supportClients": false,
+        "supportFolders": true,
+        "supportTags": true,
+        "supportTemplates": true,
+        "supportTriggers": true,
+        "supportVariables": true,
+        "supportVersions": true,
+        "supportZones": true,
+        "supportTransformations": false
+      },
+      "tagIds": [
+        "GTM-PQ667JWQ"
+      ]
+    },
+    "tag": [
+      {
+        "accountId": "6316985283",
+        "containerId": "232168102",
+        "tagId": "29",
+        "name": "Conversion Linker",
+        "type": "gclidw",
+        "parameter": [
+          {
+            "type": "BOOLEAN",
+            "key": "enableCrossDomain",
+            "value": "false"
+          },
+          {
+            "type": "BOOLEAN",
+            "key": "enableUrlPassthrough",
+            "value": "false"
+          }
+        ],
+        "fingerprint": "1789268936767",
+        "firingTriggerId": [
+          "2147479553"
+        ],
+        "consentSettings": {
+          "consentStatus": "NOT_SET"
+        }
+      },
+      {
+        "accountId": "6316985283",
+        "containerId": "232168102",
+        "tagId": "34",
+        "name": "Google Ads - Purchase Conversion Tracking",
+        "type": "awct",
+        "parameter": [
+          {
+            "type": "TEMPLATE",
+            "key": "conversionValue",
+            "value": "{{dlv - ecommerce.value}}"
+          },
+          {
+            "type": "TEMPLATE",
+            "key": "orderId",
+            "value": "{{dlv - ecommerce.transaction_id}}"
+          },
+          {
+            "type": "TEMPLATE",
+            "key": "conversionId",
+            "value": "{{Const - Google Ads Conversion ID}}"
+          },
+          {
+            "type": "TEMPLATE",
+            "key": "currencyCode",
+            "value": "{{dlv - ecommerce.currency}}"
+          },
+          {
+            "type": "TEMPLATE",
+            "key": "conversionLabel",
+            "value": "{{Const - Google Ads Purchase Conversion Label}}"
+          }
+        ],
+        "fingerprint": "1789186637042",
+        "firingTriggerId": [
+          "8"
+        ],
+        "consentSettings": {
+          "consentStatus": "NOT_SET"
+        }
+      },
+      {
+        "accountId": "6316985283",
+        "containerId": "232168102",
+        "tagId": "40",
+        "name": "Meta Pixel - ViewContent",
+        "type": "html",
+        "parameter": [
+          {
+            "type": "TEMPLATE",
+            "key": "html",
+            "value": "<script>\n(function() {\n  var rawVal = '{{dlv - ecommerce.value}}';\n  var val = parseFloat(rawVal);\n  var rawCurr = '{{dlv - ecommerce.currency}}';\n  var curr = (rawCurr && rawCurr !== 'undefined' && rawCurr !== 'null')\n    ? String(rawCurr).trim().toUpperCase().replace(/[^A-Z]/g, '')\n    : 'BDT';\n  if (curr.length !== 3) curr = 'BDT';\n\n\n  // Catalog matching. Parsed rather than interpolated: GTM turns an array\n  // into \"a,b,c\" when it substitutes into HTML, so the variables hand over\n  // JSON and this turns it back into a real array.\n  var contentIds = [];\n  var contents = [];\n  try { contentIds = JSON.parse('{{CJS - Meta content_ids}}') || []; } catch (e) {}\n  try { contents = JSON.parse('{{CJS - Meta contents}}') || []; } catch (e) {}\n\n  var params = {\n    content_type: 'product',\n    currency: curr\n  };\n  if (contentIds.length) { params.content_ids = contentIds; }\n  if (!isNaN(val) && val > 0) {\n    params.value = Number(val.toFixed(2));\n  }\n\n  var eventOptions = {};\n  var _eid = '{{dlv - event_id}}';\n  if (_eid && _eid !== 'undefined' && _eid !== 'null') {\n    eventOptions.eventID = _eid;\n  }\n\n  fbq('track', 'ViewContent', params, eventOptions);\n})();\n</script>"
+          },
+          {
+            "type": "BOOLEAN",
+            "key": "supportDocumentWrite",
+            "value": "false"
+          }
+        ],
+        "fingerprint": "1789900000000",
+        "firingTriggerId": [
+          "22"
+        ],
+        "consentSettings": {
+          "consentStatus": "NOT_SET"
+        },
+        "setupTag": [
+          {
+            "tagName": "Meta Pixel - Base Code",
+            "stopOnSetupFailure": false
+          }
+        ]
+      },
+      {
+        "accountId": "6316985283",
+        "containerId": "232168102",
+        "tagId": "41",
+        "name": "Meta Pixel - Search",
+        "type": "html",
+        "parameter": [
+          {
+            "type": "TEMPLATE",
+            "key": "html",
+            "value": "<script>\n(function() {\n  var eventOptions = {};\n  var _eid = '{{dlv - event_id}}';\n  if (_eid && _eid !== 'undefined' && _eid !== 'null') {\n    eventOptions.eventID = _eid;\n  }\n\n  fbq('track', 'Search', {\n    search_string: '{{dlv - search_term}}'\n  }, eventOptions);\n})();\n</script>"
+          },
+          {
+            "type": "BOOLEAN",
+            "key": "supportDocumentWrite",
+            "value": "false"
+          }
+        ],
+        "fingerprint": "1789582625275",
+        "firingTriggerId": [
+          "15"
+        ],
+        "consentSettings": {
+          "consentStatus": "NOT_SET"
+        },
+        "setupTag": [
+          {
+            "tagName": "Meta Pixel - Base Code",
+            "stopOnSetupFailure": false
+          }
+        ]
+      },
+      {
+        "accountId": "6316985283",
+        "containerId": "232168102",
+        "tagId": "42",
+        "name": "GA4 Event - add_to_cart",
+        "type": "gaawe",
+        "parameter": [
+          {
+            "type": "BOOLEAN",
+            "key": "sendEcommerceData",
+            "value": "true"
+          },
+          {
+            "type": "LIST",
+            "key": "eventSettingsTable",
+            "list": [
+              {
+                "type": "MAP",
+                "map": [
+                  {
+                    "type": "TEMPLATE",
+                    "key": "parameter",
+                    "value": "event_id"
+                  },
+                  {
+                    "type": "TEMPLATE",
+                    "key": "parameterValue",
+                    "value": "{{dlv - event_id}}"
+                  }
+                ]
+              },
+              {
+                "type": "MAP",
+                "map": [
+                  {
+                    "type": "TEMPLATE",
+                    "key": "parameter",
+                    "value": "external_id"
+                  },
+                  {
+                    "type": "TEMPLATE",
+                    "key": "parameterValue",
+                    "value": "{{dlv - user_data.external_id}}"
+                  }
+                ]
+              },
+              {
+                "type": "MAP",
+                "map": [
+                  {
+                    "type": "TEMPLATE",
+                    "key": "parameter",
+                    "value": "email"
+                  },
+                  {
+                    "type": "TEMPLATE",
+                    "key": "parameterValue",
+                    "value": "{{dlv - user_data.email_sha256}}"
+                  }
+                ]
+              },
+              {
+                "type": "MAP",
+                "map": [
+                  {
+                    "type": "TEMPLATE",
+                    "key": "parameter",
+                    "value": "phone"
+                  },
+                  {
+                    "type": "TEMPLATE",
+                    "key": "parameterValue",
+                    "value": "{{dlv - user_data.phone_sha256}}"
+                  }
+                ]
+              },
+              {
+                "type": "MAP",
+                "map": [
+                  {
+                    "type": "TEMPLATE",
+                    "key": "parameter",
+                    "value": "fbc"
+                  },
+                  {
+                    "type": "TEMPLATE",
+                    "key": "parameterValue",
+                    "value": "{{CJS - fbc}}"
+                  }
+                ]
+              },
+              {
+                "type": "MAP",
+                "map": [
+                  {
+                    "type": "TEMPLATE",
+                    "key": "parameter",
+                    "value": "server_container_url"
+                  },
+                  {
+                    "type": "TEMPLATE",
+                    "key": "parameterValue",
+                    "value": "https://ss.sleepsheetbd.com"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "TEMPLATE",
+            "key": "eventName",
+            "value": "add_to_cart"
+          },
+          {
+            "type": "TEMPLATE",
+            "key": "measurementIdOverride",
+            "value": "{{Const - GA4 Measurement ID}}"
+          }
+        ],
+        "fingerprint": "1789900000005",
+        "firingTriggerId": [
+          "21"
+        ],
+        "consentSettings": {
+          "consentStatus": "NOT_SET"
+        }
+      },
+      {
+        "accountId": "6316985283",
+        "containerId": "232168102",
+        "tagId": "43",
+        "name": "GA4 Event - search",
+        "type": "gaawe",
+        "parameter": [
+          {
+            "type": "BOOLEAN",
+            "key": "sendEcommerceData",
+            "value": "true"
+          },
+          {
+            "type": "LIST",
+            "key": "eventSettingsTable",
+            "list": [
+              {
+                "type": "MAP",
+                "map": [
+                  {
+                    "type": "TEMPLATE",
+                    "key": "parameter",
+                    "value": "search_term"
+                  },
+                  {
+                    "type": "TEMPLATE",
+                    "key": "parameterValue",
+                    "value": "{{dlv - search_term}}"
+                  }
+                ]
+              },
+              {
+                "type": "MAP",
+                "map": [
+                  {
+                    "type": "TEMPLATE",
+                    "key": "parameter",
+                    "value": "event_id"
+                  },
+                  {
+                    "type": "TEMPLATE",
+                    "key": "parameterValue",
+                    "value": "{{dlv - event_id}}"
+                  }
+                ]
+              },
+              {
+                "type": "MAP",
+                "map": [
+                  {
+                    "type": "TEMPLATE",
+                    "key": "parameter",
+                    "value": "external_id"
+                  },
+                  {
+                    "type": "TEMPLATE",
+                    "key": "parameterValue",
+                    "value": "{{dlv - user_data.external_id}}"
+                  }
+                ]
+              },
+              {
+                "type": "MAP",
+                "map": [
+                  {
+                    "type": "TEMPLATE",
+                    "key": "parameter",
+                    "value": "email"
+                  },
+                  {
+                    "type": "TEMPLATE",
+                    "key": "parameterValue",
+                    "value": "{{dlv - user_data.email_sha256}}"
+                  }
+                ]
+              },
+              {
+                "type": "MAP",
+                "map": [
+                  {
+                    "type": "TEMPLATE",
+                    "key": "parameter",
+                    "value": "phone"
+                  },
+                  {
+                    "type": "TEMPLATE",
+                    "key": "parameterValue",
+                    "value": "{{dlv - user_data.phone_sha256}}"
+                  }
+                ]
+              },
+              {
+                "type": "MAP",
+                "map": [
+                  {
+                    "type": "TEMPLATE",
+                    "key": "parameter",
+                    "value": "fbc"
+                  },
+                  {
+                    "type": "TEMPLATE",
+                    "key": "parameterValue",
+                    "value": "{{CJS - fbc}}"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "TEMPLATE",
+            "key": "eventName",
+            "value": "search"
+          },
+          {
+            "type": "TEMPLATE",
+            "key": "measurementIdOverride",
+            "value": "{{Const - GA4 Measurement ID}}"
+          }
+        ],
+        "fingerprint": "1789900000005",
+        "firingTriggerId": [
+          "15"
+        ],
+        "consentSettings": {
+          "consentStatus": "NOT_SET"
+        }
+      },
+      {
+        "accountId": "6316985283",
+        "containerId": "232168102",
+        "tagId": "44",
+        "name": "GA4 Event - view_item",
+        "type": "gaawe",
+        "parameter": [
+          {
+            "type": "BOOLEAN",
+            "key": "sendEcommerceData",
+            "value": "true"
+          },
+          {
+            "type": "LIST",
+            "key": "eventSettingsTable",
+            "list": [
+              {
+                "type": "MAP",
+                "map": [
+                  {
+                    "type": "TEMPLATE",
+                    "key": "parameter",
+                    "value": "event_id"
+                  },
+                  {
+                    "type": "TEMPLATE",
+                    "key": "parameterValue",
+                    "value": "{{dlv - event_id}}"
+                  }
+                ]
+              },
+              {
+                "type": "MAP",
+                "map": [
+                  {
+                    "type": "TEMPLATE",
+                    "key": "parameter",
+                    "value": "external_id"
+                  },
+                  {
+                    "type": "TEMPLATE",
+                    "key": "parameterValue",
+                    "value": "{{dlv - user_data.external_id}}"
+                  }
+                ]
+              },
+              {
+                "type": "MAP",
+                "map": [
+                  {
+                    "type": "TEMPLATE",
+                    "key": "parameter",
+                    "value": "email"
+                  },
+                  {
+                    "type": "TEMPLATE",
+                    "key": "parameterValue",
+                    "value": "{{dlv - user_data.email_sha256}}"
+                  }
+                ]
+              },
+              {
+                "type": "MAP",
+                "map": [
+                  {
+                    "type": "TEMPLATE",
+                    "key": "parameter",
+                    "value": "phone"
+                  },
+                  {
+                    "type": "TEMPLATE",
+                    "key": "parameterValue",
+                    "value": "{{dlv - user_data.phone_sha256}}"
+                  }
+                ]
+              },
+              {
+                "type": "MAP",
+                "map": [
+                  {
+                    "type": "TEMPLATE",
+                    "key": "parameter",
+                    "value": "fbc"
+                  },
+                  {
+                    "type": "TEMPLATE",
+                    "key": "parameterValue",
+                    "value": "{{CJS - fbc}}"
+                  }
+                ]
+              },
+              {
+                "type": "MAP",
+                "map": [
+                  {
+                    "type": "TEMPLATE",
+                    "key": "parameter",
+                    "value": "server_container_url"
+                  },
+                  {
+                    "type": "TEMPLATE",
+                    "key": "parameterValue",
+                    "value": "https://ss.sleepsheetbd.com"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "TEMPLATE",
+            "key": "eventName",
+            "value": "view_item"
+          },
+          {
+            "type": "TEMPLATE",
+            "key": "measurementIdOverride",
+            "value": "{{Const - GA4 Measurement ID}}"
+          }
+        ],
+        "fingerprint": "1789900000005",
+        "firingTriggerId": [
+          "22"
+        ],
+        "consentSettings": {
+          "consentStatus": "NOT_SET"
+        }
+      },
+      {
+        "accountId": "6316985283",
+        "containerId": "232168102",
+        "tagId": "45",
+        "name": "GA4 Event - purchase",
+        "type": "gaawe",
+        "parameter": [
+          {
+            "type": "BOOLEAN",
+            "key": "sendEcommerceData",
+            "value": "true"
+          },
+          {
+            "type": "LIST",
+            "key": "eventSettingsTable",
+            "list": [
+              {
+                "type": "MAP",
+                "map": [
+                  {
+                    "type": "TEMPLATE",
+                    "key": "parameter",
+                    "value": "event_id"
+                  },
+                  {
+                    "type": "TEMPLATE",
+                    "key": "parameterValue",
+                    "value": "{{dlv - event_id}}"
+                  }
+                ]
+              },
+              {
+                "type": "MAP",
+                "map": [
+                  {
+                    "type": "TEMPLATE",
+                    "key": "parameter",
+                    "value": "fbc"
+                  },
+                  {
+                    "type": "TEMPLATE",
+                    "key": "parameterValue",
+                    "value": "{{CJS - fbc}}"
+                  }
+                ]
+              },
+              {
+                "type": "MAP",
+                "map": [
+                  {
+                    "type": "TEMPLATE",
+                    "key": "parameter",
+                    "value": "external_id"
+                  },
+                  {
+                    "type": "TEMPLATE",
+                    "key": "parameterValue",
+                    "value": "{{dlv - user_data.external_id}}"
+                  }
+                ]
+              },
+              {
+                "type": "MAP",
+                "map": [
+                  {
+                    "type": "TEMPLATE",
+                    "key": "parameter",
+                    "value": "email"
+                  },
+                  {
+                    "type": "TEMPLATE",
+                    "key": "parameterValue",
+                    "value": "{{dlv - user_data.email_sha256}}"
+                  }
+                ]
+              },
+              {
+                "type": "MAP",
+                "map": [
+                  {
+                    "type": "TEMPLATE",
+                    "key": "parameter",
+                    "value": "phone"
+                  },
+                  {
+                    "type": "TEMPLATE",
+                    "key": "parameterValue",
+                    "value": "{{dlv - user_data.phone_sha256}}"
+                  }
+                ]
+              },
+              {
+                "type": "MAP",
+                "map": [
+                  {
+                    "type": "TEMPLATE",
+                    "key": "parameter",
+                    "value": "server_container_url"
+                  },
+                  {
+                    "type": "TEMPLATE",
+                    "key": "parameterValue",
+                    "value": "https://ss.sleepsheetbd.com"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "TEMPLATE",
+            "key": "eventName",
+            "value": "purchase"
+          },
+          {
+            "type": "TEMPLATE",
+            "key": "measurementIdOverride",
+            "value": "{{Const - GA4 Measurement ID}}"
+          }
+        ],
+        "fingerprint": "1789900000005",
+        "firingTriggerId": [
+          "8"
+        ],
+        "consentSettings": {
+          "consentStatus": "NOT_SET"
+        }
+      },
+      {
+        "accountId": "6316985283",
+        "containerId": "232168102",
+        "tagId": "47",
+        "name": "Meta Pixel - Base Code",
+        "type": "html",
+        "parameter": [
+          {
+            "type": "TEMPLATE",
+            "key": "html",
+            "value": "<script>\n!function(f,b,e,v,n,t,s)\n{if(f.fbq)return;n=f.fbq=function(){n.callMethod?\nn.callMethod.apply(n,arguments):n.queue.push(arguments)};\nif(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';\nn.queue=[];t=b.createElement(e);t.async=!0;\nt.src=v;s=b.getElementsByTagName(e)[0];\ns.parentNode.insertBefore(t,s)}(window, document,'script',\n'https://connect.facebook.net/en_US/fbevents.js');\nfbq('init', '{{Const - Meta Pixel ID}}');\n</script>"
+          },
+          {
+            "type": "BOOLEAN",
+            "key": "supportDocumentWrite",
+            "value": "false"
+          }
+        ],
+        "fingerprint": "1789900000004",
+        "firingTriggerId": [
+          "2147479553"
+        ],
+        "consentSettings": {
+          "consentStatus": "NOT_SET"
+        }
+      },
+      {
+        "accountId": "6316985283",
+        "containerId": "232168102",
+        "tagId": "48",
+        "name": "Meta Pixel - Purchase",
+        "type": "html",
+        "parameter": [
+          {
+            "type": "TEMPLATE",
+            "key": "html",
+            "value": "<script>\n(function() {\n  // 1. Resolve numeric value (must be > 0)\n  var rawVal = '{{dlv - ecommerce.value}}';\n  var numVal = parseFloat(rawVal);\n\n  if (isNaN(numVal) || numVal <= 0) {\n    if (window.dataLayer && window.dataLayer.length) {\n      for (var i = window.dataLayer.length - 1; i >= 0; i--) {\n        var d = window.dataLayer[i];\n        if (d && d.ecommerce && d.ecommerce.value !== undefined) {\n          var dv = parseFloat(d.ecommerce.value);\n          if (!isNaN(dv) && dv > 0) {\n            numVal = dv;\n            break;\n          }\n        }\n      }\n    }\n  }\n\n  // 2. Resolve currency (must be exactly 3 uppercase letters, e.g. BDT)\n  var rawCurr = '{{dlv - ecommerce.currency}}';\n  var curr = (rawCurr && rawCurr !== 'undefined' && rawCurr !== 'null')\n    ? String(rawCurr).trim().toUpperCase().replace(/[^A-Z]/g, '')\n    : '';\n\n  if (!curr || curr.length !== 3) {\n    if (window.dataLayer && window.dataLayer.length) {\n      for (var j = window.dataLayer.length - 1; j >= 0; j--) {\n        var e = window.dataLayer[j];\n        if (e && e.ecommerce && e.ecommerce.currency) {\n          var dc = String(e.ecommerce.currency).trim().toUpperCase().replace(/[^A-Z]/g, '');\n          if (dc.length === 3) {\n            curr = dc;\n            break;\n          }\n        }\n      }\n    }\n  }\n  if (!curr || curr.length !== 3) curr = 'BDT';\n\n  // Skip invalid purchase events where value is not > 0\n  if (isNaN(numVal) || numVal <= 0) {\n    return;\n  }\n\n  var finalValue = Number(numVal.toFixed(2));\n\n  // 3. User Data / Advanced Matching\n  var userData = {};\n  var email = '{{dlv - user_data.email}}';\n  var phone = '{{dlv - user_data.phone_number}}';\n  var externalId = '{{dlv - user_data.external_id}}';\n\n  if (email && email !== 'undefined' && email !== 'null') {\n    userData.em = email.toLowerCase().trim();\n  }\n  if (phone && phone !== 'undefined' && phone !== 'null') {\n    userData.ph = phone.trim();\n  }\n  if (externalId && externalId !== 'undefined' && externalId !== 'null') {\n    userData.external_id = externalId.trim();\n  }\n  // fbc is not an Advanced Matching key: the Pixel reads the _fbc cookie\n  // itself. The server-side copy of this Purchase gets it from the GA4\n  // purchase tag's `fbc` parameter instead.\n\n  if (Object.keys(userData).length > 0) {\n    fbq('init', '{{Const - Meta Pixel ID}}', userData);\n  }\n\n  // 4. Transaction / Deduplication ID\n  var orderId = '{{dlv - ecommerce.transaction_id}}';\n  if (!orderId || orderId === 'undefined' || orderId === 'null') {\n    if (window.dataLayer && window.dataLayer.length) {\n      for (var k = window.dataLayer.length - 1; k >= 0; k--) {\n        var t = window.dataLayer[k];\n        if (t && t.ecommerce && t.ecommerce.transaction_id) {\n          orderId = String(t.ecommerce.transaction_id);\n          break;\n        }\n      }\n    }\n  }\n\n\n  // Catalog matching. Parsed rather than interpolated: GTM turns an array\n  // into \"a,b,c\" when it substitutes into HTML, so the variables hand over\n  // JSON and this turns it back into a real array.\n  var contentIds = [];\n  var contents = [];\n  try { contentIds = JSON.parse('{{CJS - Meta content_ids}}') || []; } catch (e) {}\n  try { contents = JSON.parse('{{CJS - Meta contents}}') || []; } catch (e) {}\n\n  var purchaseParams = {\n    content_type: 'product',\n    value: finalValue,\n    currency: curr\n  };\n  if (contentIds.length) { purchaseParams.content_ids = contentIds; }\n  if (contents.length) { purchaseParams.contents = contents; }\n  if (contents.length) {\n    var numItems = 0;\n    for (var n = 0; n < contents.length; n++) { numItems += contents[n].quantity || 0; }\n    if (numItems > 0) { purchaseParams.num_items = numItems; }\n  }\n  if (orderId && orderId !== 'undefined' && orderId !== 'null') {\n    purchaseParams.order_id = orderId;\n  }\n\n  // The server container's CAPI tag reads event_id off the same dataLayer\n  // push, so both sides send the same value and Meta collapses the pair.\n  // The derivation below is the old behaviour, kept only for a browser still\n  // running JS cached from before the app started sending event_id.\n  var eventOptions = {};\n  var _eid = '{{dlv - event_id}}';\n  if (_eid && _eid !== 'undefined' && _eid !== 'null') {\n    eventOptions.eventID = _eid;\n  } else if (orderId && orderId !== 'undefined' && orderId !== 'null') {\n    eventOptions.eventID = (orderId.indexOf('purchase_') === 0) ? orderId : ('purchase_' + orderId);\n  }\n\n  fbq('track', 'Purchase', purchaseParams, eventOptions);\n})();\n</script>"
+          },
+          {
+            "type": "BOOLEAN",
+            "key": "supportDocumentWrite",
+            "value": "false"
+          }
+        ],
+        "fingerprint": "1789900000000",
+        "firingTriggerId": [
+          "8"
+        ],
+        "consentSettings": {
+          "consentStatus": "NOT_SET"
+        },
+        "setupTag": [
+          {
+            "tagName": "Meta Pixel - Base Code",
+            "stopOnSetupFailure": false
+          }
+        ]
+      },
+      {
+        "accountId": "6316985283",
+        "containerId": "232168102",
+        "tagId": "49",
+        "name": "GA4 Event - remove_from_cart",
+        "type": "gaawe",
+        "parameter": [
+          {
+            "type": "BOOLEAN",
+            "key": "sendEcommerceData",
+            "value": "true"
+          },
+          {
+            "type": "LIST",
+            "key": "eventSettingsTable",
+            "list": [
+              {
+                "type": "MAP",
+                "map": [
+                  {
+                    "type": "TEMPLATE",
+                    "key": "parameter",
+                    "value": "event_id"
+                  },
+                  {
+                    "type": "TEMPLATE",
+                    "key": "parameterValue",
+                    "value": "{{dlv - event_id}}"
+                  }
+                ]
+              },
+              {
+                "type": "MAP",
+                "map": [
+                  {
+                    "type": "TEMPLATE",
+                    "key": "parameter",
+                    "value": "external_id"
+                  },
+                  {
+                    "type": "TEMPLATE",
+                    "key": "parameterValue",
+                    "value": "{{dlv - user_data.external_id}}"
+                  }
+                ]
+              },
+              {
+                "type": "MAP",
+                "map": [
+                  {
+                    "type": "TEMPLATE",
+                    "key": "parameter",
+                    "value": "email"
+                  },
+                  {
+                    "type": "TEMPLATE",
+                    "key": "parameterValue",
+                    "value": "{{dlv - user_data.email_sha256}}"
+                  }
+                ]
+              },
+              {
+                "type": "MAP",
+                "map": [
+                  {
+                    "type": "TEMPLATE",
+                    "key": "parameter",
+                    "value": "phone"
+                  },
+                  {
+                    "type": "TEMPLATE",
+                    "key": "parameterValue",
+                    "value": "{{dlv - user_data.phone_sha256}}"
+                  }
+                ]
+              },
+              {
+                "type": "MAP",
+                "map": [
+                  {
+                    "type": "TEMPLATE",
+                    "key": "parameter",
+                    "value": "fbc"
+                  },
+                  {
+                    "type": "TEMPLATE",
+                    "key": "parameterValue",
+                    "value": "{{CJS - fbc}}"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "TEMPLATE",
+            "key": "eventName",
+            "value": "remove_from_cart"
+          },
+          {
+            "type": "TEMPLATE",
+            "key": "measurementIdOverride",
+            "value": "{{Const - GA4 Measurement ID}}"
+          }
+        ],
+        "fingerprint": "1789900000005",
+        "firingTriggerId": [
+          "19"
+        ],
+        "consentSettings": {
+          "consentStatus": "NOT_SET"
+        }
+      },
+      {
+        "accountId": "6316985283",
+        "containerId": "232168102",
+        "tagId": "50",
+        "name": "Google Tag - GA4 Config (G-Y62ZKHQGLV)",
+        "type": "googtag",
+        "parameter": [
+          {
+            "type": "TEMPLATE",
+            "key": "tagId",
+            "value": "{{Const - GA4 Measurement ID}}"
+          },
+          {
+            "type": "LIST",
+            "key": "configSettingsTable",
+            "list": [
+              {
+                "type": "MAP",
+                "map": [
+                  {
+                    "type": "TEMPLATE",
+                    "key": "parameter",
+                    "value": "event_id"
+                  },
+                  {
+                    "type": "TEMPLATE",
+                    "key": "parameterValue",
+                    "value": "{{CJS - PageView Event ID}}"
+                  }
+                ]
+              },
+              {
+                "type": "MAP",
+                "map": [
+                  {
+                    "type": "TEMPLATE",
+                    "key": "parameter",
+                    "value": "fbc"
+                  },
+                  {
+                    "type": "TEMPLATE",
+                    "key": "parameterValue",
+                    "value": "{{CJS - fbc}}"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "fingerprint": "1789582625276",
+        "firingTriggerId": [
+          "2147479553"
+        ],
+        "monitoringMetadata": {
+          "type": "MAP"
+        },
+        "consentSettings": {
+          "consentStatus": "NOT_SET"
+        }
+      },
+      {
+        "accountId": "6316985283",
+        "containerId": "232168102",
+        "tagId": "51",
+        "name": "Meta Pixel - AddToCart",
+        "type": "html",
+        "parameter": [
+          {
+            "type": "TEMPLATE",
+            "key": "html",
+            "value": "<script>\n(function() {\n  var rawVal = '{{dlv - ecommerce.value}}';\n  var val = parseFloat(rawVal);\n  var rawCurr = '{{dlv - ecommerce.currency}}';\n  var curr = (rawCurr && rawCurr !== 'undefined' && rawCurr !== 'null')\n    ? String(rawCurr).trim().toUpperCase().replace(/[^A-Z]/g, '')\n    : 'BDT';\n  if (curr.length !== 3) curr = 'BDT';\n\n\n  // Catalog matching. Parsed rather than interpolated: GTM turns an array\n  // into \"a,b,c\" when it substitutes into HTML, so the variables hand over\n  // JSON and this turns it back into a real array.\n  var contentIds = [];\n  var contents = [];\n  try { contentIds = JSON.parse('{{CJS - Meta content_ids}}') || []; } catch (e) {}\n  try { contents = JSON.parse('{{CJS - Meta contents}}') || []; } catch (e) {}\n\n  var params = {\n    content_type: 'product',\n    currency: curr\n  };\n  if (contentIds.length) { params.content_ids = contentIds; }\n  if (contents.length) { params.contents = contents; }\n  if (!isNaN(val) && val > 0) {\n    params.value = Number(val.toFixed(2));\n  }\n\n  var eventOptions = {};\n  var _eid = '{{dlv - event_id}}';\n  if (_eid && _eid !== 'undefined' && _eid !== 'null') {\n    eventOptions.eventID = _eid;\n  }\n\n  fbq('track', 'AddToCart', params, eventOptions);\n})();\n</script>"
+          },
+          {
+            "type": "BOOLEAN",
+            "key": "supportDocumentWrite",
+            "value": "false"
+          }
+        ],
+        "fingerprint": "1789900000000",
+        "firingTriggerId": [
+          "21"
+        ],
+        "consentSettings": {
+          "consentStatus": "NOT_SET"
+        },
+        "setupTag": [
+          {
+            "tagName": "Meta Pixel - Base Code",
+            "stopOnSetupFailure": false
+          }
+        ]
+      },
+      {
+        "accountId": "6316985283",
+        "containerId": "232168102",
+        "tagId": "52",
+        "name": "Meta Pixel - InitiateCheckout",
+        "type": "html",
+        "parameter": [
+          {
+            "type": "TEMPLATE",
+            "key": "html",
+            "value": "<script>\n(function() {\n  var rawVal = '{{dlv - ecommerce.value}}';\n  var val = parseFloat(rawVal);\n  var rawCurr = '{{dlv - ecommerce.currency}}';\n  var curr = (rawCurr && rawCurr !== 'undefined' && rawCurr !== 'null')\n    ? String(rawCurr).trim().toUpperCase().replace(/[^A-Z]/g, '')\n    : 'BDT';\n  if (curr.length !== 3) curr = 'BDT';\n\n\n  // Catalog matching. Parsed rather than interpolated: GTM turns an array\n  // into \"a,b,c\" when it substitutes into HTML, so the variables hand over\n  // JSON and this turns it back into a real array.\n  var contentIds = [];\n  var contents = [];\n  try { contentIds = JSON.parse('{{CJS - Meta content_ids}}') || []; } catch (e) {}\n  try { contents = JSON.parse('{{CJS - Meta contents}}') || []; } catch (e) {}\n\n  var params = {\n    content_type: 'product',\n    currency: curr\n  };\n  if (contentIds.length) { params.content_ids = contentIds; }\n  if (contents.length) { params.contents = contents; }\n  if (contents.length) {\n    var numItems = 0;\n    for (var n = 0; n < contents.length; n++) { numItems += contents[n].quantity || 0; }\n    if (numItems > 0) { params.num_items = numItems; }\n  }\n  if (!isNaN(val) && val > 0) {\n    params.value = Number(val.toFixed(2));\n  }\n\n  var eventOptions = {};\n  var _eid = '{{dlv - event_id}}';\n  if (_eid && _eid !== 'undefined' && _eid !== 'null') {\n    eventOptions.eventID = _eid;\n  }\n\n  fbq('track', 'InitiateCheckout', params, eventOptions);\n})();\n</script>"
+          },
+          {
+            "type": "BOOLEAN",
+            "key": "supportDocumentWrite",
+            "value": "false"
+          }
+        ],
+        "fingerprint": "1789900000000",
+        "firingTriggerId": [
+          "11"
+        ],
+        "consentSettings": {
+          "consentStatus": "NOT_SET"
+        },
+        "setupTag": [
+          {
+            "tagName": "Meta Pixel - Base Code",
+            "stopOnSetupFailure": false
+          }
+        ]
+      },
+      {
+        "accountId": "6316985283",
+        "containerId": "232168102",
+        "tagId": "53",
+        "name": "GA4 Event - begin_checkout",
+        "type": "gaawe",
+        "parameter": [
+          {
+            "type": "BOOLEAN",
+            "key": "sendEcommerceData",
+            "value": "true"
+          },
+          {
+            "type": "LIST",
+            "key": "eventSettingsTable",
+            "list": [
+              {
+                "type": "MAP",
+                "map": [
+                  {
+                    "type": "TEMPLATE",
+                    "key": "parameter",
+                    "value": "event_id"
+                  },
+                  {
+                    "type": "TEMPLATE",
+                    "key": "parameterValue",
+                    "value": "{{dlv - event_id}}"
+                  }
+                ]
+              },
+              {
+                "type": "MAP",
+                "map": [
+                  {
+                    "type": "TEMPLATE",
+                    "key": "parameter",
+                    "value": "external_id"
+                  },
+                  {
+                    "type": "TEMPLATE",
+                    "key": "parameterValue",
+                    "value": "{{dlv - user_data.external_id}}"
+                  }
+                ]
+              },
+              {
+                "type": "MAP",
+                "map": [
+                  {
+                    "type": "TEMPLATE",
+                    "key": "parameter",
+                    "value": "email"
+                  },
+                  {
+                    "type": "TEMPLATE",
+                    "key": "parameterValue",
+                    "value": "{{dlv - user_data.email_sha256}}"
+                  }
+                ]
+              },
+              {
+                "type": "MAP",
+                "map": [
+                  {
+                    "type": "TEMPLATE",
+                    "key": "parameter",
+                    "value": "phone"
+                  },
+                  {
+                    "type": "TEMPLATE",
+                    "key": "parameterValue",
+                    "value": "{{dlv - user_data.phone_sha256}}"
+                  }
+                ]
+              },
+              {
+                "type": "MAP",
+                "map": [
+                  {
+                    "type": "TEMPLATE",
+                    "key": "parameter",
+                    "value": "fbc"
+                  },
+                  {
+                    "type": "TEMPLATE",
+                    "key": "parameterValue",
+                    "value": "{{CJS - fbc}}"
+                  }
+                ]
+              },
+              {
+                "type": "MAP",
+                "map": [
+                  {
+                    "type": "TEMPLATE",
+                    "key": "parameter",
+                    "value": "server_container_url"
+                  },
+                  {
+                    "type": "TEMPLATE",
+                    "key": "parameterValue",
+                    "value": "https://ss.sleepsheetbd.com"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "TEMPLATE",
+            "key": "eventName",
+            "value": "begin_checkout"
+          },
+          {
+            "type": "TEMPLATE",
+            "key": "measurementIdOverride",
+            "value": "{{Const - GA4 Measurement ID}}"
+          }
+        ],
+        "fingerprint": "1789900000005",
+        "firingTriggerId": [
+          "11"
+        ],
+        "consentSettings": {
+          "consentStatus": "NOT_SET"
+        }
+      },
+      {
+        "accountId": "6316985283",
+        "containerId": "232168102",
+        "tagId": "55",
+        "name": "Google Tag - Google Ads (AW-18374797061)",
+        "type": "googtag",
+        "parameter": [
+          {
+            "type": "TEMPLATE",
+            "key": "tagId",
+            "value": "AW-18374797061"
+          }
+        ],
+        "fingerprint": "1789583688848",
+        "firingTriggerId": [
+          "2147479573"
+        ],
+        "tagFiringOption": "ONCE_PER_EVENT",
+        "monitoringMetadata": {
+          "type": "MAP"
+        },
+        "consentSettings": {
+          "consentStatus": "NOT_SET"
+        }
+      },
+      {
+        "accountId": "6316985283",
+        "containerId": "232168102",
+        "tagId": "56",
+        "name": "Meta Pixel - PageView",
+        "type": "html",
+        "parameter": [
+          {
+            "type": "TEMPLATE",
+            "key": "html",
+            "value": "<script>\n(function() {\n  // Split out of the base code so a single-page navigation can report a page\n  // view without re-running fbq('init'). The id comes from the same variable\n  // the GA4 page_view carries to the server container, and it is renewed per\n  // navigation, so each one is its own event rather than a duplicate of the\n  // first.\n  var eventOptions = {};\n  var _eid = '{{CJS - PageView Event ID}}';\n  if (_eid && _eid !== 'undefined' && _eid !== 'null') {\n    eventOptions.eventID = _eid;\n  }\n  fbq('track', 'PageView', {}, eventOptions);\n})();\n</script>"
+          },
+          {
+            "type": "BOOLEAN",
+            "key": "supportDocumentWrite",
+            "value": "false"
+          }
+        ],
+        "fingerprint": "1789900000004",
+        "firingTriggerId": [
+          "2147479553",
+          "23"
+        ],
+        "tagFiringOption": "ONCE_PER_EVENT",
+        "consentSettings": {
+          "consentStatus": "NOT_SET"
+        },
+        "setupTag": [
+          {
+            "tagName": "Meta Pixel - Base Code",
+            "stopOnSetupFailure": false
+          }
+        ]
+      },
+      {
+        "accountId": "6316985283",
+        "containerId": "232168102",
+        "tagId": "57",
+        "name": "Google Ads - Add to Cart Conversion Tracking",
+        "type": "awct",
+        "parameter": [
+          {
+            "type": "TEMPLATE",
+            "key": "conversionValue",
+            "value": "{{dlv - ecommerce.value}}"
+          },
+          {
+            "type": "TEMPLATE",
+            "key": "conversionId",
+            "value": "{{Const - Google Ads Conversion ID}}"
+          },
+          {
+            "type": "TEMPLATE",
+            "key": "currencyCode",
+            "value": "{{dlv - ecommerce.currency}}"
+          },
+          {
+            "type": "TEMPLATE",
+            "key": "conversionLabel",
+            "value": "{{Const - Google Ads AddToCart Conversion Label}}"
+          }
+        ],
+        "fingerprint": "1789900000007",
+        "firingTriggerId": [
+          "21"
+        ],
+        "consentSettings": {
+          "consentStatus": "NOT_SET"
+        }
+      }
+    ],
+    "trigger": [
+      {
+        "accountId": "6316985283",
+        "containerId": "232168102",
+        "triggerId": "8",
+        "name": "Custom Event - purchase",
+        "type": "CUSTOM_EVENT",
+        "customEventFilter": [
+          {
+            "type": "EQUALS",
+            "parameter": [
+              {
+                "type": "TEMPLATE",
+                "key": "arg0",
+                "value": "{{_event}}"
+              },
+              {
+                "type": "TEMPLATE",
+                "key": "arg1",
+                "value": "purchase"
+              }
+            ]
+          }
+        ],
+        "fingerprint": "1789186637040"
+      },
+      {
+        "accountId": "6316985283",
+        "containerId": "232168102",
+        "triggerId": "11",
+        "name": "Custom Event - begin_checkout",
+        "type": "CUSTOM_EVENT",
+        "customEventFilter": [
+          {
+            "type": "EQUALS",
+            "parameter": [
+              {
+                "type": "TEMPLATE",
+                "key": "arg0",
+                "value": "{{_event}}"
+              },
+              {
+                "type": "TEMPLATE",
+                "key": "arg1",
+                "value": "begin_checkout"
+              }
+            ]
+          }
+        ],
+        "fingerprint": "1789186637041"
+      },
+      {
+        "accountId": "6316985283",
+        "containerId": "232168102",
+        "triggerId": "15",
+        "name": "Custom Event - search",
+        "type": "CUSTOM_EVENT",
+        "customEventFilter": [
+          {
+            "type": "EQUALS",
+            "parameter": [
+              {
+                "type": "TEMPLATE",
+                "key": "arg0",
+                "value": "{{_event}}"
+              },
+              {
+                "type": "TEMPLATE",
+                "key": "arg1",
+                "value": "search"
+              }
+            ]
+          }
+        ],
+        "fingerprint": "1789186637041"
+      },
+      {
+        "accountId": "6316985283",
+        "containerId": "232168102",
+        "triggerId": "19",
+        "name": "Custom Event - remove_from_cart",
+        "type": "CUSTOM_EVENT",
+        "customEventFilter": [
+          {
+            "type": "EQUALS",
+            "parameter": [
+              {
+                "type": "TEMPLATE",
+                "key": "arg0",
+                "value": "{{_event}}"
+              },
+              {
+                "type": "TEMPLATE",
+                "key": "arg1",
+                "value": "remove_from_cart"
+              }
+            ]
+          }
+        ],
+        "fingerprint": "1789186637041"
+      },
+      {
+        "accountId": "6316985283",
+        "containerId": "232168102",
+        "triggerId": "21",
+        "name": "Custom Event - add_to_cart",
+        "type": "CUSTOM_EVENT",
+        "customEventFilter": [
+          {
+            "type": "EQUALS",
+            "parameter": [
+              {
+                "type": "TEMPLATE",
+                "key": "arg0",
+                "value": "{{_event}}"
+              },
+              {
+                "type": "TEMPLATE",
+                "key": "arg1",
+                "value": "add_to_cart"
+              }
+            ]
+          }
+        ],
+        "fingerprint": "1789186637042"
+      },
+      {
+        "accountId": "6316985283",
+        "containerId": "232168102",
+        "triggerId": "22",
+        "name": "Custom Event - view_item",
+        "type": "CUSTOM_EVENT",
+        "customEventFilter": [
+          {
+            "type": "EQUALS",
+            "parameter": [
+              {
+                "type": "TEMPLATE",
+                "key": "arg0",
+                "value": "{{_event}}"
+              },
+              {
+                "type": "TEMPLATE",
+                "key": "arg1",
+                "value": "view_item"
+              }
+            ]
+          }
+        ],
+        "fingerprint": "1789186637042"
+      },
+      {
+        "accountId": "6316985283",
+        "containerId": "232168102",
+        "triggerId": "23",
+        "name": "History Change - SPA navigation",
+        "type": "HISTORY_CHANGE",
+        "fingerprint": "1789900000004"
+      }
+    ],
+    "variable": [
+      {
+        "accountId": "6316985283",
+        "containerId": "232168102",
+        "variableId": "5",
+        "name": "dlv - ecommerce.value",
+        "type": "v",
+        "parameter": [
+          {
+            "type": "INTEGER",
+            "key": "dataLayerVersion",
+            "value": "2"
+          },
+          {
+            "type": "TEMPLATE",
+            "key": "name",
+            "value": "ecommerce.value"
+          }
+        ],
+        "fingerprint": "1789186637040"
+      },
+      {
+        "accountId": "6316985283",
+        "containerId": "232168102",
+        "variableId": "6",
+        "name": "dlv - ecommerce.currency",
+        "type": "v",
+        "parameter": [
+          {
+            "type": "INTEGER",
+            "key": "dataLayerVersion",
+            "value": "2"
+          },
+          {
+            "type": "TEMPLATE",
+            "key": "name",
+            "value": "ecommerce.currency"
+          }
+        ],
+        "fingerprint": "1789186637040"
+      },
+      {
+        "accountId": "6316985283",
+        "containerId": "232168102",
+        "variableId": "7",
+        "name": "dlv - ecommerce.transaction_id",
+        "type": "v",
+        "parameter": [
+          {
+            "type": "INTEGER",
+            "key": "dataLayerVersion",
+            "value": "2"
+          },
+          {
+            "type": "TEMPLATE",
+            "key": "name",
+            "value": "ecommerce.transaction_id"
+          }
+        ],
+        "fingerprint": "1789186637040"
+      },
+      {
+        "accountId": "6316985283",
+        "containerId": "232168102",
+        "variableId": "10",
+        "name": "Const - Google Ads Purchase Conversion Label",
+        "type": "c",
+        "parameter": [
+          {
+            "type": "TEMPLATE",
+            "key": "value",
+            "value": "bIlgCOm-2PgcEIXO5LlE"
+          }
+        ],
+        "fingerprint": "1789476319891",
+        "formatValue": {}
+      },
+      {
+        "accountId": "6316985283",
+        "containerId": "232168102",
+        "variableId": "12",
+        "name": "Const - Meta Pixel ID",
+        "type": "c",
+        "parameter": [
+          {
+            "type": "TEMPLATE",
+            "key": "value",
+            "value": "1041069494713009"
+          }
+        ],
+        "fingerprint": "1789267020108",
+        "formatValue": {}
+      },
+      {
+        "accountId": "6316985283",
+        "containerId": "232168102",
+        "variableId": "13",
+        "name": "Const - Google Ads Conversion ID",
+        "type": "c",
+        "parameter": [
+          {
+            "type": "TEMPLATE",
+            "key": "value",
+            "value": "18374797061"
+          }
+        ],
+        "fingerprint": "1789476343154",
+        "formatValue": {}
+      },
+      {
+        "accountId": "6316985283",
+        "containerId": "232168102",
+        "variableId": "14",
+        "name": "dlv - search_term",
+        "type": "v",
+        "parameter": [
+          {
+            "type": "INTEGER",
+            "key": "dataLayerVersion",
+            "value": "2"
+          },
+          {
+            "type": "TEMPLATE",
+            "key": "name",
+            "value": "search_term"
+          }
+        ],
+        "fingerprint": "1789186637041"
+      },
+      {
+        "accountId": "6316985283",
+        "containerId": "232168102",
+        "variableId": "17",
+        "name": "dlv - user_data.phone_number",
+        "type": "v",
+        "parameter": [
+          {
+            "type": "INTEGER",
+            "key": "dataLayerVersion",
+            "value": "2"
+          },
+          {
+            "type": "TEMPLATE",
+            "key": "name",
+            "value": "user_data.phone_number"
+          }
+        ],
+        "fingerprint": "1789186637041"
+      },
+      {
+        "accountId": "6316985283",
+        "containerId": "232168102",
+        "variableId": "18",
+        "name": "Const - GA4 Measurement ID",
+        "type": "c",
+        "parameter": [
+          {
+            "type": "TEMPLATE",
+            "key": "value",
+            "value": "G-Y62ZKHQGLV"
+          }
+        ],
+        "fingerprint": "1789186637041"
+      },
+      {
+        "accountId": "6316985283",
+        "containerId": "232168102",
+        "variableId": "24",
+        "name": "dlv - user_data.email",
+        "type": "v",
+        "parameter": [
+          {
+            "type": "INTEGER",
+            "key": "dataLayerVersion",
+            "value": "2"
+          },
+          {
+            "type": "TEMPLATE",
+            "key": "name",
+            "value": "user_data.email"
+          }
+        ],
+        "fingerprint": "1789186637042"
+      },
+      {
+        "accountId": "6316985283",
+        "containerId": "232168102",
+        "variableId": "25",
+        "name": "dlv - ecommerce.items",
+        "type": "v",
+        "parameter": [
+          {
+            "type": "INTEGER",
+            "key": "dataLayerVersion",
+            "value": "2"
+          },
+          {
+            "type": "TEMPLATE",
+            "key": "name",
+            "value": "ecommerce.items"
+          }
+        ],
+        "fingerprint": "1789186637042"
+      },
+      {
+        "accountId": "6316985283",
+        "containerId": "232168102",
+        "variableId": "39",
+        "name": "dlv - event_id",
+        "type": "v",
+        "parameter": [
+          {
+            "type": "INTEGER",
+            "key": "dataLayerVersion",
+            "value": "2"
+          },
+          {
+            "type": "TEMPLATE",
+            "key": "name",
+            "value": "event_id"
+          }
+        ],
+        "fingerprint": "1789582625275"
+      },
+      {
+        "accountId": "6316985283",
+        "containerId": "232168102",
+        "variableId": "46",
+        "name": "CJS - PageView Event ID",
+        "type": "jsm",
+        "parameter": [
+          {
+            "type": "TEMPLATE",
+            "key": "javascript",
+            "value": "function() {\n  try {\n    // One id per navigation, not per page load.\n    //\n    // Both copies of a page view have to carry the same id — the browser\n    // Pixel fires one and the GA4 page_view carries the other to the server\n    // container — so it is cached rather than generated twice. But it used to\n    // be cached on `window` and never renewed, which is only harmless while\n    // exactly one page view exists per load. The moment a single-page\n    // navigation fires another, every one of them would arrive under the\n    // first id and Meta would collapse them all into that first page view.\n    //\n    // Keyed on the URL, so going A -> B -> A gets a third id rather than\n    // reusing A's: what is being identified is the navigation, not the page.\n    var here = window.location.pathname + window.location.search;\n    var cache = window.__ssPageView;\n    if (!cache || cache.url !== here) {\n      cache = {\n        url: here,\n        id: 'pageview_' + new Date().getTime() + '_' + Math.random().toString(36).slice(2, 10)\n      };\n      window.__ssPageView = cache;\n    }\n    return cache.id;\n  } catch (e) {\n    return undefined;\n  }\n}"
+          }
+        ],
+        "fingerprint": "1789900000003"
+      },
+      {
+        "accountId": "6316985283",
+        "containerId": "232168102",
+        "variableId": "56",
+        "name": "CJS - fbc",
+        "type": "jsm",
+        "parameter": [
+          {
+            "type": "TEMPLATE",
+            "key": "javascript",
+            "value": "function() {\n  // Meta click-id for the server container. The CAPI tag on\n  // ss.sleepsheetbd.com can't reliably read the site's _fbc cookie (the\n  // app's own copy is host-only on sleepsheetbd.com), so it is sent as an\n  // explicit `fbc` event parameter, which the stape tag auto-maps.\n  try {\n    var m = document.cookie.match(/(?:^|; )_fbc=([^;]*)/);\n    if (m && m[1]) return decodeURIComponent(m[1]);\n    // Fallback the app writes in lib/meta-fbc.ts when the cookie didn't stick.\n    var stored = window.localStorage && window.localStorage.getItem('_fbc_captured');\n    if (stored) return stored;\n    var q = window.location.search.match(/[?&]fbclid=([^&#]+)/);\n    if (q && q[1]) return 'fb.1.' + new Date().getTime() + '.' + decodeURIComponent(q[1]);\n  } catch (e) {}\n  return undefined;\n}"
+          }
+        ],
+        "fingerprint": "1789821092261"
+      },
+      {
+        "accountId": "6316985283",
+        "containerId": "232168102",
+        "variableId": "57",
+        "name": "dlv - user_data.external_id",
+        "type": "v",
+        "parameter": [
+          {
+            "type": "INTEGER",
+            "key": "dataLayerVersion",
+            "value": "2"
+          },
+          {
+            "type": "TEMPLATE",
+            "key": "name",
+            "value": "user_data.external_id"
+          }
+        ],
+        "fingerprint": "1789821092262"
+      },
+      {
+        "accountId": "6316985283",
+        "containerId": "232168102",
+        "variableId": "58",
+        "name": "CJS - Meta content_ids",
+        "type": "jsm",
+        "parameter": [
+          {
+            "type": "TEMPLATE",
+            "key": "javascript",
+            "value": "function() {\n  // Meta matches an event to a catalog product by content_ids. Without it,\n  // content_type:'product' means nothing and no catalog/DPA audience can be\n  // built. The ids here are ecommerce.items[].item_id, which the app sets to\n  // the product id — the same value the feed in lib/meta-catalog uses as the\n  // catalog item id, so the two sides line up.\n  try {\n    var items = {{dlv - ecommerce.items}};\n    if (!items || !items.length) return '[]';\n    var ids = [];\n    for (var i = 0; i < items.length; i++) {\n      var id = items[i] && (items[i].item_id || items[i].id);\n      if (id) ids.push(String(id));\n    }\n    return JSON.stringify(ids);\n  } catch (e) {\n    return '[]';\n  }\n}"
+          }
+        ],
+        "fingerprint": "1789900000000"
+      },
+      {
+        "accountId": "6316985283",
+        "containerId": "232168102",
+        "variableId": "59",
+        "name": "CJS - Meta contents",
+        "type": "jsm",
+        "parameter": [
+          {
+            "type": "TEMPLATE",
+            "key": "javascript",
+            "value": "function() {\n  // The per-item form: id + quantity + item_price. Meta uses it for value\n  // optimisation and for the item breakdown on the event.\n  try {\n    var items = {{dlv - ecommerce.items}};\n    if (!items || !items.length) return '[]';\n    var out = [];\n    for (var i = 0; i < items.length; i++) {\n      var it = items[i];\n      if (!it) continue;\n      var id = it.item_id || it.id;\n      if (!id) continue;\n      out.push({\n        id: String(id),\n        quantity: Number(it.quantity) || 1,\n        item_price: Number(it.price) || 0\n      });\n    }\n    return JSON.stringify(out);\n  } catch (e) {\n    return '[]';\n  }\n}"
+          }
+        ],
+        "fingerprint": "1789900000000"
+      },
+      {
+        "accountId": "6316985283",
+        "containerId": "232168102",
+        "variableId": "60",
+        "name": "dlv - user_data.email_sha256",
+        "type": "v",
+        "parameter": [
+          {
+            "type": "INTEGER",
+            "key": "dataLayerVersion",
+            "value": "2"
+          },
+          {
+            "type": "BOOLEAN",
+            "key": "setDefaultValue",
+            "value": "false"
+          },
+          {
+            "type": "TEMPLATE",
+            "key": "name",
+            "value": "user_data.email_sha256"
+          }
+        ],
+        "fingerprint": "1789900000001"
+      },
+      {
+        "accountId": "6316985283",
+        "containerId": "232168102",
+        "variableId": "61",
+        "name": "dlv - user_data.phone_sha256",
+        "type": "v",
+        "parameter": [
+          {
+            "type": "INTEGER",
+            "key": "dataLayerVersion",
+            "value": "2"
+          },
+          {
+            "type": "BOOLEAN",
+            "key": "setDefaultValue",
+            "value": "false"
+          },
+          {
+            "type": "TEMPLATE",
+            "key": "name",
+            "value": "user_data.phone_sha256"
+          }
+        ],
+        "fingerprint": "1789900000001"
+      },
+      {
+        "accountId": "6316985283",
+        "containerId": "232168102",
+        "variableId": "63",
+        "name": "Const - Google Ads AddToCart Conversion Label",
+        "type": "c",
+        "parameter": [
+          {
+            "type": "TEMPLATE",
+            "key": "value",
+            "value": "SET_ADD_TO_CART_CONVERSION_LABEL_HERE"
+          }
+        ],
+        "fingerprint": "1789900000008"
+      }
+    ],
+    "builtInVariable": [
+      {
+        "accountId": "6316985283",
+        "containerId": "232168102",
+        "type": "PAGE_URL",
+        "name": "Page URL"
+      },
+      {
+        "accountId": "6316985283",
+        "containerId": "232168102",
+        "type": "PAGE_HOSTNAME",
+        "name": "Page Hostname"
+      },
+      {
+        "accountId": "6316985283",
+        "containerId": "232168102",
+        "type": "PAGE_PATH",
+        "name": "Page Path"
+      },
+      {
+        "accountId": "6316985283",
+        "containerId": "232168102",
+        "type": "REFERRER",
+        "name": "Referrer"
+      },
+      {
+        "accountId": "6316985283",
+        "containerId": "232168102",
+        "type": "EVENT",
+        "name": "Event"
+      }
+    ],
+    "fingerprint": "1789900000005",
+    "tagManagerUrl": "https://tagmanager.google.com/#/versions/accounts/6316985283/containers/232168102/versions/0?apiLink=version"
+  }
+}

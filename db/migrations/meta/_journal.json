@@ -1,0 +1,223 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1782147003102,
+      "tag": "0000_outgoing_mojo",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1782148719567,
+      "tag": "0001_marvelous_mentor",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1783702957467,
+      "tag": "0002_workable_logan",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1783779103718,
+      "tag": "0003_sour_bloodaxe",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1783971943594,
+      "tag": "0004_thankful_rattler",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1784222689794,
+      "tag": "0005_cooing_wasp",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1784258377529,
+      "tag": "0006_reflective_slipstream",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1784359428218,
+      "tag": "0007_add-category-carousel-order",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1784500000000,
+      "tag": "0008_meta_purchase_idempotency",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1784600000000,
+      "tag": "0009_role_landing_url",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1787000000000,
+      "tag": "0010_blocked_ips",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1787000100000,
+      "tag": "0011_performance_indexes",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1787000200000,
+      "tag": "0012_login_lockout",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1787000300000,
+      "tag": "0013_drop_traffic_events",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1787000400000,
+      "tag": "0014_atomic_stock_decrement",
+      "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1787000500000,
+      "tag": "0015_money_columns_to_numeric",
+      "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1787000600000,
+      "tag": "0016_orders_fbc_column",
+      "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1787000700000,
+      "tag": "0017_orders_courier_status",
+      "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1787000800000,
+      "tag": "0018_user_phone_unique",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1787000900000,
+      "tag": "0019_stock_decrement_reports_sold_out",
+      "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1787001000000,
+      "tag": "0020_orders_landing_source",
+      "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1789964561018,
+      "tag": "0021_orders_refund_check",
+      "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1789965528352,
+      "tag": "0022_products_name_trgm_index",
+      "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1790000000000,
+      "tag": "0023_products_slug",
+      "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1790175181285,
+      "tag": "0024_category_seo_content",
+      "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1790247902809,
+      "tag": "0025_orders_delivery_charge",
+      "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1790945601601,
+      "tag": "0026_products_video",
+      "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "7",
+      "when": 1790958552659,
+      "tag": "0027_product_video_likes",
+      "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "7",
+      "when": 1790962914016,
+      "tag": "0028_products_video_likes_base",
+      "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1790964191513,
+      "tag": "0029_product_video_stats",
+      "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1791136436829,
+      "tag": "0030_melodic_susan_delgado",
+      "breakpoints": true
+    }
+  ]
+}

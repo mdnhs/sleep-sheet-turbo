@@ -1,0 +1,2 @@
+ALTER TABLE "products" ALTER COLUMN "productVariants" SET DATA TYPE json USING to_json("productVariants");--> statement-breakpoint
+ALTER TABLE "products" ALTER COLUMN "productVariants" SET DEFAULT '[]'::json;
