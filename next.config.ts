@@ -5,15 +5,31 @@ const nextConfig: NextConfig = {
     optimizePackageImports: ["lucide-react", "date-fns", "@tabler/icons-react"],
   },
   async rewrites() {
-    return [
-      { source: "/facebook-feed.xml", destination: "/facebook-feed?format=xml" },
-      { source: "/facebook-feed.csv", destination: "/facebook-feed?format=csv" },
-      { source: "/facebook-feed.json", destination: "/facebook-feed?format=json" },
-      { source: "/hero-banner-1.png", destination: "/hero-banner-1.webp" },
-      { source: "/hero-banner-2.png", destination: "/hero-banner-2.webp" },
-      { source: "/hero-slider-1.png", destination: "/hero-slider-1.webp" },
-      { source: "/logo.png", destination: "/logo.webp" },
-    ];
+    return {
+      beforeFiles: [
+        // A shared video link, /videos?v=<slug>, is served from its own
+        // cached page so it can preview as that one video, without /videos
+        // reading searchParams (which made the whole route render per
+        // request). beforeFiles, because /videos is a page of its own and an
+        // ordinary rewrite would never get past it. The browser keeps the
+        // ?v= address, which is what opens the viewer client-side.
+        {
+          source: "/videos",
+          has: [{ type: "query", key: "v", value: "(?<v>[^/]+)" }],
+          destination: "/videos/share/:v",
+        },
+      ],
+      afterFiles: [
+        { source: "/facebook-feed.xml", destination: "/facebook-feed?format=xml" },
+        { source: "/facebook-feed.csv", destination: "/facebook-feed?format=csv" },
+        { source: "/facebook-feed.json", destination: "/facebook-feed?format=json" },
+        { source: "/hero-banner-1.png", destination: "/hero-banner-1.webp" },
+        { source: "/hero-banner-2.png", destination: "/hero-banner-2.webp" },
+        { source: "/hero-slider-1.png", destination: "/hero-slider-1.webp" },
+        { source: "/logo.png", destination: "/logo.webp" },
+      ],
+      fallback: [],
+    };
   },
   // No security headers were set anywhere before this (BAD-7, audit
   // 2026-09-21). These are defense-in-depth: lib/sanitize.ts is what

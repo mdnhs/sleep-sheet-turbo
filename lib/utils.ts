@@ -92,8 +92,12 @@ export function formatDate(isoDate: string): string {
   const date = new Date(isoDate);
 
   return date.toLocaleString("en-US", {
+    // Pinned so the server (UTC) and the browser (Dhaka) print the same day:
+    // otherwise anything dated 18:00–24:00 UTC renders one date in the cached
+    // HTML and another in the browser, a hydration mismatch.
+    timeZone: "Asia/Dhaka",
     year: "numeric",
-    month: "long", 
+    month: "long",
     day: "numeric",
     // hour: "2-digit",
     // minute: "2-digit",

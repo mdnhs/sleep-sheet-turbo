@@ -31,6 +31,7 @@ import { trackGtmAddToCart, trackGtmBeginCheckout } from "@/lib/gtm";
 import { floorToNearest50 } from "@/lib/utils";
 import FallbackImage from "@/components/ui/fallback-image";
 import { triggerHaptic } from "@/lib/haptics";
+import { afterNextPaint } from "@/lib/after-next-paint";
 
 interface ProductPickerProps {
   product: Product;
@@ -100,6 +101,19 @@ function ProductPicker({ product }: ProductPickerProps) {
       setQuantity(newQuantity);
     }
   };
+
+  // Order Now goes to /checkout, and nothing on a phone's product page
+  // prefetched it, so the tap waited on the route's payload and JS. Warm it
+  // once the browser is idle: /checkout is static and edge-cached, so this
+  // costs a little data and no server work.
+  React.useEffect(() => {
+    if (typeof window.requestIdleCallback !== "function") {
+      const id = window.setTimeout(() => router.prefetch("/checkout"), 3000);
+      return () => window.clearTimeout(id);
+    }
+    const id = window.requestIdleCallback(() => router.prefetch("/checkout"), { timeout: 5000 });
+    return () => window.cancelIdleCallback(id);
+  }, [router]);
 
   React.useEffect(() => {
     const el = mainCtaRef.current;
@@ -278,7 +292,11 @@ function ProductPicker({ product }: ProductPickerProps) {
       price: displayPrice,
     });
 
-    router.push("/checkout");
+    // Through the same after-paint queue as the tracking pushes above, so
+    // they reach GTM first — while the URL is still this product's. A
+    // prefetched /checkout could otherwise commit (and change the URL) before
+    // they flush, reporting add_to_cart/begin_checkout as /checkout.
+    afterNextPaint(() => router.push("/checkout"));
   };
 
   return (
@@ -762,10 +780,14 @@ function ProductPicker({ product }: ProductPickerProps) {
           <div className="flex items-center gap-2.5 flex-1 min-w-0 pr-1">
             {product.images && product.images[0] && (
               <div className="relative h-10 w-10 sm:h-11 sm:w-11 shrink-0 rounded-lg overflow-hidden bg-secondary/20 border border-border/50 shadow-xs">
+                {/* sizes: without it a `fill` image assumes 100vw, so this
+                    40-44px thumbnail fetched a ~1200px photo while the page's
+                    LCP image was still loading. */}
                 <FallbackImage
                   src={product.images[0]}
                   alt={product.name}
                   fill
+                  sizes="44px"
                   className="object-cover"
                 />
               </div>

@@ -96,23 +96,37 @@ const ProductVideoCard = memo(function ProductVideoCard({
       className="group relative aspect-[9/16] w-full overflow-hidden rounded-2xl bg-black"
     >
       {!playing && (
+        // unoptimized: the poster URL is already a sized Cloudinary transform,
+        // and the custom loader only resizes /image/upload/ URLs — so the
+        // srcset it generated here was the same URL repeated at 11 widths,
+        // dead weight in the HTML of every page showing these cards.
+        // `priority` is deprecated in Next 16 and set no fetchpriority; the
+        // above-the-fold cards ask for it directly.
         <Image
           src={productVideoPoster(item.video, 540)}
           alt={item.name}
           fill
-          priority={priority}
+          unoptimized
+          loading={priority ? "eager" : "lazy"}
+          fetchPriority={priority ? "high" : "auto"}
           sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
           className="absolute inset-0 object-cover pointer-events-none"
         />
       )}
+      {/* No `poster` attribute: a poster is fetched as soon as the element is
+          parsed — lazy loading doesn't apply to it — so every card on the
+          page downloaded its still up front (~60KB each, 11 of them on a
+          product page, 36 on /videos), competing with the LCP image on a
+          phone's connection. The lazy <Image> above already shows that same
+          still, and it stays up until `playing` (not `play`) fires, i.e. until
+          a real frame is on screen, so nothing flashes black meanwhile. */}
       <video
         ref={videoRef}
         muted={muted}
         loop
         playsInline
         preload="none"
-        poster={productVideoPoster(item.video, 540)}
-        onPlay={() => setPlaying(true)}
+        onPlaying={() => setPlaying(true)}
         onPause={() => setPlaying(false)}
         onClick={onOpen}
         aria-label={`${item.name} – video`}

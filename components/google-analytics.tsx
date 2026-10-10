@@ -19,6 +19,11 @@ export default function GoogleAnalytics() {
 
   // Prevent GTM container from loading on dashboard and its subroutes
   const isDashboard = pathname?.startsWith("/dashboard");
+  // The order-success page exists to report the Purchase, and nothing else
+  // does: there is no server-side Purchase sender, so a buyer who closes the
+  // tab before the idle/interaction trigger below fires was never counted by
+  // GA4, Ads or Meta. It has no paint to protect either, so load right away.
+  const isOrderSuccess = pathname?.startsWith("/order-success");
 
   // GTM Web Container ID from DB settings (fallback to env or production default)
   const gtmWebId =
@@ -79,6 +84,11 @@ export default function GoogleAnalytics() {
       document.head.appendChild(script);
     };
 
+    if (isOrderSuccess) {
+      loadContainer();
+      return;
+    }
+
     const loadOnInteraction = () => {
       loadContainer();
       removeInteractionListeners();
@@ -119,7 +129,7 @@ export default function GoogleAnalytics() {
       if (idleCallbackId !== undefined) window.cancelIdleCallback(idleCallbackId);
       if (timeoutId !== undefined) window.clearTimeout(timeoutId);
     };
-  }, [isDashboard, gtmWebId]);
+  }, [isDashboard, isOrderSuccess, gtmWebId]);
 
   if (isDashboard) return null;
 

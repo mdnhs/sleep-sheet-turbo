@@ -13,6 +13,7 @@ import { useCurrent } from "@/features/auth/api/use-current";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { trackEvent } from "@/lib/traffic-tracker";
 import { trackGtmAddToCart, trackGtmBeginCheckout } from "@/lib/gtm";
+import { afterNextPaint } from "@/lib/after-next-paint";
 import OptimizedImage from "@/components/ui/optimized-image";
 import { floorToNearest50 } from "@/lib/utils";
 
@@ -136,8 +137,14 @@ const ProductCard = ({ product, priority = false }: ProductCardProps) => {
         quantity,
         price: displayPrice,
       });
-      toast.success("Added to cart successfully");
-      router.push("/checkout");
+      // The toast (sonner mounts it with flushSync) and the navigation go
+      // through the same after-paint queue as the tracking pushes above: the
+      // tap paints first, and the pushes reach GTM while the URL is still
+      // this page's, before /checkout commits.
+      afterNextPaint(() => {
+        toast.success("Added to cart successfully");
+        router.push("/checkout");
+      });
     }
   };
 
@@ -192,9 +199,12 @@ const ProductCard = ({ product, priority = false }: ProductCardProps) => {
       quantity,
       price: displayPrice,
     });
-    toast.success("Added to cart successfully");
     setIsDrawerOpen(false);
-    router.push("/checkout");
+    // After the tracking pushes, as in the quick-buy handler above.
+    afterNextPaint(() => {
+      toast.success("Added to cart successfully");
+      router.push("/checkout");
+    });
   };
 
   const handleQuickAdd = (e: React.MouseEvent) => {

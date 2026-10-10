@@ -5,7 +5,6 @@ import { cn } from "@/lib/utils";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 import QueryProvider from "@/provider/query-provider";
-import { TooltipProvider } from "@/components/ui/tooltip";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
 import { TrackingIdentity } from "@/provider/tracking-identity";
 import { seoConfig, websiteSchema, organizationSchema, sameAsFromSettings, structuredDataScript } from "@/lib/seo";
@@ -184,17 +183,19 @@ export default async function RootLayout({
           enableSystem={false}
           disableTransitionOnChange
         >
-          <TooltipProvider>
-            <Toaster />
-            <QueryProvider>
-              <SeoVerification />
-              <GoogleAnalytics />
-              <TrackingIdentity />
-              <NuqsAdapter>
-                {children}
-              </NuqsAdapter>
-            </QueryProvider>
-          </TooltipProvider>
+          {/* No app-wide TooltipProvider: importing it here put base-ui's
+              tooltip stack in every page's JS. The dashboard layout provides
+              one for its sidebar; the storefront's desktop-only navbar
+              tooltips load theirs on demand (components/lazy-tooltip.tsx). */}
+          <Toaster />
+          <QueryProvider>
+            <SeoVerification />
+            <GoogleAnalytics />
+            <TrackingIdentity />
+            <NuqsAdapter>
+              {children}
+            </NuqsAdapter>
+          </QueryProvider>
         </ThemeProvider>
         <VercelAnalytics />
       </body>

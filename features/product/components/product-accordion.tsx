@@ -14,7 +14,7 @@ interface ProductAccordionProps {
 }
 
 import { useSettings } from "@/features/settings/api/use-settings";
-import React from "react";
+import React, { useSyncExternalStore } from "react";
 import { useCurrency } from "@/hooks/use-currency";
 import { useLanguage } from "@/hooks/use-language";
 
@@ -41,19 +41,32 @@ export function ProductAccordion({ product }: ProductAccordionProps) {
     "Nov",
     "Dec",
   ];
+  // The dates come from the visitor's clock, so they are only computed in the
+  // browser. The product page is cached HTML (ISR) generated up to a day
+  // earlier, on a server in UTC: rendering "today" there produced a different
+  // date than the visitor's whenever the two days differed, and that text
+  // mismatch makes React throw away the server HTML and re-render the page on
+  // the client. During SSR and hydration these render empty instead.
+  const isClient = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false,
+  );
   const today = new Date();
 
   // Inside Dhaka: 1 day (tomorrow)
   const tomorrow = new Date(today);
   tomorrow.setDate(today.getDate() + 1);
-  const tomorrowStr = `${tomorrow.getDate()} ${months[tomorrow.getMonth()]}`;
+  const tomorrowStr = isClient ? `${tomorrow.getDate()} ${months[tomorrow.getMonth()]}` : "";
 
   // Outside Dhaka: 3-4 days
   const minDate = new Date(today);
   minDate.setDate(today.getDate() + 3);
   const maxDate = new Date(today);
   maxDate.setDate(today.getDate() + 4);
-  const outsideRangeStr = `${minDate.getDate()} ${months[minDate.getMonth()]} - ${maxDate.getDate()} ${months[maxDate.getMonth()]}`;
+  const outsideRangeStr = isClient
+    ? `${minDate.getDate()} ${months[minDate.getMonth()]} - ${maxDate.getDate()} ${months[maxDate.getMonth()]}`
+    : "";
 
   return (
     <div className="w-full space-y-4">

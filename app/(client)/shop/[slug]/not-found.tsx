@@ -1,14 +1,20 @@
-import Link from "next/link";
 import { Search } from "lucide-react";
-import ProductCard from "@/components/product/product-card";
-import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button-variants";
 import { getPublicProducts } from "@/lib/prefetch-home";
+import { cn, getOptimizedImageUrl } from "@/lib/utils";
 
 // Segment-scoped override of app/not-found.tsx: rendered when the product
 // page calls notFound(), still with a real 404 status. A bare "Page not
 // found" here is a dead end for a visitor who arrived from a paid ad
 // specifically wanting this product, so this offers a search box and a
 // handful of live products instead of losing them outright.
+//
+// Plain server markup on purpose — no ProductCard, Button or next/link. Next
+// renders a segment's not-found element on every request to that segment
+// (it is a prop of the layout router, see create-component-tree.js), so its
+// output and every client component it references shipped with each product
+// page: 8 full ProductCards (descriptions included) in the RSC payload, plus
+// their JS — for a page almost nobody sees.
 export default async function ProductNotFound() {
   const productsRes = await getPublicProducts().catch(() => null);
   const suggestions = productsRes?.data || [];
@@ -34,14 +40,16 @@ export default async function ProductNotFound() {
                 className="w-full h-11 pl-9 pr-3 rounded-lg border border-border bg-white dark:bg-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
               />
             </div>
-            <Button type="submit" className="h-11">
+            <button type="submit" className={cn(buttonVariants(), "h-11")}>
               খুঁজুন
-            </Button>
+            </button>
           </form>
 
-          <Button nativeButton={false} variant="outline" render={<Link href="/shop" />}>
+          {/* Plain <a>, not next/link — see the note above. */}
+          {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
+          <a href="/shop" className={buttonVariants({ variant: "outline" })}>
             সব প্রোডাক্ট দেখুন
-          </Button>
+          </a>
         </div>
 
         {suggestions.length > 0 && (
@@ -49,11 +57,30 @@ export default async function ProductNotFound() {
             <h2 className="text-lg font-semibold text-foreground text-center mb-4">
               এগুলো দেখতে পারেন
             </h2>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+            <ul className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 list-none p-0 m-0">
               {suggestions.map((product) => (
-                <ProductCard key={product.id} product={product} />
+                <li key={product.id}>
+                  <a
+                    href={`/shop/${product.slug || product.id}`}
+                    className="block overflow-hidden rounded-2xl bg-white dark:bg-slate-900 hover:shadow-md transition-shadow"
+                  >
+                    {product.images[0] && (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={getOptimizedImageUrl(product.images[0], 400)}
+                        alt={product.name}
+                        loading="lazy"
+                        decoding="async"
+                        className="aspect-square w-full object-cover"
+                      />
+                    )}
+                    <span className="block p-3 text-sm font-medium text-foreground line-clamp-2">
+                      {product.name}
+                    </span>
+                  </a>
+                </li>
               ))}
-            </div>
+            </ul>
           </div>
         )}
       </div>

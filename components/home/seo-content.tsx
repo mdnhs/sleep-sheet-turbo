@@ -1,6 +1,6 @@
 import { faqSchema, structuredDataScript } from "@/lib/seo";
 import { getPublicSettings, getPriceRanges, type PriceRow } from "@/lib/prefetch-home";
-import { SHIPPING_ZONES } from "@/features/checkout/schema";
+import { SHIPPING_ZONES } from "@/features/checkout/constants";
 import SeoContentBody from "./seo-content-body";
 
 // Server component: the FAQPage JSON-LD below is emitted in English always,

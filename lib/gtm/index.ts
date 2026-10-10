@@ -12,6 +12,7 @@ export * from "./events";
 export * from "./user-identity";
 
 import { getGtmIdentity } from "./user-identity";
+import { afterNextPaint } from "@/lib/after-next-paint";
 
 declare global {
   interface Window {
@@ -149,16 +150,24 @@ export async function hashIdentifiers(input: {
 
 /**
  * Safely push an event or object to Google Tag Manager dataLayer.
+ *
+ * The push itself happens after the next paint (see lib/after-next-paint):
+ * these are called from click handlers — Add to cart, Order now — and GTM
+ * fires the matching tags synchronously inside push(), which made them part
+ * of the tap's INP. The payload (event_id included) is built now; only its
+ * delivery waits, and pushes keep their order.
  */
 export function pushToDataLayer(payload: Record<string, unknown>): void {
   if (typeof window === "undefined") return;
   if (window.location?.pathname?.startsWith("/dashboard")) return;
-  try {
-    window.dataLayer = window.dataLayer || [];
-    window.dataLayer.push(payload);
-  } catch (error) {
-    console.error("[GTM] Failed to push to dataLayer:", error);
-  }
+  afterNextPaint(() => {
+    try {
+      window.dataLayer = window.dataLayer || [];
+      window.dataLayer.push(payload);
+    } catch (error) {
+      console.error("[GTM] Failed to push to dataLayer:", error);
+    }
+  });
 }
 
 /**

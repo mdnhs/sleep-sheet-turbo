@@ -47,15 +47,21 @@ const getCachedPost = unstable_cache(
 
 type Props = { params: Promise<{ slug: string }> };
 
+// `revalidate` alone left this route rendering on every request: a dynamic
+// segment only becomes ISR once it exports generateStaticParams. An empty list
+// prerenders nothing at build — each post renders on its first visit and is
+// served from the cache after that, until invalidateBlog() or the timer.
+export function generateStaticParams(): Array<{ slug: string }> {
+  return [];
+}
+
 export async function generateMetadata({ params }: Props) {
   const { slug } = await params;
 
   try {
-    const [post] = await db
-      .select()
-      .from(posts)
-      .where(eq(posts.slug, slug))
-      .limit(1);
+    // The same cached, "blog"-tagged read as the page body (it carries every
+    // field used here), rather than a second, uncached query per render.
+    const post = await getCachedPost(slug);
 
     if (post) {
       const cleanSummary = post.summary || post.content.replace(/<[^>]*>/g, "").slice(0, 160).trim();

@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { toast } from "sonner";
 import { client } from "@/lib/rpc";
+import { afterNextPaint } from "@/lib/after-next-paint";
 import { CartItem, CartResponse } from "../type";
 
 type CartState = {
@@ -65,7 +66,10 @@ export const useCartStore = create<CartState>((set, get) => ({
       if (!payload.isAuthenticated) {
         if (payload.guestProduct) {
           get().addGuestItem(payload.guestProduct);
-          toast.success("Item added to cart");
+          // After the tap's paint: this runs inside the Add to cart / Order
+          // now click, and sonner mounts a toast with flushSync and two
+          // forced layouts — work that otherwise lands in that tap's INP.
+          afterNextPaint(() => toast.success("Item added to cart"));
           return;
         }
         toast.error("You must be logged in to add items to cart");

@@ -75,12 +75,18 @@ function SwitchImage({ product }: SwitchImageProps) {
         // tiny copy of the video's first frame, scaled up and blurred, sits
         // behind the (letterboxed) video. A still image rather than a second
         // live video, so it costs almost nothing on a phone.
+        //
+        // This glow — not the video's poster — is the page's LCP element on a
+        // phone: it fills the whole frame, while the portrait video only
+        // covers a slice of it. So it gets fetchPriority="high" (React's SSR
+        // preload for it inherits that); at ~120px wide it costs a few KB.
         <div className="absolute inset-0 overflow-hidden bg-black">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={productVideoPoster(video, 120)}
             alt=""
             aria-hidden="true"
+            fetchPriority="high"
             className="absolute inset-0 h-full w-full scale-125 object-cover opacity-70 blur-2xl"
           />
           <BrandedVideoPlayer
@@ -116,10 +122,14 @@ function SwitchImage({ product }: SwitchImageProps) {
               : `${product.name} – photo ${selectedImage + 1} of ${product.images.length}`
           }
           fill
-          priority
+          // `priority` is deprecated in Next 16; eager + high priority is the
+          // documented replacement (React still preloads it in <head>).
+          loading="eager"
           fetchPriority="high"
           quality={70}
-          sizes="(max-width: 1024px) 100vw, 50vw"
+          // The frame sits in the page's px-4 container: 100vw made phones at
+          // DPR ~3 pick the 1920w file for a slot that needs 1200w.
+          sizes="(max-width: 1023px) calc(100vw - 32px), 50vw"
           className="object-cover transition-transform duration-700"
         />
       </button>

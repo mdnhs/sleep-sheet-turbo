@@ -6,7 +6,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { UserButton } from "@/features/auth/components/user-button";
+import dynamic from "next/dynamic";
 import { useCurrent } from "@/features/auth/api/use-current";
 import { useCartStore, selectTotalItems } from "@/features/cart/state/use-cart-store";
 import Image from "next/image";
@@ -16,7 +16,7 @@ import { Menu, ShoppingCart, User, Bed, BadgePercent, Search, Sun, Moon, Heart, 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useQueryState } from "nuqs";
 import { useTheme } from "next-themes";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { LazyTooltip } from "@/components/lazy-tooltip";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const subscribe = () => () => { };
@@ -31,6 +31,15 @@ import { useLanguage } from "@/hooks/use-language";
 import CartDrawer from "./cart/cart-drawer";
 import { Button } from "./ui/button";
 import { trackGtmSearch } from "@/lib/gtm";
+
+// Loaded on demand: the account menu only ever renders for a signed-in
+// visitor, after mount, yet a static import put its dropdown (base-ui Menu
+// plus floating-ui positioning) in the JS every guest — i.e. every ad
+// visitor — downloaded and ran.
+const UserButton = dynamic(
+  () => import("@/features/auth/components/user-button").then((m) => m.UserButton),
+  { ssr: false, loading: () => <div className="size-10 rounded-full border" aria-hidden /> },
+);
 
 const NAV_LINKS = [
   { id: 1, name: "home" as const, path: "/" },
@@ -89,24 +98,22 @@ function ThemeToggle() {
   };
 
   return (
-    <Tooltip>
-      <TooltipTrigger
-        render={
-          <button
-            onClick={toggleTheme}
-            className="group relative flex h-10 w-10 items-center justify-center rounded-full bg-transparent transition-all duration-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:scale-105 text-foreground focus:outline-none"
-            aria-label="Toggle theme"
-          />
-        }
-      >
-        {hasMounted && theme === "dark" ? (
-          <Sun className="h-5 w-5 transition-transform duration-500 group-hover:rotate-45" />
-        ) : (
-          <Moon className="h-5 w-5 transition-transform duration-500 group-hover:-rotate-12" />
-        )}
-      </TooltipTrigger>
-      <TooltipContent side="bottom">Toggle theme</TooltipContent>
-    </Tooltip>
+    <LazyTooltip
+      label="Toggle theme"
+      render={
+        <button
+          onClick={toggleTheme}
+          className="group relative flex h-10 w-10 items-center justify-center rounded-full bg-transparent transition-all duration-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:scale-105 text-foreground focus:outline-none"
+          aria-label="Toggle theme"
+        />
+      }
+    >
+      {hasMounted && theme === "dark" ? (
+        <Sun className="h-5 w-5 transition-transform duration-500 group-hover:rotate-45" />
+      ) : (
+        <Moon className="h-5 w-5 transition-transform duration-500 group-hover:-rotate-12" />
+      )}
+    </LazyTooltip>
   );
 }
 
@@ -152,63 +159,57 @@ function NavbarActions({
       <ThemeToggle />
 
       {/* Wishlist Button */}
-      <Tooltip>
-        <TooltipTrigger
-          render={
-            <Link
-              href="/account?tab=wishlist"
-              className="group relative flex h-10 w-10 items-center justify-center rounded-full bg-transparent transition-all duration-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:scale-105 text-foreground focus:outline-none"
-              aria-label="View Wishlist"
-            />
-          }
-        >
-          <Heart className="h-5 w-5 transition-transform duration-300 group-hover:scale-110" />
-          {hasMounted && wishlistItemsCount > 0 && (
-            <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-white shadow-sm">
-              {wishlistItemsCount}
-            </span>
-          )}
-        </TooltipTrigger>
-        <TooltipContent side="bottom">{t("wishlist")}</TooltipContent>
-      </Tooltip>
+      <LazyTooltip
+        label={t("wishlist")}
+        render={
+          <Link
+            href="/account?tab=wishlist"
+            className="group relative flex h-10 w-10 items-center justify-center rounded-full bg-transparent transition-all duration-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:scale-105 text-foreground focus:outline-none"
+            aria-label="View Wishlist"
+          />
+        }
+      >
+        <Heart className="h-5 w-5 transition-transform duration-300 group-hover:scale-110" />
+        {hasMounted && wishlistItemsCount > 0 && (
+          <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-white shadow-sm">
+            {wishlistItemsCount}
+          </span>
+        )}
+      </LazyTooltip>
 
       {/* Cart Button */}
-      <Tooltip>
-        <TooltipTrigger
-          render={
-            <button
-              onClick={onCartOpen}
-              className="group relative flex h-10 w-10 items-center justify-center rounded-full bg-transparent transition-all duration-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:scale-105 text-foreground focus:outline-none"
-              aria-label="View Cart"
-            />
-          }
-        >
-          <ShoppingCart className="h-5 w-5 transition-transform duration-300 group-hover:rotate-3" />
-          {hasMounted && totalItems > 0 && (
-            <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-white shadow-sm">
-              {totalItems}
-            </span>
-          )}
-        </TooltipTrigger>
-        <TooltipContent side="bottom">{t("cart")}</TooltipContent>
-      </Tooltip>
+      <LazyTooltip
+        label={t("cart")}
+        render={
+          <button
+            onClick={onCartOpen}
+            className="group relative flex h-10 w-10 items-center justify-center rounded-full bg-transparent transition-all duration-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:scale-105 text-foreground focus:outline-none"
+            aria-label="View Cart"
+          />
+        }
+      >
+        <ShoppingCart className="h-5 w-5 transition-transform duration-300 group-hover:rotate-3" />
+        {hasMounted && totalItems > 0 && (
+          <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-white shadow-sm">
+            {totalItems}
+          </span>
+        )}
+      </LazyTooltip>
 
       {/* Profile/Sign In Button */}
       {!hasMounted || !user ? (
-        <Tooltip>
-          <TooltipTrigger
-            render={
-              <Link
-                href="/signin"
-                className="group relative flex h-10 w-10 items-center justify-center rounded-full bg-transparent transition-all duration-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:scale-105 text-foreground focus:outline-none"
-                aria-label="Sign In"
-              />
-            }
-          >
-            <User className="h-5 w-5" />
-          </TooltipTrigger>
-          <TooltipContent side="bottom">{t("signIn")}</TooltipContent>
-        </Tooltip>
+        <LazyTooltip
+          label={t("signIn")}
+          render={
+            <Link
+              href="/signin"
+              className="group relative flex h-10 w-10 items-center justify-center rounded-full bg-transparent transition-all duration-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:scale-105 text-foreground focus:outline-none"
+              aria-label="Sign In"
+            />
+          }
+        >
+          <User className="h-5 w-5" />
+        </LazyTooltip>
       ) : (
         <UserButton />
       )}

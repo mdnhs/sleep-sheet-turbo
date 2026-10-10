@@ -1,5 +1,7 @@
 "use client";
 
+import { afterNextPaint } from "@/lib/after-next-paint";
+
 export type TrafficEventType =
   | "page_view"
   | "product_view"
@@ -28,10 +30,15 @@ export function trackEvent(
     const gtag = (window as unknown as { gtag?: (...args: unknown[]) => void }).gtag;
     if (typeof gtag !== "function") return;
 
-    gtag("event", type, {
-      page_path: path,
-      event_label: label,
-      ...meta,
+    // After the next paint, in order with lib/gtm's pushes: gtag() is a
+    // dataLayer push too, so calling it inside a click handler ran GTM's
+    // tags inside that tap.
+    afterNextPaint(() => {
+      gtag("event", type, {
+        page_path: path,
+        event_label: label,
+        ...meta,
+      });
     });
   } catch {}
 }

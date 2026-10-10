@@ -12,6 +12,13 @@ const load = () => import("@/components/product/reels-viewer");
  */
 const LazyReelsViewer = dynamic(load, { ssr: false });
 
+// A shared /videos?v=<slug> link opens the viewer straight after hydration,
+// and for that visit its poster is the LCP element — so start fetching the
+// chunk as soon as this module runs instead of when the viewer first renders.
+if (typeof window !== "undefined" && new URLSearchParams(window.location.search).has("v")) {
+  void load().catch(() => {});
+}
+
 export default LazyReelsViewer;
 
 export function useWarmReelsViewer() {

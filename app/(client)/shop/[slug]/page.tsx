@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { Star } from "lucide-react";
 import ProductCard from "@/components/product/product-card";
-import ProductVideos from "@/components/home/product-videos";
+import ProductVideosLazy from "@/features/product/components/product-videos-lazy";
 import { productVideoPoster, productVideoUrl } from "@/lib/product-video";
 import ProductPicker from "@/features/product/components/product-picker";
 import { ProductAccordion } from "@/features/product/components/product-accordion";
@@ -12,7 +12,7 @@ import ProductReviews from "@/features/product/components/product-reviews-lazy";
 import ProductTag from "@/features/product/components/product-tags";
 import SwitchImage from "@/features/product/components/switch-image";
 import { ProductViewTracker } from "@/features/product/components/product-view-tracker";
-import { getProductBySlug } from "@/features/product/server/get-product";
+import { getAllProductSlugs, getProductBySlug } from "@/features/product/server/get-product";
 import {
   seoConfig,
   generateProductMetadata,
@@ -57,13 +57,26 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   });
 }
 
-import { getPublicProductList, getPublicProductVideos, getPublicProducts } from "@/lib/prefetch-home";
-import { getSettingsMap } from "@/lib/settings-cache";
-import { SHIPPING_ZONES } from "@/features/checkout/schema";
+import { getPublicProductList, getPublicProductVideos, getPublicProducts, getPublicSettings } from "@/lib/prefetch-home";
+import { SHIPPING_ZONES } from "@/features/checkout/constants";
 
 // Cached with ISR for 24 hours at Vercel Edge CDN.
 // The "products" cache tag already invalidates when products or stock are updated in the dashboard.
 export const revalidate = 86400;
+
+// `revalidate` alone never made this route ISR: per the generateStaticParams
+// docs, a dynamic segment only revalidates (instead of rendering per request)
+// once the route exports generateStaticParams — so every product view was a
+// function invocation plus a server render, and the build's prerender
+// manifest listed no /shop/* pages at all. Prerendering every slug at build
+// also means a fresh deploy serves its product pages from the edge cache
+// straight away; a slug added after the build (dynamicParams defaults to
+// true) renders on its first visit and is cached from then on. A failed slug
+// query falls back to exactly that, rather than failing the build.
+export async function generateStaticParams() {
+  const slugs = await getAllProductSlugs().catch(() => []);
+  return slugs.map((slug) => ({ slug }));
+}
 
 export default async function ProductDetailPage({ params }: Props) {
   const { slug } = await params;
@@ -74,7 +87,11 @@ export default async function ProductDetailPage({ params }: Props) {
   // Parallel fetch: all related data fetches run concurrently without waterfalls
   const [relatedProductsRes, settings, videosRes, sameCategoryRes] = await Promise.all([
     getPublicProducts().catch(() => null),
-    getSettingsMap().catch(() => ({} as Record<string, string>)),
+    // The cached, "settings"-tagged public map (both layouts already read it,
+    // so this is a warm hit). getSettingsMap() was a direct Neon query behind
+    // only a 60s in-process TTL — run on most product views, and untagged, so
+    // a shipping-rate edit wouldn't have refreshed the cached page either.
+    getPublicSettings().catch(() => ({} as Record<string, string>)),
     getPublicProductVideos().catch(() => null),
     product.category
       ? getPublicProductList({ category: product.category }).catch(() => null)
@@ -95,7 +112,14 @@ export default async function ProductDetailPage({ params }: Props) {
 
   const sameCategory = sameCategoryRes?.data ?? [];
   const seen = new Set([product.id]);
-  const otherVideos = (videosRes?.data ?? []).filter((v) => v.id !== product.id);
+  // Only the fields the carousel and the viewer read (no description or
+  // uploadDate): everything passed to a client component is serialized into
+  // the page's HTML.
+  const otherVideos = (videosRes?.data ?? [])
+    .filter((v) => v.id !== product.id)
+    .map(({ id, slug, name, price, discount, defaultVariantName, colors, video, likes }) => ({
+      id, slug, name, price, discount, defaultVariantName, colors, video, likes,
+    }));
 
   const relatedProducts = [...sameCategory, ...(relatedProductsRes?.data ?? [])]
     .filter((p) => (seen.has(p.id) ? false : (seen.add(p.id), true)))
@@ -155,7 +179,11 @@ export default async function ProductDetailPage({ params }: Props) {
         breadcrumbSchema(productBreadcrumbs),
       )}
       {product.video && (
-        // The page opens on the video, so its poster is the LCP image.
+        // The page opens on the video. Its poster isn't the LCP element (the
+        // blurred full-frame backdrop in SwitchImage is, and that carries its
+        // own high-priority preload), but it is the frame visitors look at
+        // until playback starts, so it is still fetched early — at the default
+        // priority, behind the LCP image.
         // For non-video products, Next.js's `<Image priority fetchPriority="high">` inside SwitchImage
         // automatically outputs the exact responsive transformed preload tag.
         <link rel="preload" as="image" href={productVideoPoster(product.video)} />
@@ -244,7 +272,7 @@ export default async function ProductDetailPage({ params }: Props) {
                   video is already the gallery's first slide, so it's left out. */}
               {otherVideos.length > 0 && (
                 <div className="mt-3">
-                  <ProductVideos items={otherVideos} embedded />
+                  <ProductVideosLazy items={otherVideos} />
                 </div>
               )}
 

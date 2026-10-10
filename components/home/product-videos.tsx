@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useState } from "react";
+import React, { startTransition, useCallback, useState } from "react";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import {
@@ -74,7 +74,13 @@ export default function ProductVideos({ items, embedded = false }: ProductVideos
                 key={item.id}
                 className={slideClass}
               >
-                <ProductVideoCard item={item} onOpen={() => setOpenIndex(index)} paused={openIndex !== null} />
+                <ProductVideoCard
+                  item={item}
+                  // A transition: the tap paints right away, and mounting the
+                  // full-screen viewer renders after it instead of inside it.
+                  onOpen={() => startTransition(() => setOpenIndex(index))}
+                  paused={openIndex !== null}
+                />
               </CarouselItem>
             ))}
             {/* Last slide: the way into the full video page. */}

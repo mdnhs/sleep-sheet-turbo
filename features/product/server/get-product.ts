@@ -2,7 +2,7 @@ import { cache } from "react";
 import { unstable_cache } from "next/cache";
 import { db } from "@/db";
 import { products, reviews } from "@/db/schema";
-import { eq, desc, count } from "drizzle-orm";
+import { eq, desc, count, isNotNull } from "drizzle-orm";
 import { Product } from "@/lib/types";
 import { REVIEWS_PAGE_SIZE } from "@/features/review/constants";
 
@@ -179,3 +179,13 @@ const getCachedProductBySlug = unstable_cache(
 export const getProductBySlug = cache(
   (slug: string): Promise<Product | null> => getCachedProductBySlug(slug),
 );
+
+// Every product slug, for the product page's generateStaticParams. Runs once
+// per build, so it isn't cached — nothing calls it at request time.
+export async function getAllProductSlugs(): Promise<string[]> {
+  const rows = await db
+    .select({ slug: products.slug })
+    .from(products)
+    .where(isNotNull(products.slug));
+  return rows.map((row) => row.slug).filter((slug): slug is string => Boolean(slug));
+}

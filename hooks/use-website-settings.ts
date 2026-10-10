@@ -1,7 +1,9 @@
 "use client";
 
 import { useSettings } from "@/features/settings/api/use-settings";
-import { SHIPPING_ZONES } from "@/features/checkout/schema";
+// From ./constants, not ./schema: this hook runs on every storefront page, and
+// the schema module would bring zod into that shared bundle.
+import { SHIPPING_ZONES } from "@/features/checkout/constants";
 
 export function useWebsiteSettings() {
   const { data: settings, ...rest } = useSettings();

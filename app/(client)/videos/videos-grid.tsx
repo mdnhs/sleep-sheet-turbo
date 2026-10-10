@@ -1,6 +1,16 @@
 "use client";
 
-import React, { useCallback, useRef, useState, useSyncExternalStore } from "react";
+import React, {
+  Suspense,
+  startTransition,
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import { useQueryState } from "nuqs";
 import Link from "next/link";
 import ProductVideoCard from "@/components/product/product-video-card";
@@ -12,57 +22,23 @@ import type { ProductVideoItem } from "@/lib/types";
 // A card has to be at least this visible to be a candidate for playing.
 const MIN_RATIO = 0.6;
 
+type ViewerHandle = { open: (index: number) => void };
+
 export default function VideosGrid({ items }: { items: ProductVideoItem[] }) {
   const { t, language } = useLanguage();
   const ratios = useRef(new Map<string, number>());
   useWarmReelsViewer();
   const [activeId, setActiveId] = useState<string | null>(null);
-  // The open video lives in the URL (?v=<slug>), so every video has its own
-  // shareable address and the browser's back button closes the viewer. The
-  // viewer itself renders only in the browser (it portals into document.body).
-  const [videoSlug, setVideoSlug] = useQueryState("v");
-  const isClient = useSyncExternalStore(
-    () => () => {},
-    () => true,
-    () => false,
-  );
-  const found = videoSlug ? items.findIndex((item) => item.slug === videoSlug) : -1;
-  const openIndex = isClient && found >= 0 ? found : null;
-  // Opening pushes a history entry; closing goes back over it when we pushed
-  // one (so "back" and "close" are the same thing), else just clears the param.
-  const pushed = useRef(false);
+  // Which video the full-screen viewer has open, mirrored up from
+  // <VideoViewer> (which owns it, in the URL) so the cards know to pause.
+  const [openIndex, setOpenIndex] = useState<number | null>(null);
+  const viewer = useRef<ViewerHandle>(null);
 
-  const openViewer = useCallback(
-    (index: number) => {
-      pushed.current = true;
-      void setVideoSlug(items[index].slug, { history: "push" });
-    },
-    [items, setVideoSlug],
-  );
-  const closeViewer = useCallback(() => {
-    if (pushed.current) {
-      pushed.current = false;
-      history.back();
-    } else {
-      void setVideoSlug(null, { history: "replace" });
-    }
-  }, [setVideoSlug]);
-  const onActiveChange = useCallback(
-    (index: number) => void setVideoSlug(items[index].slug, { history: "replace" }),
-    [items, setVideoSlug],
-  );
-
-  const openViewerHandlers = useRef<Map<number, () => void>>(new Map());
-  const getOpenViewer = useCallback(
-    (index: number) => {
-      let handler = openViewerHandlers.current.get(index);
-      if (!handler) {
-        handler = () => openViewer(index);
-        openViewerHandlers.current.set(index, handler);
-      }
-      return handler;
-    },
-    [openViewer]
+  // One stable handler per card, so the memoized cards don't re-render on
+  // every grid render. The ref is read when a card is tapped, not here.
+  const openHandlers = useMemo(
+    () => items.map((_, index) => () => viewer.current?.open(index)),
+    [items],
   );
 
   // Only ONE video plays at a time: whichever card is most on screen. A grid
@@ -107,12 +83,14 @@ export default function VideosGrid({ items }: { items: ProductVideoItem[] }) {
           <ul className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 sm:gap-3 md:grid-cols-4 lg:grid-cols-5 list-none p-0 m-0">
             {items.map((item, index) => (
               <li key={item.id}>
+                {/* No `paused`: in this controlled grid `active` already
+                    turns false for the playing card when the viewer opens,
+                    and flipping `paused` too re-rendered all the cards. */}
                 <ProductVideoCard
                   item={item}
                   active={openIndex === null && activeId === item.id}
                   onVisibleRatio={onVisibleRatio}
-                  onOpen={getOpenViewer(index)}
-                  paused={openIndex !== null}
+                  onOpen={openHandlers[index]}
                   priority={index < 2}
                 />
                 {/* A real, descriptive link to each product (the card's own
@@ -127,15 +105,80 @@ export default function VideosGrid({ items }: { items: ProductVideoItem[] }) {
           </ul>
         )}
       </div>
-      {openIndex !== null && (
-        <ReelsViewer
-          items={items}
-          startIndex={openIndex}
-          onClose={closeViewer}
-          onActiveChange={onActiveChange}
-          manageHistory={false}
-        />
-      )}
+      {/* ?v= is read through useSearchParams, and in a statically rendered
+          page that hook turns everything up to the nearest Suspense boundary
+          into client-only rendering. Inside the grid, that was the whole grid
+          — the first posters (the LCP element) included — so the viewer that
+          needs ?v= gets a boundary of its own and the cards stay in the HTML. */}
+      <Suspense fallback={null}>
+        <VideoViewer ref={viewer} items={items} onOpenIndexChange={setOpenIndex} />
+      </Suspense>
     </div>
+  );
+}
+
+function VideoViewer({
+  ref,
+  items,
+  onOpenIndexChange,
+}: {
+  ref: React.Ref<ViewerHandle>;
+  items: ProductVideoItem[];
+  onOpenIndexChange: (index: number | null) => void;
+}) {
+  // The open video lives in the URL (?v=<slug>), so every video has its own
+  // shareable address and the browser's back button closes the viewer. The
+  // viewer itself renders only in the browser (it portals into document.body).
+  const [videoSlug, setVideoSlug] = useQueryState("v");
+  const isClient = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false,
+  );
+  const found = videoSlug ? items.findIndex((item) => item.slug === videoSlug) : -1;
+  const openIndex = isClient && found >= 0 ? found : null;
+  // Opening pushes a history entry; closing goes back over it when we pushed
+  // one (so "back" and "close" are the same thing), else just clears the param.
+  const pushed = useRef(false);
+
+  useEffect(() => {
+    onOpenIndexChange(openIndex);
+  }, [openIndex, onOpenIndexChange]);
+
+  const open = useCallback(
+    (index: number) => {
+      pushed.current = true;
+      // A transition: the tap gets its next paint right away, and mounting
+      // the full-screen viewer renders after it instead of inside it.
+      startTransition(() => {
+        void setVideoSlug(items[index].slug, { history: "push" });
+      });
+    },
+    [items, setVideoSlug],
+  );
+  useImperativeHandle(ref, () => ({ open }), [open]);
+
+  const closeViewer = useCallback(() => {
+    if (pushed.current) {
+      pushed.current = false;
+      history.back();
+    } else {
+      void setVideoSlug(null, { history: "replace" });
+    }
+  }, [setVideoSlug]);
+  const onActiveChange = useCallback(
+    (index: number) => void setVideoSlug(items[index].slug, { history: "replace" }),
+    [items, setVideoSlug],
+  );
+
+  if (openIndex === null) return null;
+  return (
+    <ReelsViewer
+      items={items}
+      startIndex={openIndex}
+      onClose={closeViewer}
+      onActiveChange={onActiveChange}
+      manageHistory={false}
+    />
   );
 }

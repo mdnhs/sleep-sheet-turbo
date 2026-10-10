@@ -1,14 +1,13 @@
-import { z } from "zod";
+// The namespace import, zod 4's documented form: `import { z }` binds the `z`
+// re-export object, which drags every locale table (~157KB) into the
+// checkout's client JS; this lets the bundler keep only what's used.
+import * as z from "zod";
 import type { translations } from "@/hooks/use-language";
 
 type TranslateFn = (key: keyof typeof translations["en"]) => string;
 
-export const SHIPPING_ZONES = {
-  inside_dhaka: { label: "Inside Dhaka", cost: 60 },
-  outside_dhaka: { label: "Outside Dhaka", cost: 120 },
-} as const;
-
-export type ShippingZone = keyof typeof SHIPPING_ZONES;
+// Defined in ./constants so client code can use them without importing zod.
+export { SHIPPING_ZONES, type ShippingZone } from "./constants";
 
 export function createShippingInformationSchema(t: TranslateFn) {
   return z.object({

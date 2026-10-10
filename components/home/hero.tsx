@@ -171,7 +171,9 @@ function Hero() {
                   alt={slide.heading}
                   fill
                   draggable={false}
-                  sizes="(max-width: 1024px) 100vw, 66vw"
+                  // The slider sits in the px-4 container, so a phone's slot is
+                  // 100vw - 32px; plain 100vw had DPR ~3 phones fetch 1920w.
+                  sizes="(max-width: 1023px) calc(100vw - 32px), 66vw"
                   quality={65}
                   // The first slide is the LCP. `priority` alone sets eager
                   // loading + a preload + fetchpriority="high"; do NOT also pass

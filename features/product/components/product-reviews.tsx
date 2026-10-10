@@ -1,13 +1,18 @@
 "use client";
 
 import React, { useState } from "react";
+import dynamic from "next/dynamic";
 import { Product } from "@/lib/types";
 import { formatDate, toTitleCase } from "@/lib/utils";
 import { Star } from "lucide-react";
-import ReviewForm from "./review-form";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useGetReviews } from "@/features/review/api/use-get-reviews";
+
+// The form (react-hook-form + zod) only renders inside the "Write a Review"
+// dialog, yet a static import shipped it — zod's ~290KB included — in the
+// JS every product page hydrates with. Now it loads when the dialog opens.
+const ReviewForm = dynamic(() => import("./review-form"));
 
 interface ProductReviewsProps {
   product: Product;
@@ -108,9 +113,16 @@ export function ProductReviews({ product }: ProductReviewsProps) {
                 {loadedReviews.map((review) => (
                   <div key={review.id} className="flex gap-4 py-6 first:pt-0">
                     <div className="h-10 w-10 rounded-full bg-secondary overflow-hidden shrink-0">
+                      {/* Lazy: React's SSR preloads every eager <img> in the
+                          head, so these below-the-fold avatars were fetched
+                          (from a third-party origin) alongside the LCP image. */}
                       <img
                         src={`https://api.dicebear.com/7.x/notionists/svg?seed=${review.name}`}
                         alt={review.name}
+                        width={40}
+                        height={40}
+                        loading="lazy"
+                        decoding="async"
                         className="w-full h-full object-cover"
                       />
                     </div>
