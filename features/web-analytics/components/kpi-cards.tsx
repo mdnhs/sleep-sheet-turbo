@@ -1,11 +1,21 @@
 "use client";
 
+import { Banknote, Eye, LogOut, Percent, ShoppingBag, Users, type LucideIcon } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useCurrency } from "@/hooks/use-currency";
 import { cn } from "@/lib/utils";
 import { useWaOverview, type WaQuery } from "../api/use-web-analytics";
 import { formatCount, formatPercent, kpiValue, METRIC_LABELS, METRICS, trendPercent, type Metric } from "../lib/format";
+
+const METRIC_ICONS: Record<Metric, LucideIcon> = {
+  visitors: Users,
+  pageViews: Eye,
+  bounceRate: LogOut,
+  orders: ShoppingBag,
+  revenue: Banknote,
+  conversionRate: Percent,
+};
 
 const LOWER_IS_BETTER: ReadonlySet<Metric> = new Set<Metric>(["bounceRate"]);
 
@@ -21,11 +31,15 @@ export function KpiCards({ q, metric, onSelect }: { q: WaQuery; metric: Metric; 
       {METRICS.map((m) => {
         const value = data ? kpiValue(data.kpis, m) : 0;
         const trend = data ? trendPercent(value, kpiValue(data.previous, m)) : null;
+        const Icon = METRIC_ICONS[m];
         const good = trend !== null && (LOWER_IS_BETTER.has(m) ? trend < 0 : trend > 0);
         return (
           <button key={m} type="button" onClick={() => onSelect(m)} className="text-left">
             <Card className={cn("gap-1 p-4 ring-0 transition-colors", metric === m ? "bg-primary/10" : "hover:bg-muted/50")}>
-              <span className="text-xs text-muted-foreground">{METRIC_LABELS[m]}</span>
+              <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <Icon className="size-3.5" aria-hidden="true" />
+                {METRIC_LABELS[m]}
+              </span>
               {isLoading && !data ? (
                 <Skeleton className="h-8 w-20" />
               ) : (

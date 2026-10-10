@@ -8,6 +8,7 @@ import { useCurrency } from "@/hooks/use-currency";
 import { useWaBreakdown, type WaQuery } from "../api/use-web-analytics";
 import { NONE, type Dimension } from "../lib/dimensions";
 import { formatCount, keyLabel } from "../lib/format";
+import { RowIcon } from "./row-icon";
 
 export interface BreakdownTab {
   dim: Dimension;
@@ -37,7 +38,7 @@ export function BreakdownPanel({
       <CardHeader className="pb-2">
         {tabs.length > 1 ? (
           <Tabs value={active} onValueChange={(value) => setActive(value as Dimension)}>
-            <div className="-mx-1 overflow-x-auto px-1">
+            <div className="-mx-1 overflow-x-auto overflow-y-hidden px-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               <TabsList>
                 {tabs.map((tab) => (
                   <TabsTrigger key={tab.dim} value={tab.dim}>
@@ -86,7 +87,10 @@ export function BreakdownPanel({
                     style={{ width: `${(row.visitors / max) * 100}%` }}
                     aria-hidden="true"
                   />
-                  <span className="relative truncate">{keyLabel(active, row.key)}</span>
+                  <span className="relative flex min-w-0 items-center gap-2">
+                    <RowIcon dim={active} rowKey={row.key} />
+                    <span className="truncate">{keyLabel(active, row.key)}</span>
+                  </span>
                   <span className="relative flex shrink-0 gap-6 tabular-nums">
                     {showOrders && (
                       <>

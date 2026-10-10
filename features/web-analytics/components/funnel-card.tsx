@@ -1,17 +1,18 @@
 "use client";
 
+import { CreditCard, Eye, PackageCheck, ShoppingCart, Users, type LucideIcon } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useWaFunnel, type WaQuery } from "../api/use-web-analytics";
 import { formatCount, formatPercent } from "../lib/format";
 import type { Funnel } from "../lib/types";
 
-const STEPS: { key: keyof Funnel; label: string }[] = [
-  { key: "visited", label: "Visited" },
-  { key: "viewedProduct", label: "Viewed a product" },
-  { key: "addedToCart", label: "Added to cart / Buy now" },
-  { key: "startedCheckout", label: "Started checkout" },
-  { key: "ordered", label: "Placed an order" },
+const STEPS: { key: keyof Funnel; label: string; icon: LucideIcon }[] = [
+  { key: "visited", label: "Visited", icon: Users },
+  { key: "viewedProduct", label: "Viewed a product", icon: Eye },
+  { key: "addedToCart", label: "Added to cart / Buy now", icon: ShoppingCart },
+  { key: "startedCheckout", label: "Started checkout", icon: CreditCard },
+  { key: "ordered", label: "Placed an order", icon: PackageCheck },
 ];
 
 export function FunnelCard({ q }: { q: WaQuery }) {
@@ -34,7 +35,10 @@ export function FunnelCard({ q }: { q: WaQuery }) {
               return (
                 <li key={step.key}>
                   <div className="mb-1 flex flex-wrap justify-between gap-x-2 text-sm">
-                    <span>{step.label}</span>
+                    <span className="flex items-center gap-2">
+                      <step.icon className="size-4 text-muted-foreground" aria-hidden="true" />
+                      {step.label}
+                    </span>
                     <span className="tabular-nums">
                       <span className="font-medium">{formatCount(value)}</span>
                       {i > 0 && (

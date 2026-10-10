@@ -221,7 +221,7 @@ export async function getFunnel(ex: Db, r: Range, f: Filters): Promise<Funnel> {
 }
 
 export async function getProducts(ex: Db, r: Range, f: Filters, limit: number): Promise<ProductRow[]> {
-  const { rows } = await ex.execute<{ product_id: string; name: string; views: string; added: string; orders: string }>(sql`
+  const { rows } = await ex.execute<{ product_id: string; name: string; image: string | null; views: string; added: string; orders: string }>(sql`
     WITH ${qualifyingCte(r, f)}
     a AS (
       SELECT product_id,
@@ -242,7 +242,7 @@ export async function getProducts(ex: Db, r: Range, f: Filters, limit: number): 
         ${sessionFilter(sql`e.session_id`, f)} AND ${VALID_ORDER}
       GROUP BY 1
     )
-    SELECT a.product_id, p."productName" AS name, a.views, a.added, COALESCE(b.orders, 0) AS orders
+    SELECT a.product_id, p."productName" AS name, p."productImages"[1] AS image, a.views, a.added, COALESCE(b.orders, 0) AS orders
     FROM a
     JOIN products p ON p.id = a.product_id
     LEFT JOIN b ON b.product_id = a.product_id
@@ -252,6 +252,7 @@ export async function getProducts(ex: Db, r: Range, f: Filters, limit: number): 
   return rows.map((row) => ({
     productId: row.product_id,
     name: row.name,
+    image: row.image,
     views: num(row.views),
     addedToCart: num(row.added),
     orders: num(row.orders),

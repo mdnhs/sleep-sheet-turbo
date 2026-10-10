@@ -73,6 +73,7 @@ export interface Funnel {
 export interface ProductRow {
   productId: string;
   name: string;
+  image: string | null;
   views: number;
   addedToCart: number;
   orders: number;

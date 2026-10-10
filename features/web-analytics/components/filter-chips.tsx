@@ -1,8 +1,9 @@
 "use client";
 
 import { X } from "lucide-react";
-import { activeFilters, type Dimension, type Filters } from "../lib/dimensions";
+import { activeFilters, NONE, type Dimension, type Filters } from "../lib/dimensions";
 import { DIMENSION_LABELS, filterValueLabel } from "../lib/format";
+import { RowIcon } from "./row-icon";
 
 export function FilterChips({ filters, onRemove }: { filters: Filters; onRemove: (dim: Dimension) => void }) {
   const active = activeFilters(filters);
@@ -17,6 +18,7 @@ export function FilterChips({ filters, onRemove }: { filters: Filters; onRemove:
           className="flex items-center gap-1 rounded-full border bg-muted/40 px-3 py-1 text-xs"
         >
           <span className="text-muted-foreground">{DIMENSION_LABELS[dim]}:</span>
+          <RowIcon dim={dim} rowKey={value === NONE ? null : value} />
           <span className="font-medium">{filterValueLabel(dim, value)}</span>
           <X className="h-3 w-3" aria-label="Remove filter" />
         </button>
