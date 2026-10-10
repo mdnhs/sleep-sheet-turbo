@@ -12,6 +12,7 @@ import {
 } from "@/lib/checkout-idempotency";
 import { getCapturedFbc } from "@/lib/meta-fbc";
 import { getCapturedLandingSignals } from "@/lib/traffic-source";
+import { getAnalyticsIds } from "@/features/web-analytics/lib/collector";
 import { triggerHaptic } from "@/lib/haptics";
 
 interface useCheckoutProps {
@@ -32,6 +33,7 @@ export const UseCheckout = () => {
       shippingInfo,
     }: useCheckoutProps) => {
       const landing = getCapturedLandingSignals();
+      const analyticsIds = getAnalyticsIds();
       const payload = {
         shippingInfo,
         paymentInfo: {
@@ -58,6 +60,8 @@ export const UseCheckout = () => {
         utmMedium: landing?.utmMedium,
         utmCampaign: landing?.utmCampaign,
         landingReferrer: landing?.referrer,
+        analyticsVisitorId: analyticsIds?.visitorId,
+        analyticsSessionId: analyticsIds?.sessionId,
       };
 
       const response = await client.api.checkout.$post({ json: payload });

@@ -21,6 +21,8 @@ import { clientIpFromHeaders, isIpBlocked } from "@/lib/blocked-ip";
 import { isUniqueViolation } from "@/lib/db-errors";
 import { isBkashAvailable } from "@/lib/bkash";
 import { expireStaleBkashOrders, failBkashOrder, startBkashPayment } from "@/lib/bkash-orders";
+import { after } from "next/server";
+import { recordOrderEvent } from "@/features/web-analytics/server/record-order-event";
 
 // Mirrors features/checkout/schema.ts (client-side form validation) so the
 // server never trusts shippingInfo/paymentInfo/guestItems shape or content
@@ -60,6 +62,10 @@ const checkoutSchema = z.object({
   utmMedium: z.string().optional(),
   utmCampaign: z.string().optional(),
   landingReferrer: z.string().optional(),
+  // First-party analytics ids (features/web-analytics/lib/collector.ts), so
+  // the order can be tied to the visit and campaign that produced it.
+  analyticsVisitorId: z.string().trim().max(64).optional(),
+  analyticsSessionId: z.string().trim().max(64).optional(),
 });
 
 async function getShippingCost(zone: string): Promise<number> {
@@ -104,7 +110,7 @@ const app = new Hono()
 .post("/", rateLimit("checkout", 20, 5 * 60_000), sessionMiddleware, zValidator("json", checkoutSchema), async (c) => {
   const user = c.get("user");
 
-  const { shippingInfo, paymentInfo, guestItems, idempotencyKey: rawKey, fbc, gclid, utmSource, utmMedium, utmCampaign, landingReferrer } = c.req.valid("json");
+  const { shippingInfo, paymentInfo, guestItems, idempotencyKey: rawKey, fbc, gclid, utmSource, utmMedium, utmCampaign, landingReferrer, analyticsVisitorId, analyticsSessionId } = c.req.valid("json");
 
   // Fraud control: an IP blocked from the order menu (features/blocked-ips)
   // is refused here, before any order row is written. This is the actual
@@ -277,6 +283,20 @@ const app = new Hono()
 
       const createdOrder = order;
       invalidateStockCache(soldOutProductIds(stockResult));
+
+      // Ties this order to the visit that produced it. Runs after the
+      // response and never fails the checkout. bKash orders are recorded now
+      // too: an unpaid one ends up CANCELLED, which the dashboard excludes.
+      const analyticsHeaders = c.req.raw.headers;
+      after(() =>
+        recordOrderEvent({
+          orderId: order.id,
+          value: totalAmount,
+          visitorId: analyticsVisitorId,
+          sessionId: analyticsSessionId,
+          headers: analyticsHeaders,
+        }),
+      );
 
       // bKash: the order is only reserved. The customer pays on bKash's page
       // and the callback (features/bkash) confirms it, notifies n8n and
@@ -465,6 +485,18 @@ const app = new Hono()
 
     const guestOrderId = order.id;
     invalidateStockCache(soldOutProductIds(stockResult));
+
+    // See the logged-in branch.
+    const analyticsHeaders = c.req.raw.headers;
+    after(() =>
+      recordOrderEvent({
+        orderId: order.id,
+        value: totalAmount,
+        visitorId: analyticsVisitorId,
+        sessionId: analyticsSessionId,
+        headers: analyticsHeaders,
+      }),
+    );
 
     // See the logged-in branch: bKash orders wait for the payment callback.
     if (isBkash) {
