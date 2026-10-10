@@ -9,6 +9,7 @@ import { sessionMiddleware } from "@/lib/session-middleware";
 import { isAllowed } from "@/lib/permissions";
 import { rateLimit } from "@/lib/rate-limit";
 import { totalAfterSubtotalChange } from "@/lib/order-totals";
+import { sameOrderNumber, toOrderSummary } from "@/features/order/server/track-order";
 import { setActivityMeta, summarizeNames, titleCase, type ActivityChange } from "@/features/activity/server/log-activity";
 import {
   isPendingSql,
@@ -872,7 +873,7 @@ const app = new Hono()
 // idempotencyKey), the linked account, and the internal timeline never do.
 // rateLimit bounds how fast one IP can enumerate phone numbers against it.
 .get("/by-phone", rateLimit("orders-by-phone", 20, 5 * 60_000), async (c) => {
-  const { phone } = c.req.query();
+  const { phone, order: orderNumber } = c.req.query();
 
   if (!phone) {
     return c.json({ error: "Phone number is required" }, 400);
@@ -881,8 +882,10 @@ const app = new Hono()
   try {
     const ordersList = await db.query.orders.findMany({
       where: eq(orders.guestPhone, phone),
+      // No `id`: the order id is the capability for GET /:id, so it must
+      // never come back from a lookup keyed by something as guessable as a
+      // phone number.
       columns: {
-        id: true,
         orderNumber: true,
         status: true,
         paymentMethod: true,
@@ -898,10 +901,6 @@ const app = new Hono()
       },
       with: {
         items: {
-          // Trimmed to what the track-order page actually renders — no
-          // costPrice (staff-only), no full product row (description,
-          // tags, features, care instructions and variants; over-fetching
-          // flagged in the 2026-09-21 audit).
           columns: { id: true, quantity: true, price: true, size: true, color: true },
           with: {
             product: {
@@ -913,10 +912,19 @@ const app = new Hono()
       orderBy: (fields, { desc }) => [desc(fields.createdAt)],
     });
 
+    // Phone alone: a summary of each order (what and where it stands).
+    if (!orderNumber) {
+      return c.json({ verified: false, orders: ordersList.map(toOrderSummary) });
+    }
+
+    // Phone + order number: that one order in full, as the invoice needs it.
     // Customers see the delivery charge they paid, never the admin's courier cost.
-    return c.json({
-      orders: ordersList.map(({ deliveryCharge, ...o }) => ({ ...o, shippingCost: deliveryCharge })),
-    });
+    const match = ordersList.find((o) => sameOrderNumber(o.orderNumber, orderNumber));
+    if (!match) {
+      return c.json({ verified: false, orders: [] });
+    }
+    const { deliveryCharge, ...rest } = match;
+    return c.json({ verified: true, orders: [{ ...rest, shippingCost: deliveryCharge }] });
   } catch (error) {
     console.error("Failed to fetch orders by phone:", error);
     return c.json({ error: "Failed to fetch orders" }, 500);

@@ -18,18 +18,20 @@ interface OrderItem {
   price: number;
   size?: string | null;
   color?: string | null;
-  product: { id: string; name: string; images: string[] };
+  product: { id?: string; name: string; images: string[] } | null;
 }
 
+// A phone number alone returns a summary (no order number, name, address,
+// note or tracking). Phone + order number returns the full order, so those
+// fields are optional and present only when the lookup is `verified`.
 interface Order {
-  id: string;
-  orderNumber: string;
+  orderNumber?: string;
   status: string;
   paymentMethod: string;
   totalAmount: number;
-  subtotal: number;
-  shippingCost: number;
-  shippingAddress: string;
+  subtotal?: number;
+  shippingCost?: number;
+  shippingAddress?: string;
   guestPhone?: string | null;
   createdAt: string;
   guestName?: string | null;
@@ -59,9 +61,12 @@ function TrackOrderContent({ initialOrders, initialPhone }: TrackOrderContentPro
   const searchParams = useSearchParams();
   const router = useRouter();
   const phoneParam = searchParams.get("phone") || initialPhone || "";
+  const orderParam = searchParams.get("order") || "";
   const { t, language } = useLanguage();
 
   const [phone, setPhone] = useState(phoneParam);
+  const [orderNo, setOrderNo] = useState(orderParam);
+  const [verified, setVerified] = useState(false);
   const [orders, setOrders] = useState<Order[]>(initialOrders || []);
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(Boolean(initialOrders && initialOrders.length > 0));
@@ -71,7 +76,7 @@ function TrackOrderContent({ initialOrders, initialPhone }: TrackOrderContentPro
   const { formatAmount } = useCurrency();
   const { siteName, logoUrl, footerPhone } = useWebsiteSettings();
 
-  const performSearch = async (phoneNumber: string) => {
+  const performSearch = async (phoneNumber: string, orderNumber: string) => {
     if (!phoneNumber.trim()) return;
     setLoading(true);
     setError("");
@@ -79,18 +84,23 @@ function TrackOrderContent({ initialOrders, initialPhone }: TrackOrderContentPro
     setCurrentPage(1);
 
     try {
-      const res = await fetch(`/api/orders/by-phone?phone=${encodeURIComponent(phoneNumber.trim())}`);
+      const query = new URLSearchParams({ phone: phoneNumber.trim() });
+      if (orderNumber.trim()) query.set("order", orderNumber.trim());
+      const res = await fetch(`/api/orders/by-phone?${query}`);
       const data = await res.json();
 
       if (!res.ok) {
         setError(data.error || t("errorFetchOrders"));
         setOrders([]);
+        setVerified(false);
       } else {
         setOrders(data.orders || []);
+        setVerified(Boolean(data.verified));
       }
     } catch {
       setError(t("errorSomethingWentWrong"));
       setOrders([]);
+      setVerified(false);
     } finally {
       setLoading(false);
       setSearched(true);
@@ -99,19 +109,24 @@ function TrackOrderContent({ initialOrders, initialPhone }: TrackOrderContentPro
 
   useEffect(() => {
     if (phoneParam && (!initialOrders || initialOrders.length === 0)) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- syncing the editable phone input from the URL param this effect already has to run for (performSearch is a required side effect, not derivable during render).
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- syncing the editable inputs from the URL params this effect already has to run for (performSearch is a required side effect, not derivable during render).
       setPhone(phoneParam);
-      performSearch(phoneParam);
+      setOrderNo(orderParam);
+      performSearch(phoneParam, orderParam);
     }
-  }, [phoneParam]);
+  }, [phoneParam, orderParam]);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!phone.trim()) return;
-    router.push(`/track-order?phone=${encodeURIComponent(phone.trim())}`);
+    const query = new URLSearchParams({ phone: phone.trim() });
+    if (orderNo.trim()) query.set("order", orderNo.trim());
+    router.push(`/track-order?${query}`);
   };
 
   const handleDownloadInvoice = async (order: Order) => {
+    // Only a verified (phone + order number) lookup carries what the invoice needs.
+    if (!order.orderNumber || order.shippingAddress == null || order.subtotal == null || order.shippingCost == null) return;
     try {
       // Load the PDF renderer on demand — it is far too heavy to ship in the
       // page bundle for a click-only feature.
@@ -120,13 +135,13 @@ function TrackOrderContent({ initialOrders, initialPhone }: TrackOrderContentPro
         import("@/features/checkout/components/invoice-pdf"),
       ]);
       const items = order.items.map((item) => ({
-        id: item.product.id,
-        name: item.product.name,
+        id: item.product?.id ?? item.id,
+        name: item.product?.name ?? "",
         quantity: item.quantity,
         price: item.price,
         size: item.size || undefined,
         color: item.color || undefined,
-        image: item.product.images?.[0] || undefined,
+        image: item.product?.images?.[0] || undefined,
       }));
       const placedOrderData = {
         orderNumber: order.orderNumber,
@@ -205,6 +220,15 @@ function TrackOrderContent({ initialOrders, initialPhone }: TrackOrderContentPro
               />
               <Phone className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground/60" />
             </div>
+            <div className="relative sm:w-48">
+              <Input
+                type="text"
+                placeholder={t("orderNumberOptional")}
+                value={orderNo}
+                onChange={(e) => setOrderNo(e.target.value)}
+                className="h-14 bg-background/50 backdrop-blur-sm border-border/50 rounded-2xl px-5 text-base focus-visible:ring-2 focus-visible:ring-primary/50 shadow-inner"
+              />
+            </div>
             <Button type="submit" disabled={loading} className="h-14 px-8 rounded-2xl font-bold text-base bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary/80 text-primary-foreground shadow-lg shadow-primary/25 transition-all">
               {loading ? (
                 <div className="flex items-center gap-2">
@@ -234,18 +258,20 @@ function TrackOrderContent({ initialOrders, initialPhone }: TrackOrderContentPro
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {orders.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((order) => {
+        {orders.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((order, index) => {
           const statusInfo = STATUS_LABELS[order.status] || { labelKey: undefined, color: "" };
           return (
-            <Card key={order.id} className="bg-card rounded-3xl p-5 sm:p-7 hover:-translate-y-1 transition-all duration-300 ring-0">
+            <Card key={order.orderNumber ?? `${order.createdAt}-${index}`} className="bg-card rounded-3xl p-5 sm:p-7 hover:-translate-y-1 transition-all duration-300 ring-0">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/40 pb-4 mb-4">
                 <div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
-                      {t("orderNumberLabel2")}
-                    </span>
-                    <span className="text-sm font-black text-foreground">{order.orderNumber}</span>
-                  </div>
+                  {order.orderNumber && (
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
+                        {t("orderNumberLabel2")}
+                      </span>
+                      <span className="text-sm font-black text-foreground">{order.orderNumber}</span>
+                    </div>
+                  )}
                   <div className="flex items-center gap-1.5 mt-1 text-xs text-muted-foreground">
                     <Calendar className="h-3.5 w-3.5" />
                     <span>
@@ -271,7 +297,7 @@ function TrackOrderContent({ initialOrders, initialPhone }: TrackOrderContentPro
                 {order.items.map((item) => (
                   <div key={item.id} className="flex justify-between items-center text-sm gap-4">
                     <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-foreground truncate">{item.product.name}</p>
+                      <p className="font-semibold text-foreground truncate">{item.product?.name}</p>
                       <div className="flex items-center gap-1.5 mt-0.5 text-xs text-muted-foreground font-medium">
                         <span>{t("qty")}: {item.quantity}</span>
                         {item.size && (
@@ -300,15 +326,19 @@ function TrackOrderContent({ initialOrders, initialPhone }: TrackOrderContentPro
                   </span>
                   <span className="text-lg font-black text-foreground tracking-tight">{formatAmount(order.totalAmount)}</span>
                 </div>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={() => handleDownloadInvoice(order)}
-                  className="rounded-full bg-primary/5 hover:bg-primary/10 border-primary/20 text-primary"
-                >
-                  <Download className="h-3.5 w-3.5 mr-2" />
-                  {t("downloadInvoice")}
-                </Button>
+                {verified ? (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleDownloadInvoice(order)}
+                    className="rounded-full bg-primary/5 hover:bg-primary/10 border-primary/20 text-primary"
+                  >
+                    <Download className="h-3.5 w-3.5 mr-2" />
+                    {t("downloadInvoice")}
+                  </Button>
+                ) : (
+                  <p className="text-xs text-muted-foreground max-w-[14rem]">{t("enterOrderNumberForDetails")}</p>
+                )}
               </div>
             </Card>
           );

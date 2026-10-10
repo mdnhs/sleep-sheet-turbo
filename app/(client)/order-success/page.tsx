@@ -296,7 +296,7 @@ function OrderSuccessContent() {
           )}
 
           <div className="flex flex-col sm:flex-row gap-3 w-full mb-6">
-            <Link href={`/track-order?phone=${encodeURIComponent(order.guestPhone || phone || "")}`} className="flex-1">
+            <Link href={`/track-order?phone=${encodeURIComponent(order.guestPhone || phone || "")}&order=${encodeURIComponent(order.orderNumber)}`} className="flex-1">
               <Button variant="outline" className="w-full h-11 rounded-full font-bold text-sm border-border/60 hover:bg-muted/40">
                 {t("trackMyOrder")}
               </Button>
