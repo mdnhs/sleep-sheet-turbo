@@ -34,7 +34,7 @@ import webAnalytics from "@/features/web-analytics/server/route";
 import { logActivity } from "@/features/activity/server/log-activity";
 import { cors } from "hono/cors";
 import { HTTPException } from "hono/http-exception";
-import { notifyServerError } from "@/lib/error-alert";
+import { alertKey, notifyServerError, sanitizeAlertMessage } from "@/lib/error-alert";
 
 // Browser requests here carry the session cookie, so allowing every origin
 // (the previous `cors()` default) let any site read cookie-authenticated
@@ -54,9 +54,22 @@ const app = new Hono().basePath("/api");
 // client hooks can read. The error message never reaches the caller.
 app.onError((err, c) => {
   if (err instanceof HTTPException) return err.getResponse();
-  const path = c.req.routePath || new URL(c.req.url).pathname;
+  // A wildcard route path ("/api/*", from the middleware) says nothing about
+  // which endpoint failed, so fall back to the real URL path.
+  const routePath = c.req.routePath;
+  const path = routePath && !routePath.endsWith("*") ? routePath : new URL(c.req.url).pathname;
   console.error(`[api] ${c.req.method} ${path}`, err);
-  notifyServerError({ method: c.req.method, path, message: String(err.message ?? err).slice(0, 300) });
+  // The alert is best effort: a failure here must never replace the JSON 500.
+  try {
+    notifyServerError({
+      method: c.req.method,
+      path,
+      message: sanitizeAlertMessage(err),
+      key: alertKey(c.req.method, path, err),
+    });
+  } catch (alertError) {
+    console.error("[api] error alert failed:", alertError);
+  }
   return c.json({ error: "Internal server error" }, 500);
 });
 app.use(
