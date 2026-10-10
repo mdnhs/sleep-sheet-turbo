@@ -1,11 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { can, isAllowed } from "./permissions";
-
-// Mirrors canViewAnalytics in features/analytics/server/route.ts. Kept here
-// because the route module pulls in the db client, and the decision under
-// test is pure.
-const canViewAnalytics = (user: Parameters<typeof can>[0]) =>
-  isAllowed(user, "dashboard", "read", ["MODERATOR"]) || can(user, "reports", "read");
+import { canViewAnalytics } from "./analytics-access";
 
 // The two roles that actually exist in this store, copied verbatim from the
 // roles table. If either changes shape, this test should be the thing that

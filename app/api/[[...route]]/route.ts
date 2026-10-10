@@ -30,6 +30,7 @@ import googleSheets from "@/features/google-sheets/server/route";
 import fraudChecker from "@/features/fraud-checker/server/route";
 import audiences from "@/features/audiences/server/route";
 import webAnalyticsCollect from "@/features/web-analytics/server/collect";
+import webAnalytics from "@/features/web-analytics/server/route";
 import { logActivity } from "@/features/activity/server/log-activity";
 import { cors } from "hono/cors";
 
@@ -85,6 +86,7 @@ const routes =app
 .route("/fraud-check",fraudChecker)
 .route("/audiences",audiences)
 .route("/t", webAnalyticsCollect)
+.route("/web-analytics",webAnalytics)
 
 export const GET = handle(app)
 export const POST = handle(app)
