@@ -17,7 +17,7 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 ARG DEPLOYMENT_VERSION
 ENV DEPLOYMENT_VERSION=$DEPLOYMENT_VERSION
-ARG NEXT_PUBLIC_APP_URL=https://stage.sleepsheetbd.com
+ARG NEXT_PUBLIC_APP_URL=https://sleepsheetbd.com
 ENV NEXT_PUBLIC_APP_URL=$NEXT_PUBLIC_APP_URL
 ENV SKIP_BUILD_TYPECHECK=1
 RUN pnpm build
