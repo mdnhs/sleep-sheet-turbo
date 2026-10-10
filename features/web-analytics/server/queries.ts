@@ -1,8 +1,8 @@
 import { sql } from "drizzle-orm";
 import type { db, Transaction } from "@/db";
 import { ANALYTICS_TZ, type BucketUnit } from "../lib/buckets";
-import type { Filters } from "../lib/dimensions";
-import type { Kpis, SeriesPoint } from "../lib/types";
+import { DIMENSIONS, type Dimension, type Filters } from "../lib/dimensions";
+import type { BreakdownRow, Funnel, Kpis, LiveSnapshot, ProductRow, SeriesPoint } from "../lib/types";
 import { filterSql, inRange, ORDER_AMOUNT, qualifyingSessions, VALID_ORDER, type Range } from "./filters";
 
 /** The app's db, or a transaction (the DB tests run every query inside one and roll it back). */
@@ -142,4 +142,141 @@ export async function getSeries(ex: Db, r: Range, f: Filters, unit: BucketUnit):
     orders: num(row.orders),
     revenue: num(row.revenue),
   }));
+}
+
+export async function getBreakdown(
+  ex: Db,
+  r: Range,
+  f: Filters,
+  dim: Dimension,
+  limit: number,
+): Promise<BreakdownRow[]> {
+  const column = sql.identifier(DIMENSIONS[dim]);
+  // Order events carry the session's landing attributes, so grouping them by
+  // the same column attributes each order to its referrer / campaign.
+  const { rows } = await ex.execute<{ key: string | null; visitors: string; orders: string; revenue: string | null }>(sql`
+    WITH q AS (${qualifyingSessions(r, f)}),
+    v AS (
+      SELECT ${column} AS key, count(DISTINCT visitor_id) AS visitors
+      FROM analytics_events
+      WHERE type = 'page_view' AND ${inRange(r)} ${filterSql(f)}
+      GROUP BY 1
+    ),
+    o AS (
+      SELECT key, count(*) AS orders, sum(amount) AS revenue
+      FROM (
+        SELECT DISTINCT ON (ord.id) e.${column} AS key, ${ORDER_AMOUNT} AS amount
+        FROM analytics_events e JOIN orders ord ON ord.id = e.order_id
+        WHERE e.type = 'order_complete' AND ${inRange(r, sql`e.ts`)}
+          AND e.session_id IN (SELECT session_id FROM q) AND ${VALID_ORDER}
+        ORDER BY ord.id, e.ts
+      ) per_order
+      GROUP BY 1
+    )
+    SELECT v.key, v.visitors, COALESCE(o.orders, 0) AS orders, COALESCE(o.revenue, 0) AS revenue
+    FROM v LEFT JOIN o ON o.key IS NOT DISTINCT FROM v.key
+    ORDER BY v.visitors DESC, v.key ASC NULLS LAST
+    LIMIT ${limit}
+  `);
+  return rows.map((row) => ({
+    key: row.key,
+    visitors: num(row.visitors),
+    orders: num(row.orders),
+    revenue: num(row.revenue),
+  }));
+}
+
+export async function getFunnel(ex: Db, r: Range, f: Filters): Promise<Funnel> {
+  const { rows } = await ex.execute<{
+    visited: string;
+    viewed_product: string;
+    added_to_cart: string;
+    started_checkout: string;
+    ordered: string;
+  }>(sql`
+    WITH q AS (${qualifyingSessions(r, f)}),
+    ev AS (
+      SELECT e.session_id, e.type, e.order_id FROM analytics_events e
+      WHERE ${inRange(r, sql`e.ts`)} AND e.session_id IN (SELECT session_id FROM q)
+    )
+    SELECT
+      count(DISTINCT session_id) FILTER (WHERE type = 'page_view') AS visited,
+      count(DISTINCT session_id) FILTER (WHERE type = 'product_view') AS viewed_product,
+      count(DISTINCT session_id) FILTER (WHERE type IN ('add_to_cart', 'buy_now')) AS added_to_cart,
+      count(DISTINCT session_id) FILTER (WHERE type = 'checkout_start') AS started_checkout,
+      (
+        SELECT count(DISTINCT ev.session_id) FROM ev JOIN orders ord ON ord.id = ev.order_id
+        WHERE ev.type = 'order_complete' AND ${VALID_ORDER}
+      ) AS ordered
+    FROM ev
+  `);
+  const row = rows[0];
+  return {
+    visited: num(row?.visited),
+    viewedProduct: num(row?.viewed_product),
+    addedToCart: num(row?.added_to_cart),
+    startedCheckout: num(row?.started_checkout),
+    ordered: num(row?.ordered),
+  };
+}
+
+export async function getProducts(ex: Db, r: Range, f: Filters, limit: number): Promise<ProductRow[]> {
+  const { rows } = await ex.execute<{ product_id: string; name: string; views: string; added: string; orders: string }>(sql`
+    WITH q AS (${qualifyingSessions(r, f)}),
+    a AS (
+      SELECT product_id,
+        count(DISTINCT session_id) FILTER (WHERE type = 'product_view') AS views,
+        count(DISTINCT session_id) FILTER (WHERE type IN ('add_to_cart', 'buy_now')) AS added
+      FROM analytics_events
+      WHERE ${inRange(r)} AND product_id IS NOT NULL
+        AND type IN ('product_view', 'add_to_cart', 'buy_now')
+        AND session_id IN (SELECT session_id FROM q)
+      GROUP BY product_id
+    ),
+    b AS (
+      SELECT oi."productId" AS product_id, count(DISTINCT ord.id) AS orders
+      FROM analytics_events e
+      JOIN orders ord ON ord.id = e.order_id
+      JOIN order_items oi ON oi."orderId" = ord.id
+      WHERE e.type = 'order_complete' AND ${inRange(r, sql`e.ts`)}
+        AND e.session_id IN (SELECT session_id FROM q) AND ${VALID_ORDER}
+      GROUP BY 1
+    )
+    SELECT a.product_id, p."productName" AS name, a.views, a.added, COALESCE(b.orders, 0) AS orders
+    FROM a
+    JOIN products p ON p.id = a.product_id
+    LEFT JOIN b ON b.product_id = a.product_id
+    ORDER BY a.views DESC, a.added DESC
+    LIMIT ${limit}
+  `);
+  return rows.map((row) => ({
+    productId: row.product_id,
+    name: row.name,
+    views: num(row.views),
+    addedToCart: num(row.added),
+    orders: num(row.orders),
+  }));
+}
+
+/** Visitors with any event in the last 5 minutes, and the page each last viewed. */
+export async function getLive(ex: Db): Promise<LiveSnapshot> {
+  const online = await ex.execute<{ online: string }>(sql`
+    SELECT count(DISTINCT visitor_id) AS online FROM analytics_events
+    WHERE ts > now() - interval '5 minutes'
+  `);
+  const pages = await ex.execute<{ path: string; visitors: string }>(sql`
+    SELECT path, count(*) AS visitors
+    FROM (
+      SELECT DISTINCT ON (visitor_id) visitor_id, path FROM analytics_events
+      WHERE type = 'page_view' AND ts > now() - interval '5 minutes'
+      ORDER BY visitor_id, ts DESC
+    ) latest
+    GROUP BY path
+    ORDER BY visitors DESC, path ASC
+    LIMIT 10
+  `);
+  return {
+    online: num(online.rows[0]?.online),
+    pages: pages.rows.map((row) => ({ path: row.path, visitors: num(row.visitors) })),
+  };
 }

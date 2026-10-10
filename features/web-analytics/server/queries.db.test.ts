@@ -4,7 +4,7 @@ import { analyticsEvents, orderItems, orders, products } from "@/db/schema";
 import { toRoute } from "../lib/route-pattern";
 import type { AnalyticsEventType } from "../lib/types";
 import { NONE } from "../lib/dimensions";
-import { getKpis, getSeries } from "./queries";
+import { getBreakdown, getFunnel, getKpis, getLive, getProducts, getSeries } from "./queries";
 import type { NewAnalyticsEvent } from "./store";
 
 // Runs against the local Docker Postgres:
@@ -204,6 +204,80 @@ describe.skipIf(!RUN)("web analytics queries (database)", () => {
         ["2001-02-01T00:00:00", 1],
         ["2001-03-01T00:00:00", 1],
       ]);
+    });
+  });
+
+  it("breaks visitors, orders and revenue down by referrer", async () => {
+    await withRollback(async (tx) => {
+      await seedScenario(tx);
+      expect(await getBreakdown(tx, DAY_RANGE, {}, "referrer", 10)).toEqual([
+        { key: "youtube.com", visitors: 1, orders: 1, revenue: 800 },
+        { key: null, visitors: 1, orders: 0, revenue: 0 },
+      ]);
+    });
+  });
+
+  it("breaks visitors down by page", async () => {
+    await withRollback(async (tx) => {
+      await seedScenario(tx);
+      const rows = await getBreakdown(tx, DAY_RANGE, {}, "path", 10);
+      expect(rows.map((r) => [r.key, r.visitors])).toEqual([
+        ["/", 2],
+        ["/shop/a", 1],
+      ]);
+    });
+  });
+
+  it("builds the funnel, leaving out the cancelled order", async () => {
+    await withRollback(async (tx) => {
+      await seedScenario(tx);
+      expect(await getFunnel(tx, DAY_RANGE, {})).toEqual({
+        visited: 3,
+        viewedProduct: 1,
+        addedToCart: 1,
+        startedCheckout: 1,
+        ordered: 1,
+      });
+      expect(await getFunnel(tx, DAY_RANGE, { referrer: NONE })).toEqual({
+        visited: 1,
+        viewedProduct: 0,
+        addedToCart: 0,
+        startedCheckout: 0,
+        ordered: 0,
+      });
+    });
+  });
+
+  it("lists products with views, carts and orders", async () => {
+    await withRollback(async (tx) => {
+      const { productId } = await seedScenario(tx);
+      const rows = await getProducts(tx, DAY_RANGE, {}, 20);
+      expect(rows).toHaveLength(1);
+      expect(rows[0]).toMatchObject({ productId, views: 1, addedToCart: 1, orders: 1 });
+      expect(typeof rows[0].name).toBe("string");
+    });
+  });
+
+  it("reports who is online and the page each visitor is on now", async () => {
+    await withRollback(async (tx) => {
+      const before = await getLive(tx);
+      const now = Date.now();
+      await tx.insert(analyticsEvents).values([
+        ev({ type: "page_view", session: "wa-l1", visitor: "wa-live-1", at: new Date(now).toISOString(), path: "/wa-live-a" }),
+        ev({ type: "page_view", session: "wa-l2", visitor: "wa-live-2", at: new Date(now - 60_000).toISOString(), path: "/wa-live-c" }),
+        ev({ type: "page_view", session: "wa-l2", visitor: "wa-live-2", at: new Date(now).toISOString(), path: "/wa-live-b" }),
+        ev({ type: "page_view", session: "wa-l3", visitor: "wa-live-3", at: new Date(now - 10 * 60_000).toISOString(), path: "/wa-live-old" }),
+      ]);
+      const live = await getLive(tx);
+      expect(live.online - before.online).toBe(2);
+      expect(live.pages).toEqual(
+        expect.arrayContaining([
+          { path: "/wa-live-a", visitors: 1 },
+          { path: "/wa-live-b", visitors: 1 },
+        ]),
+      );
+      expect(live.pages.map((p) => p.path)).not.toContain("/wa-live-c");
+      expect(live.pages.map((p) => p.path)).not.toContain("/wa-live-old");
     });
   });
 });
