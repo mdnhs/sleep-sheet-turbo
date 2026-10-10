@@ -219,7 +219,7 @@ export function PosFacebookPages() {
       {/* Add New Page Input */}
       <div className="flex gap-2">
         <Input
-          placeholder="e.g. Sleep Sheet Official, Sleep Sheet Outlet"
+          placeholder="e.g. Main Page, Outlet Page"
           value={newName}
           onChange={(e) => setNewName(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && add()}

@@ -7,13 +7,14 @@ import { replaceProductsSheet, type ProductSheetRow } from "@/lib/google-sheets-
 import { db } from "@/db";
 import { orders, products, categories } from "@/db/schema";
 import { eq, inArray } from "drizzle-orm";
+import { getSetting } from "@/lib/settings/read";
 import { isAllowed } from "@/lib/permissions";
 import { setActivityMeta, summarizeNames } from "@/features/activity/server/log-activity";
 
-function formatOrderChannel(saleType?: string | null, reference?: string | null): string {
+function formatOrderChannel(saleType: string | null | undefined, reference: string | null | undefined, storeName: string): string {
   if (saleType === "POS") {
     const ref = reference?.trim();
-    if (!ref) return "Sleep Sheet (POS)";
+    if (!ref) return `${storeName} (POS)`;
     if (ref.toLowerCase().endsWith("(pos)")) return ref;
     return `${ref} (POS)`;
   }
@@ -21,7 +22,8 @@ function formatOrderChannel(saleType?: string | null, reference?: string | null)
 }
 
 function toSheetRow(
-  order: NonNullable<Awaited<ReturnType<typeof loadOrderForSheet>>>
+  order: NonNullable<Awaited<ReturnType<typeof loadOrderForSheet>>>,
+  storeName: string,
 ): SheetOrderRow {
   const address = [
     order.shippingAddress,
@@ -49,7 +51,7 @@ function toSheetRow(
     totalAmount: order.totalAmount,
     boughtCost,
     shippingCost: order.shippingCost != null ? Number(order.shippingCost) : 200,
-    channel: formatOrderChannel(order.saleType, order.reference),
+    channel: formatOrderChannel(order.saleType, order.reference, storeName),
   };
 }
 
@@ -80,7 +82,8 @@ const app = new Hono()
       if (!order) return c.json({ error: "Order not found" }, 404);
 
       try {
-        await appendOrdersToSheet([toSheetRow(order)]);
+        const storeName = await getSetting("site_name");
+        await appendOrdersToSheet([toSheetRow(order, storeName)]);
         await db.update(orders)
           .set({ sheetBookedAt: new Date() })
           .where(eq(orders.id, orderId));
@@ -120,7 +123,8 @@ const app = new Hono()
       }
 
       try {
-        await appendOrdersToSheet(targetOrders.map(toSheetRow));
+        const storeName = await getSetting("site_name");
+        await appendOrdersToSheet(targetOrders.map((o) => toSheetRow(o, storeName)));
         await db.update(orders)
           .set({ sheetBookedAt: new Date() })
           .where(inArray(orders.id, targetOrders.map((o) => o.id)));

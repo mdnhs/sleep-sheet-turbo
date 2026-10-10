@@ -8,6 +8,7 @@ import { ChevronDown, ChevronUp, Heart, Share2, Volume2, VolumeX, X, Zap } from 
 import { toast } from "sonner";
 import { useCurrency } from "@/hooks/use-currency";
 import { useLanguage } from "@/hooks/use-language";
+import { useWebsiteSettings } from "@/hooks/use-website-settings";
 import { floorToNearest50 } from "@/lib/utils";
 import {
   productVideoPoster,
@@ -86,6 +87,7 @@ export default function ReelsViewer({
   onActiveChange,
   manageHistory = true,
 }: ReelsViewerProps) {
+  const { siteName } = useWebsiteSettings();
   const { formatAmount } = useCurrency();
   const { t } = useLanguage();
   // Frozen at mount: the host may move its own index along as the visitor
@@ -504,7 +506,7 @@ export default function ReelsViewer({
                         <span className="relative block h-[43px] w-[43px] overflow-hidden rounded-full bg-[#F9E8E9]">
                           <Image
                             src="/sleep-sheet-logo.jpg"
-                            alt="Sleep Sheet"
+                            alt={siteName}
                             fill
                             sizes="48px"
                             className="origin-[48%_48%] scale-[1.5] object-cover"

@@ -129,6 +129,7 @@ function ClientLayout({ children }: ClientLayoutProps) {
   // for a first-time visitor.
   const [cookieBannerVisible, setCookieBannerVisible] = useState(false);
   const {
+    siteName,
     footerBrandDesc,
     footerEmail,
     footerPhone,
@@ -199,6 +200,7 @@ function ClientLayout({ children }: ClientLayoutProps) {
           </>
         )}
         <Footer
+          siteName={siteName}
           footerBrandDesc={footerBrandDesc}
           footerEmail={footerEmail}
           footerPhone={footerPhone}

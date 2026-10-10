@@ -35,7 +35,7 @@ export function SocialManagerForm() {
         <h2 className="text-base font-bold tracking-tight">Postiz URL</h2>
         <p className="text-xs text-muted-foreground mt-0.5">
           The address where your social scheduler is hosted, for example{" "}
-          <code className="rounded bg-muted px-1 py-0.5">https://social.sleepsheetbd.com</code>. Leave empty until it
+          <code className="rounded bg-muted px-1 py-0.5">https://social.example.com</code>. Leave empty until it
           is set up — the sidebar then shows this page instead.
         </p>
       </div>

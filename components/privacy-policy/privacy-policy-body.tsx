@@ -2,10 +2,12 @@
 
 import Link from "next/link";
 import { useLanguage } from "@/hooks/use-language";
+import { useStoreProfile } from "@/hooks/use-store-profile";
 import { seoConfig } from "@/lib/seo";
 
 export default function PrivacyPolicyBody() {
   const { language, t } = useLanguage();
+  const store = useStoreProfile();
 
   return (
     <div className="max-w-3xl mx-auto">
@@ -28,7 +30,7 @@ export default function PrivacyPolicyBody() {
         <div className="prose prose-lg dark:prose-invert max-w-none">
           <p>
             এই প্রাইভেসি পলিসিতে ব্যাখ্যা করা হয়েছে যে আপনি {seoConfig.siteUrl.replace(/^https?:\/\//, "")}
-            {" "}ভিজিট বা শপিং করার সময় {seoConfig.siteName} কী ধরনের ব্যক্তিগত তথ্য সংগ্রহ করে, কীভাবে তা
+            {" "}ভিজিট বা শপিং করার সময় {store.name} কী ধরনের ব্যক্তিগত তথ্য সংগ্রহ করে, কীভাবে তা
             ব্যবহার করে, এবং এ ব্যাপারে আপনার কী কী পছন্দ আছে।
           </p>
 
@@ -100,7 +102,7 @@ export default function PrivacyPolicyBody() {
             <li>ধারা ৩-এ উল্লেখিত অ্যাড অ্যাট্রিবিউশন ও পরিমাপের জন্য Meta Platforms, Inc.-এর সাথে।</li>
             <li>পণ্য ও কনটেন্ট ছবির জন্য আমাদের ইমেজ হোস্টিং প্রোভাইডার Cloudinary-এর সাথে।</li>
             <li>
-              আইন অনুযায়ী প্রয়োজন হলে, অথবা {seoConfig.siteName} ও আমাদের গ্রাহকদের অধিকার, নিরাপত্তা ও
+              আইন অনুযায়ী প্রয়োজন হলে, অথবা {store.name} ও আমাদের গ্রাহকদের অধিকার, নিরাপত্তা ও
               সম্পত্তি রক্ষার জন্য।
             </li>
           </ul>
@@ -143,15 +145,15 @@ export default function PrivacyPolicyBody() {
           <h2>১০. যোগাযোগ করুন</h2>
           <p>
             এই প্রাইভেসি পলিসি বা আপনার ব্যক্তিগত তথ্য নিয়ে প্রশ্ন আছে? আমাদের সাথে যোগাযোগ করুন{" "}
-            <a href={`mailto:${seoConfig.contact.email}`}>{seoConfig.contact.email}</a> অথবা{" "}
-            <a href={`tel:${seoConfig.contact.telephone}`}>{seoConfig.contact.telephone}</a> নম্বরে, অথবা
-            লিখুন {seoConfig.address.streetAddress}, {seoConfig.address.addressLocality}, বাংলাদেশ ঠিকানায়।
+            <a href={`mailto:${store.email}`}>{store.email}</a> অথবা{" "}
+            <a href={`tel:${store.phone}`}>{store.phone}</a> নম্বরে, অথবা
+            লিখুন {store.address}, {store.city}, বাংলাদেশ ঠিকানায়।
           </p>
         </div>
       ) : (
         <div className="prose prose-lg dark:prose-invert max-w-none">
           <p>
-            This Privacy Policy explains what personal information {seoConfig.siteName} collects when
+            This Privacy Policy explains what personal information {store.name} collects when
             you visit or shop at {seoConfig.siteUrl.replace(/^https?:\/\//, "")}, how we use it, and
             the choices you have.
           </p>
@@ -226,7 +228,7 @@ export default function PrivacyPolicyBody() {
               With Meta Platforms, Inc., for ad attribution and measurement as described in Section 3.
             </li>
             <li>With Cloudinary, our image hosting provider, for product and content images.</li>
-            <li>When required by law, or to protect the rights, safety, and property of {seoConfig.siteName} and our customers.</li>
+            <li>When required by law, or to protect the rights, safety, and property of {store.name} and our customers.</li>
           </ul>
 
           <h2>5. Data Retention</h2>
@@ -266,9 +268,9 @@ export default function PrivacyPolicyBody() {
           <h2>10. Contact Us</h2>
           <p>
             Questions about this Privacy Policy or your personal information? Contact us at{" "}
-            <a href={`mailto:${seoConfig.contact.email}`}>{seoConfig.contact.email}</a> or{" "}
-            <a href={`tel:${seoConfig.contact.telephone}`}>{seoConfig.contact.telephone}</a>, or write
-            to us at {seoConfig.address.streetAddress}, {seoConfig.address.addressLocality},
+            <a href={`mailto:${store.email}`}>{store.email}</a> or{" "}
+            <a href={`tel:${store.phone}`}>{store.phone}</a>, or write
+            to us at {store.address}, {store.city},
             Bangladesh.
           </p>
         </div>

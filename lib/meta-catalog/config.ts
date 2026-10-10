@@ -1,11 +1,12 @@
 import { seoConfig } from "@/lib/seo/config"
+import { STORE_DEFAULTS } from "@/lib/settings/defaults"
 
 export const MetaCatalogConfig = {
   feedUrl: "/facebook-feed",
   currency: "BDT",
   country: "BD",
   language: "en",
-  brandFallback: "Sleep Sheet",
+  brandFallback: STORE_DEFAULTS.name,
   cacheDuration: 300,
   titleMaxLength: 150,
   descriptionMaxLength: 5000,

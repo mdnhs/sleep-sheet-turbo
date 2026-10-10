@@ -7,6 +7,7 @@ import BrandedVideoPlayer from "@/components/product/branded-video-player";
 import OptimizedImage from "@/components/ui/optimized-image";
 import { autoplayAllowed, productVideoPoster, productVideoUrl } from "@/lib/product-video";
 import { afterLoadIdle } from "@/lib/after-load-idle";
+import { useWebsiteSettings } from "@/hooks/use-website-settings";
 
 // The lightbox library (plus 6 plugins and their CSS) is only needed once the
 // user taps the image, so it is loaded on demand instead of shipping in the
@@ -20,6 +21,7 @@ interface SwitchImageProps {
 }
 
 function SwitchImage({ product }: SwitchImageProps) {
+  const { siteName } = useWebsiteSettings();
   const [selectedImage, setSelectedImage] = useState(0);
   // The optional product video is the first gallery slide: it is what the
   // page opens on, with the photos after it.
@@ -131,7 +133,7 @@ function SwitchImage({ product }: SwitchImageProps) {
           width={1200}
           alt={
             selectedImage === 0
-              ? `${product.name} – Sleep Sheet Bangladesh`
+              ? `${product.name} – ${siteName} Bangladesh`
               : `${product.name} – photo ${selectedImage + 1} of ${product.images.length}`
           }
           fill

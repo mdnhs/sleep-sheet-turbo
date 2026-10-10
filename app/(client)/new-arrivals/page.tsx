@@ -58,7 +58,7 @@ async function NewArrivalsPage() {
               route's sort=newest, which orders by createdAt desc, matching
               this page's whole purpose). */}
           <div className="flex-1 w-full">
-            <Suspense fallback={<ProductGridFallback products={initialProducts?.data} />}>
+            <Suspense fallback={<ProductGridFallback storeName={store.name} products={initialProducts?.data} />}>
               <ProductContents initialProducts={initialProducts?.data} />
             </Suspense>
           </div>

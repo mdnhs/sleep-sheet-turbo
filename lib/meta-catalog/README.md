@@ -125,7 +125,7 @@ export const catalogs = {
   default: {
     currency: "BDT",
     country: "BD",
-    brandFallback: "Sleep Sheet",
+    brandFallback: STORE_DEFAULTS.name,
     feedUrl: "/facebook-feed.xml",
     fetchProducts: fetchAllProducts,
   },

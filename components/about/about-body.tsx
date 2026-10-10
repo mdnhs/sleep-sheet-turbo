@@ -3,11 +3,12 @@
 import Link from "next/link";
 import { Separator } from "@/components/ui/separator";
 import { useLanguage } from "@/hooks/use-language";
+import { useStoreProfile } from "@/hooks/use-store-profile";
 import { StoreLocationMap } from "@/components/store-location-map";
-import { seoConfig } from "@/lib/seo";
 
 export default function AboutBody() {
   const { t } = useLanguage();
+  const store = useStoreProfile();
 
   const categories = [
     { label: t("aboutCatComforters"), href: "/categories/comforters" },
@@ -56,8 +57,8 @@ export default function AboutBody() {
           <div>
             <h3 className="text-xl font-medium mb-3">{t("aboutValueCareTitle")}</h3>
             <p>
-              {t("aboutValueCarePrefix")} {seoConfig.contact.telephone} {t("orWord")}{" "}
-              {seoConfig.contact.email}.
+              {t("aboutValueCarePrefix")} {store.phone} {t("orWord")}{" "}
+              {store.email}.
             </p>
           </div>
         </div>

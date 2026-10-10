@@ -4,13 +4,14 @@ import Link from "next/link";
 import { MapPin, Mail, Phone } from "lucide-react";
 import { ContactForm } from "@/components/contact/contact-form";
 import { useLanguage } from "@/hooks/use-language";
-import { seoConfig } from "@/lib/seo";
+import { useStoreProfile } from "@/hooks/use-store-profile";
 import { useWebsiteSettings } from "@/hooks/use-website-settings";
 import { StoreLocationMap } from "@/components/store-location-map";
 import { buildSocialLinks } from "@/components/social-links";
 
 export default function ContactBody() {
   const { t } = useLanguage();
+  const store = useStoreProfile();
   const socialLinks = buildSocialLinks(useWebsiteSettings());
 
   return (
@@ -56,10 +57,10 @@ export default function ContactBody() {
                 <h3 className="font-medium mb-1">{t("contactEmailUs")}</h3>
                 <p className="text-muted-foreground">
                   <a
-                    href={`mailto:${seoConfig.contact.email}`}
+                    href={`mailto:${store.email}`}
                     className="hover:underline"
                   >
-                    {seoConfig.contact.email}
+                    {store.email}
                   </a>
                 </p>
               </div>
@@ -70,8 +71,8 @@ export default function ContactBody() {
               <div>
                 <h3 className="font-medium mb-1">{t("contactCallUs")}</h3>
                 <p className="text-muted-foreground">
-                  <a href={`tel:${seoConfig.contact.telephone}`} className="hover:underline">
-                    {seoConfig.contact.telephone}
+                  <a href={`tel:${store.phone}`} className="hover:underline">
+                    {store.phone}
                   </a>
                 </p>
                 <p className="text-sm text-muted-foreground mt-1">{t("contactHours")}</p>

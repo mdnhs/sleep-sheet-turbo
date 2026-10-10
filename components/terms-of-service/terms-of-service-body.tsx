@@ -2,12 +2,14 @@
 
 import Link from "next/link";
 import { useLanguage } from "@/hooks/use-language";
+import { useStoreProfile } from "@/hooks/use-store-profile";
 import { seoConfig } from "@/lib/seo";
 import { useWebsiteSettings } from "@/hooks/use-website-settings";
 import { toBengaliDigits as bn } from "@/lib/utils";
 
 export default function TermsOfServiceBody() {
   const { language, t } = useLanguage();
+  const store = useStoreProfile();
   // Charges come from the same settings checkout bills from, not hardcoded
   // copy — the page used to say ৳80 inside Dhaka while checkout charged more.
   const { shippingInsideDhaka, shippingOutsideDhaka } = useWebsiteSettings();
@@ -32,7 +34,7 @@ export default function TermsOfServiceBody() {
       {language === "bn" ? (
         <div className="prose prose-lg dark:prose-invert max-w-none">
           <p>
-            {seoConfig.siteName}-এ স্বাগতম। এই সেবার শর্তাবলী (&quot;শর্তাবলী&quot;)
+            {store.name}-এ স্বাগতম। এই সেবার শর্তাবলী (&quot;শর্তাবলী&quot;)
             {" "}{seoConfig.siteUrl.replace(/^https?:\/\//, "")} (&quot;সাইট&quot;) ব্যবহার এবং এর মাধ্যমে
             আপনার করা যেকোনো ক্রয় নিয়ন্ত্রণ করে। সাইট ব্যবহার করা বা অর্ডার করার মাধ্যমে, আপনি এই
             শর্তাবলীতে সম্মত হচ্ছেন। আপনি সম্মত না হলে, দয়া করে সাইট ব্যবহার করবেন না।
@@ -75,7 +77,7 @@ export default function TermsOfServiceBody() {
 
           <h2>৫. রিপ্লেসমেন্ট গ্যারান্টি</h2>
           <p>
-            {seoConfig.siteName}-এর প্রতিটি পণ্যে রয়েছে ৭ দিনের রিপ্লেসমেন্ট গ্যারান্টি। আপনি যদি ত্রুটিপূর্ণ
+            {store.name}-এর প্রতিটি পণ্যে রয়েছে ৭ দিনের রিপ্লেসমেন্ট গ্যারান্টি। আপনি যদি ত্রুটিপূর্ণ
             বা ক্ষতিগ্রস্ত পণ্য পান, ডেলিভারির ৭ দিনের মধ্যে আমাদের সাথে যোগাযোগ করুন, আমরা বিনামূল্যে তা
             পরিবর্তন করে দেব। দয়া করে পণ্য ও প্যাকেজিং সংরক্ষণ করুন যতক্ষণ না রিপ্লেসমেন্ট সম্পন্ন হয়, কারণ
             আপনার দাবি প্রক্রিয়া করতে আমরা ছবি বা পণ্যটি নিজে চাইতে পারি।
@@ -83,7 +85,7 @@ export default function TermsOfServiceBody() {
 
           <h2>৬. বুদ্ধিবৃত্তিক সম্পত্তি</h2>
           <p>
-            সাইটের সকল কনটেন্ট — টেক্সট, গ্রাফিক্স, লোগো ও ছবিসহ — {seoConfig.siteName} বা এর লাইসেন্সদাতার
+            সাইটের সকল কনটেন্ট — টেক্সট, গ্রাফিক্স, লোগো ও ছবিসহ — {store.name} বা এর লাইসেন্সদাতার
             সম্পত্তি এবং প্রযোজ্য বুদ্ধিবৃত্তিক সম্পত্তি আইন দ্বারা সুরক্ষিত। আমাদের পূর্ব লিখিত সম্মতি ছাড়া
             আপনি আমাদের কনটেন্ট কপি, পুনরুৎপাদন বা বাণিজ্যিক উদ্দেশ্যে ব্যবহার করতে পারবেন না।
           </p>
@@ -97,7 +99,7 @@ export default function TermsOfServiceBody() {
 
           <h2>৮. দায়ের সীমাবদ্ধতা</h2>
           <p>
-            আইন দ্বারা অনুমোদিত সর্বোচ্চ সীমা পর্যন্ত, {seoConfig.siteName} সাইট ব্যবহার বা এর মাধ্যমে কেনা
+            আইন দ্বারা অনুমোদিত সর্বোচ্চ সীমা পর্যন্ত, {store.name} সাইট ব্যবহার বা এর মাধ্যমে কেনা
             কোনো পণ্য থেকে উদ্ভূত পরোক্ষ, আকস্মিক বা পরিণামগত ক্ষতির জন্য দায়ী নয়, উপরে বর্ণিত রিপ্লেসমেন্ট
             গ্যারান্টিতে উল্লেখিত প্রতিকার ব্যতীত।
           </p>
@@ -117,15 +119,15 @@ export default function TermsOfServiceBody() {
           <h2>১১. যোগাযোগ করুন</h2>
           <p>
             এই শর্তাবলী নিয়ে প্রশ্ন আছে? আমাদের সাথে যোগাযোগ করুন{" "}
-            <a href={`mailto:${seoConfig.contact.email}`}>{seoConfig.contact.email}</a> অথবা{" "}
-            <a href={`tel:${seoConfig.contact.telephone}`}>{seoConfig.contact.telephone}</a> নম্বরে, অথবা
-            লিখুন {seoConfig.address.streetAddress}, {seoConfig.address.addressLocality}, বাংলাদেশ ঠিকানায়।
+            <a href={`mailto:${store.email}`}>{store.email}</a> অথবা{" "}
+            <a href={`tel:${store.phone}`}>{store.phone}</a> নম্বরে, অথবা
+            লিখুন {store.address}, {store.city}, বাংলাদেশ ঠিকানায়।
           </p>
         </div>
       ) : (
         <div className="prose prose-lg dark:prose-invert max-w-none">
           <p>
-            Welcome to {seoConfig.siteName}. These Terms of Service (&quot;Terms&quot;) govern your
+            Welcome to {store.name}. These Terms of Service (&quot;Terms&quot;) govern your
             access to and use of {seoConfig.siteUrl.replace(/^https?:\/\//, "")} (the
             &quot;Site&quot;) and any purchase you make through it. By using the Site or placing an
             order, you agree to these Terms. If you do not agree, please do not use the Site.
@@ -170,7 +172,7 @@ export default function TermsOfServiceBody() {
 
           <h2>5. Replacement Guarantee</h2>
           <p>
-            Every product from {seoConfig.siteName} comes with a 7-day replacement guarantee. If you
+            Every product from {store.name} comes with a 7-day replacement guarantee. If you
             receive a defective or damaged product, contact us within 7 days of delivery and we will
             replace it free of charge. Please retain the product and packaging until the replacement
             is resolved, as we may ask for photos or the item itself to process your claim.
@@ -179,7 +181,7 @@ export default function TermsOfServiceBody() {
           <h2>6. Intellectual Property</h2>
           <p>
             All content on the Site — including text, graphics, logos, and images — is the property
-            of {seoConfig.siteName} or its licensors and is protected by applicable intellectual
+            of {store.name} or its licensors and is protected by applicable intellectual
             property laws. You may not copy, reproduce, or use our content for commercial purposes
             without our prior written consent.
           </p>
@@ -193,7 +195,7 @@ export default function TermsOfServiceBody() {
 
           <h2>8. Limitation of Liability</h2>
           <p>
-            To the fullest extent permitted by law, {seoConfig.siteName} is not liable for any
+            To the fullest extent permitted by law, {store.name} is not liable for any
             indirect, incidental, or consequential damages arising from your use of the Site or from
             any product purchased through it, beyond the remedies described in our Replacement
             Guarantee above.
@@ -215,9 +217,9 @@ export default function TermsOfServiceBody() {
           <h2>11. Contact Us</h2>
           <p>
             Questions about these Terms? Reach us at{" "}
-            <a href={`mailto:${seoConfig.contact.email}`}>{seoConfig.contact.email}</a> or{" "}
-            <a href={`tel:${seoConfig.contact.telephone}`}>{seoConfig.contact.telephone}</a>, or write
-            to us at {seoConfig.address.streetAddress}, {seoConfig.address.addressLocality},
+            <a href={`mailto:${store.email}`}>{store.email}</a> or{" "}
+            <a href={`tel:${store.phone}`}>{store.phone}</a>, or write
+            to us at {store.address}, {store.city},
             Bangladesh.
           </p>
         </div>

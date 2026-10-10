@@ -4,7 +4,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { WebAnalyticsDashboard } from "@/features/web-analytics/components/web-analytics-dashboard";
 
 export const metadata: Metadata = {
-  title: "Analytics | Sleep Sheet Admin",
+  title: "Analytics",
   description: "Website visitors, sources, funnel and orders",
 };
 

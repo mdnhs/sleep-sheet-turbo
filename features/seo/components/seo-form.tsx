@@ -1,5 +1,6 @@
 "use client";
 
+import { SEO_DEFAULTS, STORE_DEFAULTS } from "@/lib/settings/defaults";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -35,14 +36,14 @@ export function SeoForm() {
   const form = useForm<SeoFormValues>({
     resolver: zodResolver(seoSchema),
     values: {
-      seo_site_name: data?.seo_site_name || "Sleep Sheet",
-      seo_default_title: data?.seo_default_title || "Sleep Sheet - Premium Bedding & Sleep Solutions",
-      seo_default_description: data?.seo_default_description || "Discover premium bedding, Comforters, mattresses, pillows, and sleep accessories for ultimate comfort.",
+      seo_site_name: data?.seo_site_name || STORE_DEFAULTS.name,
+      seo_default_title: data?.seo_default_title || SEO_DEFAULTS.title,
+      seo_default_description: data?.seo_default_description || SEO_DEFAULTS.description,
       seo_default_image: data?.seo_default_image || "",
       seo_google_verification: data?.seo_google_verification || "",
       seo_bing_verification: data?.seo_bing_verification || "",
       gtm_web_id: data?.gtm_web_id || "",
-      seo_twitter_handle: data?.seo_twitter_handle || "@sleepsheet2025",
+      seo_twitter_handle: data?.seo_twitter_handle || "",
       seo_robots_ai_block: data?.seo_robots_ai_block !== "false",
     },
   });
@@ -109,7 +110,7 @@ export function SeoForm() {
                     <FormItem>
                       <FormLabel>Site Name</FormLabel>
                       <FormControl>
-                        <Input {...field} placeholder="Sleep Sheet" className="rounded-xl" />
+                        <Input {...field} placeholder="Your store name" className="rounded-xl" />
                       </FormControl>
                       <FormDescription>Used in Open Graph, Twitter Cards, and schema.org markup</FormDescription>
                       <FormMessage />
@@ -123,7 +124,7 @@ export function SeoForm() {
                     <FormItem>
                       <FormLabel>Default Meta Title</FormLabel>
                       <FormControl>
-                        <Input {...field} placeholder="Sleep Sheet - Premium Bedding & Comforters" className="rounded-xl" />
+                        <Input {...field} placeholder="Your store — what you sell" className="rounded-xl" />
                       </FormControl>
                       <FormDescription>Shown on homepage and as fallback for pages without a custom title</FormDescription>
                       <FormMessage />
@@ -234,7 +235,7 @@ export function SeoForm() {
                     <FormItem>
                       <FormLabel>Twitter/X Handle</FormLabel>
                       <FormControl>
-                        <Input {...field} placeholder="@sleepsheet" className="rounded-xl" />
+                        <Input {...field} placeholder="@yourstore" className="rounded-xl" />
                       </FormControl>
                       <FormDescription>Used in Twitter Cards attribution</FormDescription>
                       <FormMessage />

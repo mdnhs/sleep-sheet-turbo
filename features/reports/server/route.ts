@@ -1,4 +1,6 @@
 import { Hono } from "hono";
+import { posChannelSql } from "@/lib/db-literal";
+import { getSetting } from "@/lib/settings/read";
 import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
 import { sessionMiddleware } from "@/lib/session-middleware";
@@ -191,11 +193,12 @@ const app = new Hono()
       const expenseWhere = expenseConditions.length ? and(...expenseConditions) : undefined;
 
       const itemCost = sql<number>`SUM(${orderItems.quantity} * COALESCE(${orderItems.costPrice}, 0))`;
+      const posChannel = posChannelSql(await getSetting("site_name"));
       const pageRef = sql<string>`
         CASE
           WHEN ${orders.saleType} = 'POS' THEN
             CASE
-              WHEN ${orders.reference} IS NULL OR TRIM(${orders.reference}) = '' THEN 'Sleep Sheet (POS)'
+              WHEN ${orders.reference} IS NULL OR TRIM(${orders.reference}) = '' THEN ${posChannel}
               WHEN TRIM(${orders.reference}) ILIKE '%(pos)' THEN TRIM(${orders.reference})
               ELSE TRIM(${orders.reference}) || ' (POS)'
             END

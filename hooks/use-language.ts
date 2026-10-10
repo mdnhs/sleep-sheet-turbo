@@ -5,6 +5,8 @@ import {
   hydrateLanguageStore,
   type Language,
 } from "./use-language-store";
+import { useStoreProfile } from "./use-store-profile";
+import { fillStore } from "@/lib/settings/store-profile";
 
 export type { Language };
 
@@ -143,14 +145,14 @@ export const translations = {
     seoAboutHeading:
       "Premium Comforter Set & Bed Sheet Online Shop in Bangladesh",
     seoAboutPara1:
-      "Sleep Sheet is an online bedding store in Bangladesh for 100% twill cotton comforters and king size bed sheets. Each 5-piece comforter set comes with a matching bed sheet, two pillow covers and a bolster cover — a complete bedroom makeover in one order.",
+      "{store} is an online bedding store in Bangladesh for 100% twill cotton comforters and king size bed sheets. Each 5-piece comforter set comes with a matching bed sheet, two pillow covers and a bolster cover — a complete bedroom makeover in one order.",
     seoAboutPara2:
       "Shop king size bed sheets and winter comforters with zero advance payment and cash on delivery anywhere in Bangladesh. Every product comes with a 7-day easy replacement guarantee.",
     seoBrowseComforters: "Browse Comforters",
     seoBrowseBedSheets: "Shop Bed Sheets",
     seoPopularSearches: "Popular Searches",
     seoFaqHeading: "Frequently Asked Questions",
-    faqQ1: "What is included in the Sleep Sheet 5-piece comforter set?",
+    faqQ1: "What is included in the {store} 5-piece comforter set?",
     faqA1:
       "Each 5-piece comforter set includes 1 comforter, 1 bed sheet, 2 pillow covers, and 1 kolbalish (bolster) cover, made from premium twill cotton fabric.",
     faqQ2: "Do you offer cash on delivery in Bangladesh?",
@@ -161,8 +163,8 @@ export const translations = {
       "Delivery inside Dhaka takes 1 day (৳{insideDhaka} delivery charge). Outside Dhaka, delivery takes 3-4 days (৳{outsideDhaka} delivery charge).",
     faqQ4: "Is there a replacement guarantee?",
     faqA4:
-      "Yes, every Sleep Sheet product comes with a 7-day replacement guarantee. If there is any defect, we will replace the product free of charge.",
-    faqQ5: "What fabric are Sleep Sheet products made of?",
+      "Yes, every {store} product comes with a 7-day replacement guarantee. If there is any defect, we will replace the product free of charge.",
+    faqQ5: "What fabric are {store} products made of?",
     faqA5:
       "All our bed sheets and comforters are made from 100% twill cotton — a diagonal-weave cotton that stays soft, breathable, and color-fast through years of washing.",
     faqQ6: "How do I know what size to order?",
@@ -179,18 +181,18 @@ export const translations = {
     seoPriceComforterSet: "Comforter (single or 5-piece set)",
     seoPriceBedSheet: "King Size Bed Sheet (3 or 4 pieces)",
     seoPriceSeeMore: "See full category price breakdown",
-    seoWhyHeading: "Why Choose Sleep Sheet",
+    seoWhyHeading: "Why Choose {store}",
     seoWhyPoint1: "100% twill cotton fabric — soft, breathable, and long-lasting",
     seoWhyPoint2: "Zero advance payment, cash on delivery all over Bangladesh",
     seoWhyPoint3: "7-day easy replacement guarantee on every order",
     seoWhyPoint4: "1-day delivery inside Dhaka, 3-4 days nationwide",
     aboutBreadcrumbLabel: "About",
-    aboutHeading: "About Sleep Sheet",
+    aboutHeading: "About {store}",
     aboutIntro:
       "Premium quality bedding, made for comfortable sleep. We believe everyone deserves a good night's rest without paying showroom prices.",
     aboutStoryHeading: "Our Story",
     aboutStoryPara1:
-      "Sleep Sheet started in Dhaka with a simple goal: bring high-quality comforter sets, bed sheets, and pillow covers to homes across Bangladesh at a fair price, with the convenience of online ordering and cash on delivery.",
+      "{store} started in Dhaka with a simple goal: bring high-quality comforter sets, bed sheets, and pillow covers to homes across Bangladesh at a fair price, with the convenience of online ordering and cash on delivery.",
     aboutStoryPara2:
       "Every piece we sell is made from 100% twill cotton fabric, chosen for its softness and durability. From our shop at Hope Market, Mirpur 10, Dhaka, we now deliver nationwide, and our customers' comfort is what drives everything we do.",
     aboutValuesHeading: "Our Values",
@@ -229,7 +231,7 @@ export const translations = {
     contactHours: "Saturday – Thursday, 9am – 9pm (BST)",
     contactConnectHeading: "Connect With Us",
     contactMapHeading: "Find Us on the Map",
-    contactMapTitle: "Sleep Sheet location on Google Maps",
+    contactMapTitle: "{store} location on Google Maps",
     contactConnectDesc:
       "Follow us on social media to stay updated with our latest products and promotions.",
     contactFormName: "Name",
@@ -242,8 +244,8 @@ export const translations = {
     contactFormMessagePlaceholder: "Your message here...",
     contactFormSubmit: "Send Message",
     testimonialsBreadcrumbLabel: "Reviews",
-    testimonialsSubtitleWithCount: "See what {count}+ happy customers are saying about their Sleep Sheet order.",
-    testimonialsSubtitleNoCount: "See what our happy customers are saying about their Sleep Sheet order.",
+    testimonialsSubtitleWithCount: "See what {count}+ happy customers are saying about their {store} order.",
+    testimonialsSubtitleNoCount: "See what our happy customers are saying about their {store} order.",
     loadMoreReviews: "Load More Reviews",
     blogBreadcrumbLabel: "Blog",
     blogHeading: "Our Blog",
@@ -348,7 +350,7 @@ export const translations = {
     shopPageHeading: "All Products — Comforter Sets, Bed Sheets & More",
     shopSeoHeading: "Buy Bedding Online in Bangladesh",
     shopSeoIntro:
-      "From premium comforter sets to twill cotton bed sheets, AC quilts, and mattress toppers — shop the full Sleep Sheet catalog in one place, all backed by cash on delivery and a 7-day replacement guarantee.",
+      "From premium comforter sets to twill cotton bed sheets, AC quilts, and mattress toppers — shop the full {store} catalog in one place, all backed by cash on delivery and a 7-day replacement guarantee.",
     shopSeoPriceHeading: "Price Snapshot Across Categories",
     shopSeoWhyHeading: "Why Shop the Full Catalog Here",
     shopSeoWhyPoint1: "Every product is 100% twill cotton — checked for stitching and color-fastness before listing",
@@ -489,14 +491,14 @@ export const translations = {
     seoAboutHeading:
       "প্রিমিয়াম কম্ফোর্টার সেট ও বিছানার চাদরের অনলাইন শপ",
     seoAboutPara1:
-      "স্লিপ শীট বাংলাদেশের একটি অনলাইন বেডিং স্টোর, যেখানে ১০০% টুইল কটন কম্ফোর্টার আর কিং সাইজ বিছানার চাদর পাওয়া যায়। আমাদের ৫ পিস কম্ফোর্টার সেটে থাকছে ম্যাচিং বেডশীট, দুটি বালিশের কভার আর কোলবালিশের কভার — এক অর্ডারেই সম্পূর্ণ বেডরুম মেকওভার।",
+      "{store} বাংলাদেশের একটি অনলাইন বেডিং স্টোর, যেখানে ১০০% টুইল কটন কম্ফোর্টার আর কিং সাইজ বিছানার চাদর পাওয়া যায়। আমাদের ৫ পিস কম্ফোর্টার সেটে থাকছে ম্যাচিং বেডশীট, দুটি বালিশের কভার আর কোলবালিশের কভার — এক অর্ডারেই সম্পূর্ণ বেডরুম মেকওভার।",
     seoAboutPara2:
       "কোনো অগ্রিম টাকা ছাড়াই অর্ডার করুন — সারা বাংলাদেশে ক্যাশ অন ডেলিভারি, আর প্রতিটি পণ্যে ৭ দিনের সহজ রিপ্লেসমেন্ট গ্যারান্টি।",
     seoBrowseComforters: "কমফোর্টার কালেকশন",
     seoBrowseBedSheets: "বিছানার চাদর কিনুন",
     seoPopularSearches: "জনপ্রিয় অনুসন্ধান",
     seoFaqHeading: "সচরাচর জিজ্ঞাসিত প্রশ্ন",
-    faqQ1: "স্লিপ শীট ৫ পিস কমফোর্টার সেটে কী কী থাকে?",
+    faqQ1: "{store} ৫ পিস কমফোর্টার সেটে কী কী থাকে?",
     faqA1:
       "প্রতিটি ৫ পিস কমফোর্টার সেটে থাকছে ১টি কমফোর্টার, ১টি বেডশীট, ২টি বালিশের কভার এবং ১টি কোলবালিশ কভার, যা প্রিমিয়াম টুইল কটন ফেব্রিকে তৈরি।",
     faqQ2: "আপনারা কি বাংলাদেশে ক্যাশ অন ডেলিভারি দিচ্ছেন?",
@@ -507,8 +509,8 @@ export const translations = {
       "ঢাকার ভিতরে ডেলিভারি হতে ১ দিন সময় লাগে (ডেলিভারি চার্জ ৳{insideDhaka})। ঢাকার বাইরে ডেলিভারি হতে ৩-৪ দিন সময় লাগে (ডেলিভারি চার্জ ৳{outsideDhaka})।",
     faqQ4: "রিপ্লেসমেন্ট গ্যারান্টি আছে কি?",
     faqA4:
-      "হ্যাঁ, প্রতিটি স্লিপ শীট পণ্যে রয়েছে ৭ দিনের রিপ্লেসমেন্ট গ্যারান্টি। কোনো ত্রুটি থাকলে আমরা বিনামূল্যে পণ্য পরিবর্তন করে দেব।",
-    faqQ5: "স্লিপ শীট পণ্য কোন ফেব্রিকে তৈরি?",
+      "হ্যাঁ, প্রতিটি {store} পণ্যে রয়েছে ৭ দিনের রিপ্লেসমেন্ট গ্যারান্টি। কোনো ত্রুটি থাকলে আমরা বিনামূল্যে পণ্য পরিবর্তন করে দেব।",
+    faqQ5: "{store} পণ্য কোন ফেব্রিকে তৈরি?",
     faqA5:
       "আমাদের সব বিছানার চাদর ও কমফোর্টার ১০০% টুইল কটনে তৈরি — এই ডায়াগোনাল-উইভ কটন বছরের পর বছর ধোয়ার পরেও নরম, বাতাস চলাচলযোগ্য এবং রঙ অক্ষুণ্ণ থাকে।",
     faqQ6: "কোন সাইজ অর্ডার করব বুঝব কীভাবে?",
@@ -525,18 +527,18 @@ export const translations = {
     seoPriceComforterSet: "কম্ফোর্টার (শুধু কম্ফোর্টার বা ৫ পিস সেট)",
     seoPriceBedSheet: "কিং সাইজ বিছানার চাদর (৩ বা ৪ পিস)",
     seoPriceSeeMore: "সম্পূর্ণ ক্যাটাগরি প্রাইস দেখুন",
-    seoWhyHeading: "কেন স্লিপ শীট বেছে নিবেন",
+    seoWhyHeading: "কেন {store} বেছে নিবেন",
     seoWhyPoint1: "১০০% টুইল কটন ফেব্রিক — নরম, বাতাস চলাচলযোগ্য ও দীর্ঘস্থায়ী",
     seoWhyPoint2: "শূন্য অগ্রিম পেমেন্ট, সারা বাংলাদেশে ক্যাশ অন ডেলিভারি",
     seoWhyPoint3: "প্রতিটি অর্ডারে ৭ দিনের সহজ রিপ্লেসমেন্ট গ্যারান্টি",
     seoWhyPoint4: "ঢাকার ভিতরে ১ দিনে, সারাদেশে ৩-৪ দিনে ডেলিভারি",
     aboutBreadcrumbLabel: "আমাদের সম্পর্কে",
-    aboutHeading: "স্লিপ শীট সম্পর্কে",
+    aboutHeading: "{store} সম্পর্কে",
     aboutIntro:
       "আরামদায়ক ঘুমের জন্য প্রিমিয়াম কোয়ালিটির বেডিং। আমরা বিশ্বাস করি, শোরুম প্রাইসে না গিয়েও সবাই একটি ভালো রাতের ঘুম পাওয়ার অধিকার রাখে।",
     aboutStoryHeading: "আমাদের গল্প",
     aboutStoryPara1:
-      "স্লিপ শীট ঢাকায় শুরু হয়েছিল একটি সহজ লক্ষ্য নিয়ে — সারা বাংলাদেশের বাসাবাড়িতে সাশ্রয়ী মূল্যে উচ্চমানের কমফোর্টার সেট, বিছানার চাদর ও বালিশের কভার পৌঁছে দেওয়া, অনলাইনে অর্ডার ও ক্যাশ অন ডেলিভারির সুবিধাসহ।",
+      "{store} ঢাকায় শুরু হয়েছিল একটি সহজ লক্ষ্য নিয়ে — সারা বাংলাদেশের বাসাবাড়িতে সাশ্রয়ী মূল্যে উচ্চমানের কমফোর্টার সেট, বিছানার চাদর ও বালিশের কভার পৌঁছে দেওয়া, অনলাইনে অর্ডার ও ক্যাশ অন ডেলিভারির সুবিধাসহ।",
     aboutStoryPara2:
       "আমরা যা বিক্রি করি তার প্রতিটি পণ্যই ১০০% টুইল কটন ফেব্রিকে তৈরি, যা নরম ও টেকসই হওয়ার জন্য বেছে নেওয়া। মিরপুর ১০-এর হোপ মার্কেটের আমাদের দোকান থেকে এখন আমরা সারাদেশে ডেলিভারি দিচ্ছি, আর আমাদের গ্রাহকদের আরামই আমাদের সবকিছুর মূল চালিকাশক্তি।",
     aboutValuesHeading: "আমাদের মূল্যবোধ",
@@ -575,7 +577,7 @@ export const translations = {
     contactHours: "শনি – বৃহস্পতিবার, সকাল ৯টা – রাত ৯টা (বিএসটি)",
     contactConnectHeading: "আমাদের সাথে যুক্ত থাকুন",
     contactMapHeading: "ম্যাপে আমাদের খুঁজুন",
-    contactMapTitle: "গুগল ম্যাপে স্লিপ শিটের লোকেশন",
+    contactMapTitle: "গুগল ম্যাপে {store}ের লোকেশন",
     contactConnectDesc:
       "নতুন পণ্য ও অফার সম্পর্কে জানতে সোশ্যাল মিডিয়ায় আমাদের ফলো করুন।",
     contactFormName: "নাম",
@@ -676,7 +678,7 @@ export const translations = {
     shopPageHeading: "সকল পণ্য — কমফোর্টার সেট, বিছানার চাদর ও আরও",
     shopSeoHeading: "বাংলাদেশে অনলাইনে বেডিং কিনুন",
     shopSeoIntro:
-      "প্রিমিয়াম কমফোর্টার সেট থেকে শুরু করে টুইল কটন বিছানার চাদর, এসি কুইল্ট ও ম্যাট্রেস টপার — এক জায়গায় স্লিপ শীটের সম্পূর্ণ ক্যাটালগ শপ করুন, ক্যাশ অন ডেলিভারি ও ৭ দিনের রিপ্লেসমেন্ট গ্যারান্টিসহ।",
+      "প্রিমিয়াম কমফোর্টার সেট থেকে শুরু করে টুইল কটন বিছানার চাদর, এসি কুইল্ট ও ম্যাট্রেস টপার — এক জায়গায় {store}ের সম্পূর্ণ ক্যাটালগ শপ করুন, ক্যাশ অন ডেলিভারি ও ৭ দিনের রিপ্লেসমেন্ট গ্যারান্টিসহ।",
     shopSeoPriceHeading: "ক্যাটাগরি অনুযায়ী মূল্য একনজরে",
     shopSeoWhyHeading: "কেন এখান থেকে পুরো ক্যাটালগ শপ করবেন",
     shopSeoWhyPoint1: "প্রতিটি পণ্য ১০০% টুইল কটন — লিস্ট করার আগে স্টিচিং ও রঙ যাচাই করা হয়",
@@ -685,8 +687,8 @@ export const translations = {
     shopSeoWhyPoint4: "ঢাকার ভিতরে ১ দিনে, সারাদেশে ৩-৪ দিনে ডেলিভারি, সব পণ্যে ৭ দিনের রিপ্লেসমেন্ট গ্যারান্টি",
     shopSeoCta: "উপরের ফিল্টার ব্যবহার করে ক্যাটাগরি অনুযায়ী ব্রাউজ করুন, অথবা বেছে নিতে সাহায্য লাগলে হোয়াটসঅ্যাপে মেসেজ দিন।",
     testimonialsBreadcrumbLabel: "রিভিউ",
-    testimonialsSubtitleWithCount: "{count}+ সন্তুষ্ট ক্রেতা স্লিপ শীট অর্ডার সম্পর্কে কী বলছেন দেখুন।",
-    testimonialsSubtitleNoCount: "আমাদের সন্তুষ্ট ক্রেতারা স্লিপ শীট অর্ডার সম্পর্কে কী বলছেন দেখুন।",
+    testimonialsSubtitleWithCount: "{count}+ সন্তুষ্ট ক্রেতা {store} অর্ডার সম্পর্কে কী বলছেন দেখুন।",
+    testimonialsSubtitleNoCount: "আমাদের সন্তুষ্ট ক্রেতারা {store} অর্ডার সম্পর্কে কী বলছেন দেখুন।",
     loadMoreReviews: "আরও রিভিউ দেখুন",
     blogBreadcrumbLabel: "ব্লগ",
     blogHeading: "আমাদের ব্লগ",
@@ -708,6 +710,8 @@ export const translations = {
 export function useLanguage() {
   const language = useLanguageStore((state) => state.language);
   const setLanguage = useLanguageStore((state) => state.setLanguage);
+  // From the seeded ["settings"] query: no request of its own.
+  const store = useStoreProfile();
 
   useEffect(() => {
     hydrateLanguageStore();
@@ -715,7 +719,7 @@ export function useLanguage() {
 
   const t = (key: keyof (typeof translations)["en"]) => {
     const val = translations[language]?.[key] ?? translations["bn"]?.[key];
-    return val !== undefined ? val : key;
+    return val !== undefined ? fillStore(val, store, language) : key;
   };
 
   return { language, setLanguage, t };

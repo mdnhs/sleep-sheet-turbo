@@ -1,4 +1,5 @@
 "use client"
+import { useWebsiteSettings } from "@/hooks/use-website-settings"
 import { useEffect, useState, useCallback, useMemo } from "react"
 import { useGetInfiniteProducts } from "@/features/product/api/use-get-products"
 import { useInView } from "react-intersection-observer"
@@ -99,21 +100,23 @@ export default function PosClientPage() {
     { value: "price-desc", label: "High to Low" },
   ]
 
+  const { siteName } = useWebsiteSettings()
   const customMethods: { label: string; value: string }[] = settings?.pos_payment_methods
     ? JSON.parse(settings.pos_payment_methods)
     : []
 
+  const fbPagesSetting = settings?.pos_facebook_pages
   const facebookPages: { id: string; name: string }[] = useMemo(() => {
-    if (!settings?.pos_facebook_pages) return [{ id: "default", name: "Sleep Sheet" }]
+    if (!fbPagesSetting) return [{ id: "default", name: siteName }]
     try {
-      const parsed = JSON.parse(settings.pos_facebook_pages)
-      return Array.isArray(parsed) && parsed.length > 0 ? parsed : [{ id: "default", name: "Sleep Sheet" }]
+      const parsed = JSON.parse(fbPagesSetting)
+      return Array.isArray(parsed) && parsed.length > 0 ? parsed : [{ id: "default", name: siteName }]
     } catch {
-      return [{ id: "default", name: "Sleep Sheet" }]
+      return [{ id: "default", name: siteName }]
     }
-  }, [settings?.pos_facebook_pages])
+  }, [fbPagesSetting, siteName])
 
-  const defaultFbPage = settings?.pos_default_facebook_page || (facebookPages[0]?.name || "Sleep Sheet")
+  const defaultFbPage = settings?.pos_default_facebook_page || (facebookPages[0]?.name || siteName)
 
   const paymentMethods = [
     { value: "COD", label: "Cash", icon: Banknote, enabled: settings ? settings.payment_method_cod !== "false" : true },

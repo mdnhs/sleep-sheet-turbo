@@ -5,6 +5,7 @@ import { buildSocialLinks } from "@/components/social-links";
 import FooterLanguageSwitcher from "@/components/footer-language-switcher";
 
 interface FooterProps {
+  siteName: string;
   footerBrandDesc: string;
   footerEmail: string;
   footerPhone: string;
@@ -19,6 +20,7 @@ interface FooterProps {
 }
 
 const Footer = ({
+  siteName,
   footerBrandDesc,
   footerEmail,
   footerPhone,
@@ -39,7 +41,7 @@ const Footer = ({
           {/* Brand Column */}
           <div className="col-span-2 lg:col-span-4 space-y-5 md:space-y-6 flex flex-col items-center md:items-start text-center md:text-left">
             <div className="flex items-center gap-2 mb-1 md:mb-2">
-              <Image src="/dark-logo.webp" alt="SleepSheet Logo" width={160} height={40} className="h-9 md:h-10 w-auto object-contain" />
+              <Image src="/dark-logo.webp" alt={`${siteName} logo`} width={160} height={40} className="h-9 md:h-10 w-auto object-contain" />
             </div>
             <p className="text-sm text-white/60 leading-relaxed max-w-xs mx-auto md:mx-0">
               {footerBrandDesc}

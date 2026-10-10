@@ -3,6 +3,7 @@ import { Document, Page, Text, View, StyleSheet, Font, Image } from "@react-pdf/
 import { PlacedOrder, ShippingInfo } from "../types";
 import { translations } from "@/hooks/use-language";
 import { seoConfig } from "@/lib/seo";
+import { STORE_DEFAULTS } from "@/lib/settings/defaults";
 
 // Register Hind Siliguri font from Google Fonts GitHub via jsDelivr to support Bangla characters
 Font.register({
@@ -265,10 +266,11 @@ interface InvoicePDFProps {
   siteName: string;
   language: "en" | "bn";
   logoUrl: string;
-  phoneNumber?: string;
+  phoneNumber: string;
+  timeZone?: string;
 }
 
-export const InvoicePDFPage = ({ order, shippingInfo, siteName, language, logoUrl, phoneNumber }: InvoicePDFProps) => {
+export const InvoicePDFPage = ({ order, shippingInfo, siteName, language, logoUrl, phoneNumber, timeZone }: InvoicePDFProps) => {
   const t = (key: string) => {
     return translations[language]?.[key as keyof typeof translations.en] || translations.en[key as keyof typeof translations.en] || key;
   };
@@ -291,8 +293,8 @@ export const InvoicePDFPage = ({ order, shippingInfo, siteName, language, logoUr
             <View>
               <Text style={styles.brandName}>{siteName}</Text>
               <Text style={styles.brandDesc}>Merchant ID - USH1CSYQ</Text>
-              <Text style={styles.brandDesc}>sleepsheetbd.com</Text>
-              <Text style={styles.brandDesc}>{phoneNumber || seoConfig.contact.telephone}</Text>
+              <Text style={styles.brandDesc}>{new URL(seoConfig.siteUrl).host}</Text>
+              <Text style={styles.brandDesc}>{phoneNumber}</Text>
             </View>
           </View>
           <View style={styles.headerRight}>
@@ -304,7 +306,7 @@ export const InvoicePDFPage = ({ order, shippingInfo, siteName, language, logoUr
             <View style={styles.headerMetaItem}>
               <Text style={styles.headerMetaLabel}>Date / তারিখ:</Text>
               <Text style={styles.headerMetaValue}>
-                {new Date(order.createdAt).toLocaleString("en-BD", { year: "numeric", month: "long", day: "numeric", hour: "numeric", minute: "2-digit", hour12: true })}
+                {new Date(order.createdAt).toLocaleString("en-BD", { timeZone: timeZone ?? STORE_DEFAULTS.timezone, year: "numeric", month: "long", day: "numeric", hour: "numeric", minute: "2-digit", hour12: true })}
               </Text>
             </View>
           </View>
@@ -485,10 +487,11 @@ interface BulkInvoicePDFProps {
   siteName: string;
   language: "en" | "bn";
   logoUrl: string;
-  phoneNumber?: string;
+  phoneNumber: string;
+  timeZone?: string;
 }
 
-export const BulkInvoicePDF = ({ orders, siteName, language, logoUrl, phoneNumber }: BulkInvoicePDFProps) => {
+export const BulkInvoicePDF = ({ orders, siteName, language, logoUrl, phoneNumber, timeZone }: BulkInvoicePDFProps) => {
   return (
     <Document>
       {orders.map((item, index) => (
@@ -500,6 +503,7 @@ export const BulkInvoicePDF = ({ orders, siteName, language, logoUrl, phoneNumbe
           language={language}
           logoUrl={logoUrl}
           phoneNumber={phoneNumber}
+          timeZone={timeZone}
         />
       ))}
     </Document>

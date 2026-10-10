@@ -20,7 +20,7 @@ const formatBdt = (amount: number) => `৳${Math.round(amount).toLocaleString("e
  * components/product/product-card-skeleton.tsx) so the swap doesn't move
  * the layout. Falls back to the skeleton when there is nothing to show.
  */
-export default function ProductGridFallback({ products }: { products?: ProductSummary[] }) {
+export default function ProductGridFallback({ products, storeName }: { products?: ProductSummary[]; storeName: string }) {
   const list = (products ?? []).filter((p) => p.slug);
   if (list.length === 0) return <ProductGridSkeleton />;
 
@@ -45,7 +45,7 @@ export default function ProductGridFallback({ products }: { products?: ProductSu
                 {image && (
                   <Image
                     src={getOptimizedImageUrl(image, 400)}
-                    alt={`${product.name} – Sleep Sheet Bangladesh`}
+                    alt={`${product.name} – ${storeName} Bangladesh`}
                     fill
                     sizes="(max-width: 1200px) 50vw, 25vw"
                     quality={55}

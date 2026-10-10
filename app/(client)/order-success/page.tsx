@@ -282,7 +282,7 @@ function OrderSuccessContent() {
           {!settledBkash && (
             <a
               href={`https://wa.me/${footerPhone.replace(/\D/g, "")}?text=${encodeURIComponent(
-                `আসসালামু আলাইকুম Sleep Sheet! আমি একটি নতুন অর্ডার করেছি।\n\nঅর্ডার নম্বর: #${order.orderNumber}\nনাম: ${order.guestName || "Customer"}\nমোট টাকা: ৳${order.totalAmount}\nঠিকানা: ${order.shippingAddress}\n\nদয়া করে অর্ডারটি কনফার্ম করুন।`
+                `আসসালামু আলাইকুম ${siteName}! আমি একটি নতুন অর্ডার করেছি।\n\nঅর্ডার নম্বর: #${order.orderNumber}\nনাম: ${order.guestName || "Customer"}\nমোট টাকা: ৳${order.totalAmount}\nঠিকানা: ${order.shippingAddress}\n\nদয়া করে অর্ডারটি কনফার্ম করুন।`
               )}`}
               target="_blank"
               rel="noopener noreferrer"

@@ -9,7 +9,8 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { useLanguage } from "@/hooks/use-language";
-import { seoConfig } from "@/lib/seo";
+import { useStoreProfile } from "@/hooks/use-store-profile";
+import { fillStore } from "@/lib/settings/store-profile";
 
 // Static store-wide copy shown under every product. Mirrors the policy on
 // /shipping-returns — keep the two in sync when the policy changes.
@@ -35,7 +36,7 @@ const whyChooseUs = {
 const returnPolicy = {
   bn: {
     intro:
-      "স্লিপ শিট থেকে কেনাকাটার জন্য ধন্যবাদ। আপনি যেন পণ্য নিয়ে পুরোপুরি সন্তুষ্ট থাকেন, তাই আমাদের রিটার্ন ও রিপ্লেসমেন্ট নীতিমালা নিচে দেওয়া হলো।",
+      "{store} থেকে কেনাকাটার জন্য ধন্যবাদ। আপনি যেন পণ্য নিয়ে পুরোপুরি সন্তুষ্ট থাকেন, তাই আমাদের রিটার্ন ও রিপ্লেসমেন্ট নীতিমালা নিচে দেওয়া হলো।",
     sections: [
       {
         title: "রিপ্লেসমেন্ট পলিসি",
@@ -62,7 +63,7 @@ const returnPolicy = {
   },
   en: {
     intro:
-      "Thank you for shopping with Sleep Sheet. We want you to be fully happy with your order, so here is our return and replacement policy.",
+      "Thank you for shopping with {store}. We want you to be fully happy with your order, so here is our return and replacement policy.",
     sections: [
       {
         title: "Replacement policy",
@@ -91,6 +92,7 @@ const returnPolicy = {
 
 export function ProductPolicyAccordion() {
   const { language } = useLanguage();
+  const store = useStoreProfile();
   const lang = language === "bn" ? "bn" : "en";
   const policy = returnPolicy[lang];
 
@@ -130,7 +132,7 @@ export function ProductPolicyAccordion() {
             </span>
           </AccordionTrigger>
           <AccordionContent className="px-1 pt-2 border-t border-border/60 text-[15px] leading-relaxed text-foreground/90">
-            <p>{policy.intro}</p>
+            <p>{fillStore(policy.intro, store, lang)}</p>
             {policy.sections.map((section) => (
               <div key={section.title} className="mt-4">
                 <h3 className="font-bold text-foreground mb-1.5">{section.title}</h3>
@@ -143,9 +145,9 @@ export function ProductPolicyAccordion() {
             ))}
             <p className="mt-4">
               {policy.contact}{" "}
-              <a href={`tel:${seoConfig.contact.telephone}`}>{seoConfig.contact.telephone}</a>
+              <a href={`tel:${store.phone}`}>{store.phone}</a>
               {" / "}
-              <a href={`mailto:${seoConfig.contact.email}`}>{seoConfig.contact.email}</a>
+              <a href={`mailto:${store.email}`}>{store.email}</a>
             </p>
             <p className="mt-2">
               <Link href="/shipping-returns">{policy.more}</Link>

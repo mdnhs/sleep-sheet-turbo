@@ -59,7 +59,7 @@ async function ProductsPage() {
 
           {/* Main Content */}
           <div className="flex-1 w-full">
-            <Suspense fallback={<ProductGridFallback products={products} />}>
+            <Suspense fallback={<ProductGridFallback storeName={store.name} products={products} />}>
               <ProductContents initialProducts={products} />
             </Suspense>
           </div>

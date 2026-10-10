@@ -29,7 +29,7 @@ interface OrderActionButtonsProps {
 
 export function OrderActionButtons({ order }: OrderActionButtonsProps) {
   const { symbol: currencySymbol } = useCurrency();
-  const { footerPhone } = useWebsiteSettings();
+  const { footerPhone, siteName } = useWebsiteSettings();
 
   const handlePrintReceipt = () => {
     printReceipt({
@@ -74,7 +74,7 @@ export function OrderActionButtons({ order }: OrderActionButtonsProps) {
         </Button>
       )}
       <a
-        href={`https://wa.me/${(footerPhone || "+8801570241052").replace(/\D/g, "")}?text=${encodeURIComponent(`Hello Sleep Sheet, I need help with Order #${order.orderNumber}`)}`}
+        href={`https://wa.me/${footerPhone.replace(/\D/g, "")}?text=${encodeURIComponent(`Hello ${siteName}, I need help with Order #${order.orderNumber}`)}`}
         target="_blank"
         rel="noopener noreferrer"
       >

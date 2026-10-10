@@ -58,7 +58,7 @@ async function BestsellersPage() {
               units sold from real, non-cancelled orders (see the
               salesSubquery in features/product/server/route.ts). */}
           <div className="flex-1 w-full">
-            <Suspense fallback={<ProductGridFallback products={initialProducts?.data} />}>
+            <Suspense fallback={<ProductGridFallback storeName={store.name} products={initialProducts?.data} />}>
               <ProductContents initialSort="bestselling" initialProducts={initialProducts?.data} />
             </Suspense>
           </div>

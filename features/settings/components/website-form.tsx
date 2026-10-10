@@ -252,7 +252,7 @@ export function WebsiteForm() {
                 <FormField control={form.control} name="site_name" render={({ field }) => (
                   <FormItem>
                     <FormLabel>{FIELD_LABELS.site_name}</FormLabel>
-                    <FormControl><Input placeholder="Sleep Sheet" {...field} /></FormControl>
+                    <FormControl><Input placeholder="Your store name" {...field} /></FormControl>
                     <FormMessage />
                   </FormItem>
                 )} />
@@ -356,7 +356,7 @@ export function WebsiteForm() {
                   <FormField control={form.control} name="footer_email" render={({ field }) => (
                     <FormItem>
                       <FormLabel>{FIELD_LABELS.footer_email}</FormLabel>
-                      <FormControl><Input placeholder="support@sleepsheet.com" {...field} /></FormControl>
+                      <FormControl><Input placeholder="support@example.com" {...field} /></FormControl>
                       <FormMessage />
                     </FormItem>
                   )} />
@@ -370,7 +370,7 @@ export function WebsiteForm() {
                   <FormField control={form.control} name="footer_address" render={({ field }) => (
                     <FormItem>
                       <FormLabel>{FIELD_LABELS.footer_address}</FormLabel>
-                      <FormControl><Input placeholder="Hope Market, Mirpur 10, Dhaka 1216" {...field} /></FormControl>
+                      <FormControl><Input placeholder="House 1, Road 2, Dhaka 1200" {...field} /></FormControl>
                       <FormMessage />
                     </FormItem>
                   )} />
@@ -425,7 +425,7 @@ export function WebsiteForm() {
                 <FormField control={form.control} name="footer_copyright" render={({ field }) => (
                   <FormItem>
                     <FormLabel>{FIELD_LABELS.footer_copyright}</FormLabel>
-                    <FormControl><Input placeholder="© 2024 SLEEP SHEET. All rights reserved." {...field} /></FormControl>
+                    <FormControl><Input placeholder="© 2026 Your Store. All rights reserved." {...field} /></FormControl>
                     <FormMessage />
                   </FormItem>
                 )} />

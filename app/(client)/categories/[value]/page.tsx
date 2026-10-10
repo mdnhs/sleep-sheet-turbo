@@ -133,7 +133,7 @@ export default async function CategoryPage({ params }: Props) {
           </Suspense>
 
           <div className="flex-1 w-full">
-            <Suspense fallback={<ProductGridFallback products={initialProducts?.data} />}>
+            <Suspense fallback={<ProductGridFallback storeName={store.name} products={initialProducts?.data} />}>
               <ProductContents initialCategory={category.label} initialProducts={initialProducts?.data} />
             </Suspense>
           </div>

@@ -40,6 +40,7 @@ import {
 import { useCurrent } from "@/features/auth/api/use-current"
 import { can, type ModuleKey } from "@/lib/permissions"
 import { useSettings } from "@/features/settings/api/use-settings"
+import { storeProfileFromSettings } from "@/lib/settings/store-profile"
 import { isValidSocialManagerUrl } from "@/lib/social-manager"
 
 // `module` gates an item: shown only if the user can read that module.
@@ -248,7 +249,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 <IconBed className="size-4.5" />
               </div>
               <div className="flex flex-col gap-0.5 leading-none">
-                <span className="font-bold tracking-tight text-foreground text-sm">Sleep Sheet</span>
+                <span className="font-bold tracking-tight text-foreground text-sm">{storeProfileFromSettings(settings).name}</span>
                 <span className="text-[10px] font-semibold tracking-wide uppercase text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/60 px-1.5 py-0.5 rounded-full w-fit">Admin Panel</span>
               </div>
             </SidebarMenuButton>

@@ -765,14 +765,14 @@ function OrdersPageContent() {
   // Read once into a local so the memo's dependency is exactly what it uses.
   const fbPagesSetting = settings?.pos_facebook_pages;
   const configuredFbPages: { id: string; name: string }[] = React.useMemo(() => {
-    if (!fbPagesSetting) return [{ id: "default", name: "Sleep Sheet" }];
+    if (!fbPagesSetting) return [{ id: "default", name: siteName }];
     try {
       const parsed = JSON.parse(fbPagesSetting);
-      return Array.isArray(parsed) && parsed.length > 0 ? parsed : [{ id: "default", name: "Sleep Sheet" }];
+      return Array.isArray(parsed) && parsed.length > 0 ? parsed : [{ id: "default", name: siteName }];
     } catch {
-      return [{ id: "default", name: "Sleep Sheet" }];
+      return [{ id: "default", name: siteName }];
     }
-  }, [fbPagesSetting]);
+  }, [fbPagesSetting, siteName]);
 
   const availableFacebookPages = React.useMemo(() => {
     const pageSet = new Set<string>();

@@ -1,4 +1,6 @@
 import { Hono } from "hono";
+import { posChannelSql } from "@/lib/db-literal";
+import { getSetting } from "@/lib/settings/read";
 import { sessionMiddleware } from "@/lib/session-middleware";
 import { canViewAnalytics } from "@/lib/analytics-access";
 import { db } from "@/db";
@@ -69,11 +71,12 @@ const app = new Hono()
         .from(orders)
         .where(and(sql`(${orders.status} = 'REFUNDED' OR (${orders.refundedAmount} IS NOT NULL AND ${orders.refundedAmount} > 0))`, gte(orders.createdAt, start), lte(orders.createdAt, end)));
 
+    const posChannel = posChannelSql(await getSetting("site_name"));
     const pageRef = sql<string>`
       CASE
         WHEN ${orders.saleType} = 'POS' THEN
           CASE
-            WHEN ${orders.reference} IS NULL OR TRIM(${orders.reference}) = '' THEN 'Sleep Sheet (POS)'
+            WHEN ${orders.reference} IS NULL OR TRIM(${orders.reference}) = '' THEN ${posChannel}
             WHEN TRIM(${orders.reference}) ILIKE '%(pos)' THEN TRIM(${orders.reference})
             ELSE TRIM(${orders.reference}) || ' (POS)'
           END

@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import { useLanguage } from "@/hooks/use-language";
-import { seoConfig } from "@/lib/seo";
+import { useStoreProfile } from "@/hooks/use-store-profile";
 import { useWebsiteSettings } from "@/hooks/use-website-settings";
 import { toBengaliDigits as bn } from "@/lib/utils";
 
 export default function ShippingReturnsBody() {
   const { language, t } = useLanguage();
+  const store = useStoreProfile();
   // Charges come from the same settings checkout bills from, not hardcoded
   // copy — the page used to say ৳80 inside Dhaka while checkout charged more.
   const { shippingInsideDhaka, shippingOutsideDhaka } = useWebsiteSettings();
@@ -57,7 +58,7 @@ export default function ShippingReturnsBody() {
 
           <h2>৭ দিনের রিপ্লেসমেন্ট গ্যারান্টি</h2>
           <p>
-            {seoConfig.siteName}-এর প্রতিটি পণ্যে রয়েছে ৭ দিনের রিপ্লেসমেন্ট গ্যারান্টি। আপনার পণ্য
+            {store.name}-এর প্রতিটি পণ্যে রয়েছে ৭ দিনের রিপ্লেসমেন্ট গ্যারান্টি। আপনার পণ্য
             ত্রুটিপূর্ণ, ক্ষতিগ্রস্ত, বা অর্ডারকৃত পণ্যের সাথে না মিললে, ডেলিভারির ৭ দিনের মধ্যে আমাদের
             সাথে যোগাযোগ করুন, আমরা বিনামূল্যে তা পরিবর্তন করে দেব।
           </p>
@@ -65,8 +66,8 @@ export default function ShippingReturnsBody() {
           <ol>
             <li>
               ডেলিভারির ৭ দিনের মধ্যে{" "}
-              <a href={`mailto:${seoConfig.contact.email}`}>{seoConfig.contact.email}</a> অথবা{" "}
-              <a href={`tel:${seoConfig.contact.telephone}`}>{seoConfig.contact.telephone}</a>-এ
+              <a href={`mailto:${store.email}`}>{store.email}</a> অথবা{" "}
+              <a href={`tel:${store.phone}`}>{store.phone}</a>-এ
               যোগাযোগ করুন, সাথে আপনার অর্ডার নম্বর ও সমস্যার একটি ছবি দিন।
             </li>
             <li>আপনার দাবি সমাধান না হওয়া পর্যন্ত পণ্য ও এর মূল প্যাকেজিং সংরক্ষণ করুন।</li>
@@ -80,8 +81,8 @@ export default function ShippingReturnsBody() {
           <h2>প্রশ্ন আছে?</h2>
           <p>
             আমাদের সাথে যোগাযোগ করুন{" "}
-            <a href={`mailto:${seoConfig.contact.email}`}>{seoConfig.contact.email}</a> অথবা{" "}
-            <a href={`tel:${seoConfig.contact.telephone}`}>{seoConfig.contact.telephone}</a>-এ।
+            <a href={`mailto:${store.email}`}>{store.email}</a> অথবা{" "}
+            <a href={`tel:${store.phone}`}>{store.phone}</a>-এ।
           </p>
         </div>
       ) : (
@@ -112,7 +113,7 @@ export default function ShippingReturnsBody() {
 
           <h2>7-Day Replacement Guarantee</h2>
           <p>
-            Every product from {seoConfig.siteName} comes with a 7-day replacement guarantee. If your
+            Every product from {store.name} comes with a 7-day replacement guarantee. If your
             product is defective, damaged, or not what you ordered, contact us within 7 days of
             delivery and we will replace it free of charge.
           </p>
@@ -120,8 +121,8 @@ export default function ShippingReturnsBody() {
           <ol>
             <li>
               Contact us at{" "}
-              <a href={`mailto:${seoConfig.contact.email}`}>{seoConfig.contact.email}</a> or{" "}
-              <a href={`tel:${seoConfig.contact.telephone}`}>{seoConfig.contact.telephone}</a> within
+              <a href={`mailto:${store.email}`}>{store.email}</a> or{" "}
+              <a href={`tel:${store.phone}`}>{store.phone}</a> within
               7 days of delivery, with your order number and a photo of the issue.
             </li>
             <li>Keep the product and its original packaging until your claim is resolved.</li>
@@ -138,8 +139,8 @@ export default function ShippingReturnsBody() {
           <h2>Questions?</h2>
           <p>
             Reach us at{" "}
-            <a href={`mailto:${seoConfig.contact.email}`}>{seoConfig.contact.email}</a> or{" "}
-            <a href={`tel:${seoConfig.contact.telephone}`}>{seoConfig.contact.telephone}</a>.
+            <a href={`mailto:${store.email}`}>{store.email}</a> or{" "}
+            <a href={`tel:${store.phone}`}>{store.phone}</a>.
           </p>
         </div>
       )}
