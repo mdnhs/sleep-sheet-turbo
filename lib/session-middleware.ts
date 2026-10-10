@@ -9,6 +9,7 @@ import { eq } from 'drizzle-orm'
 import { AUTH_COOKIE } from '@/features/auth/constants'
 import { authenticateApiKey } from '@/lib/api-keys'
 import { authenticateOAuthToken } from '@/lib/oauth'
+import { isTokenCurrent, type SessionClaims } from '@/lib/session-token'
 
 
 type SessionUser = {
@@ -33,7 +34,7 @@ type SessionUser = {
 // the change (it calls invalidateSessionUser). The cache is per-instance, so
 // it never has to be correct across instances for longer than that window.
 const SESSION_CACHE_TTL_MS = 30_000
-const sessionCache = new Map<string, { user: SessionUser; expiresAt: number }>()
+const sessionCache = new Map<string, { user: SessionUser; tokenVersion: number; expiresAt: number }>()
 
 /** Drop a user's cached session — call after changing their role/permissions. */
 export function invalidateSessionUser(userId: string) {
@@ -87,13 +88,13 @@ export const sessionMiddleware = createMiddleware<CustomContext>(async (c, next)
   }
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as {
-      id: string
-      email: string
-    }
+    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as SessionClaims
 
+    // The cache is keyed by user id, so it must also remember the version:
+    // otherwise an old token would ride on the cache entry a fresh login
+    // created.
     const cached = sessionCache.get(decoded.id)
-    if (cached && cached.expiresAt > Date.now()) {
+    if (cached && cached.expiresAt > Date.now() && isTokenCurrent(decoded, cached)) {
       c.set('user', cached.user)
       return await next()
     }
@@ -103,7 +104,7 @@ export const sessionMiddleware = createMiddleware<CustomContext>(async (c, next)
       with: { assignedRole: true },
     })
 
-    if (!user) {
+    if (!user || !isTokenCurrent(decoded, user)) {
       sessionCache.delete(decoded.id)
       c.set('user', null)
       deleteCookie(c, AUTH_COOKIE, { path: "/" })
@@ -123,7 +124,7 @@ export const sessionMiddleware = createMiddleware<CustomContext>(async (c, next)
       address: user.address
     }
 
-    sessionCache.set(user.id, { user: sessionUser, expiresAt: Date.now() + SESSION_CACHE_TTL_MS })
+    sessionCache.set(user.id, { user: sessionUser, tokenVersion: user.tokenVersion, expiresAt: Date.now() + SESSION_CACHE_TTL_MS })
     c.set('user', sessionUser)
   } catch (err) {
     console.error('Invalid token', err)

@@ -133,6 +133,9 @@ export const users = pgTable("User", {
   // reset to 0/null on the next successful login.
   failedLoginAttempts: integer("failedLoginAttempts").default(0).notNull(),
   lockedUntil: timestamp("lockedUntil", { precision: 3 }),
+  // Bumped whenever the password is reset or changed; JWTs carry the value
+  // they were signed with, so older sessions stop working (lib/session-token.ts).
+  tokenVersion: integer("tokenVersion").default(0).notNull(),
   createdAt: timestamp("createdAt", { precision: 3 }).defaultNow().notNull(),
 }, (table) => [
   index("User_roleId_idx").on(table.roleId),

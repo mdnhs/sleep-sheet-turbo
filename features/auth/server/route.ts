@@ -1,21 +1,29 @@
 import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
 import { LoginSchema, RegisterSchema } from "../schema";
-import Jwt from "jsonwebtoken";
 import { deleteCookie, setCookie } from "hono/cookie";
 
 import bcrypt from "bcryptjs";
 import { db } from "@/db";
 import { users } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { AUTH_COOKIE } from "../constants";
 import { sessionMiddleware, invalidateSessionUser } from "@/lib/session-middleware";
 import { rateLimit } from "@/lib/rate-limit";
+import { signSessionToken } from "@/lib/session-token";
 import { z } from "zod";
 import { getWishlistData } from "@/features/wishlist/server/get-wishlist-data";
 
 // Brute-force lockout: after this many wrong passwords in a row, the account
 // is locked for LOCKOUT_MINUTES. Counter resets on any successful login.
+const SESSION_COOKIE_OPTIONS = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === "production",
+  sameSite: "Lax",
+  path: "/",
+  maxAge: 60 * 60 * 24 * 7, // 7 days, matches the JWT
+} as const;
+
 const MAX_FAILED_ATTEMPTS = 5;
 const LOCKOUT_MINUTES = 15;
 
@@ -126,19 +134,8 @@ const app = new Hono()
           .where(eq(users.id, user.id));
       }
 
-      const token = Jwt.sign(
-        { id: user.id, email: user.email },
-        process.env.JWT_SECRET!,
-        { expiresIn: "7d" }
-      );
-
-      setCookie(c, AUTH_COOKIE, token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "Lax",
-        path: "/",
-        maxAge: 60 * 60 * 24 * 7, // 7 days
-      });
+      const token = signSessionToken(user);
+      setCookie(c, AUTH_COOKIE, token, SESSION_COOKIE_OPTIONS);
 
       // Lightweight non-httpOnly flag allowing client code to skip /api/auth/current
       // round-trips entirely when a visitor is an anonymous guest.
@@ -226,7 +223,11 @@ const app = new Hono()
     }
 
     const [updated] = await db.update(users)
-      .set(updateData)
+      .set({
+        ...updateData,
+        // A new password signs every other session out (lib/session-token.ts).
+        ...(body.newPassword ? { tokenVersion: sql`${users.tokenVersion} + 1` } : {}),
+      })
       .where(eq(users.id, user.id))
       .returning({
         id: users.id,
@@ -242,6 +243,15 @@ const app = new Hono()
     // concurrent request could miss the cache, re-read the not-yet-updated
     // row, and re-cache the stale copy for another full TTL.
     invalidateSessionUser(user.id);
+
+    if (body.newPassword) {
+      // The version bump above signed this browser out too; give it a fresh cookie.
+      const fresh = await db.query.users.findFirst({
+        where: eq(users.id, user.id),
+        columns: { id: true, email: true, tokenVersion: true },
+      });
+      if (fresh) setCookie(c, AUTH_COOKIE, signSessionToken(fresh), SESSION_COOKIE_OPTIONS);
+    }
 
     return c.json({ data: updated });
   }

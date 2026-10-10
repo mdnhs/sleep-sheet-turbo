@@ -232,6 +232,13 @@
       "when": 1791657771688,
       "tag": "0032_api_keys_drop_raw_key",
       "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1791658299507,
+      "tag": "0033_user_token_version",
+      "breakpoints": true
     }
   ]
 }

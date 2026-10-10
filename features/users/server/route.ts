@@ -234,8 +234,15 @@ const app = new Hono()
       // otherwise a locked-out user with a brand new password would still
       // have to wait out the timer.
       await db.update(users)
-        .set({ password: hashedPassword, failedLoginAttempts: 0, lockedUntil: null })
+        .set({
+          password: hashedPassword,
+          failedLoginAttempts: 0,
+          lockedUntil: null,
+          // Every session the old password opened stops working.
+          tokenVersion: sql`${users.tokenVersion} + 1`,
+        })
         .where(eq(users.id, id));
+      invalidateSessionUser(id);
 
       setActivityMeta(c, {
         name: targetUser.name || targetUser.email,

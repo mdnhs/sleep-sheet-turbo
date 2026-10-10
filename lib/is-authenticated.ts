@@ -5,6 +5,7 @@ import { db } from "@/db";
 import { users } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { AUTH_COOKIE } from "@/features/auth/constants";
+import { isTokenCurrent, type SessionClaims } from "@/lib/session-token";
 
 export async function getCurrentUser() {
   const cookieStore = cookies();
@@ -13,18 +14,14 @@ export async function getCurrentUser() {
   if (!token) return null;
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as {
-      id: string;
-      email: string;
-      role:string;
-    };
+    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as SessionClaims;
 
     const user = await db.query.users.findFirst({
       where: eq(users.id, decoded.id),
       with: { assignedRole: true },
     });
 
-    if (!user) return null;
+    if (!user || !isTokenCurrent(decoded, user)) return null;
 
     const isSuperAdmin = user.email === process.env.SUPER_ADMIN_EMAIL;
 
