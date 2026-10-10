@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { parseUserAgent } from "@/lib/user-agent-parser";
 import { countryFromHeader } from "../lib/request-info";
 import { toRoute } from "../lib/route-pattern";
@@ -8,6 +9,13 @@ import {
   type AnalyticsEvent,
   type NewAnalyticsEvent,
 } from "./store";
+
+/**
+ * Lenient schema for the analytics ids a checkout request carries: an
+ * oversized or non-string value becomes undefined instead of failing request
+ * validation, so attribution can never reject an order.
+ */
+export const analyticsIdSchema = z.string().trim().max(64).optional().catch(undefined);
 
 export interface OrderEventInput {
   orderId: string;

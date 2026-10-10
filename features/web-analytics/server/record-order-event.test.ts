@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { recordOrderEvent, type OrderEventDeps } from "./record-order-event";
+import { analyticsIdSchema, recordOrderEvent, type OrderEventDeps } from "./record-order-event";
 import type { AnalyticsEvent, NewAnalyticsEvent } from "./store";
 
 const IPHONE =
@@ -104,5 +104,14 @@ describe("recordOrderEvent", () => {
     await expect(
       recordOrderEvent({ orderId: "ord4", value: 1, sessionId: "s1", headers: headers() }, deps),
     ).resolves.toBeUndefined();
+  });
+});
+
+describe("analyticsIdSchema", () => {
+  it("trims valid ids and turns bad values into undefined instead of failing", () => {
+    expect(analyticsIdSchema.parse(" abc ")).toBe("abc");
+    expect(analyticsIdSchema.parse("x".repeat(500))).toBeUndefined();
+    expect(analyticsIdSchema.parse(123)).toBeUndefined();
+    expect(analyticsIdSchema.parse(undefined)).toBeUndefined();
   });
 });

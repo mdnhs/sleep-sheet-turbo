@@ -22,7 +22,7 @@ import { isUniqueViolation } from "@/lib/db-errors";
 import { isBkashAvailable } from "@/lib/bkash";
 import { expireStaleBkashOrders, failBkashOrder, startBkashPayment } from "@/lib/bkash-orders";
 import { after } from "next/server";
-import { recordOrderEvent } from "@/features/web-analytics/server/record-order-event";
+import { analyticsIdSchema, recordOrderEvent } from "@/features/web-analytics/server/record-order-event";
 
 // Mirrors features/checkout/schema.ts (client-side form validation) so the
 // server never trusts shippingInfo/paymentInfo/guestItems shape or content
@@ -64,8 +64,8 @@ const checkoutSchema = z.object({
   landingReferrer: z.string().optional(),
   // First-party analytics ids (features/web-analytics/lib/collector.ts), so
   // the order can be tied to the visit and campaign that produced it.
-  analyticsVisitorId: z.string().trim().max(64).optional(),
-  analyticsSessionId: z.string().trim().max(64).optional(),
+  analyticsVisitorId: analyticsIdSchema,
+  analyticsSessionId: analyticsIdSchema,
 });
 
 async function getShippingCost(zone: string): Promise<number> {
