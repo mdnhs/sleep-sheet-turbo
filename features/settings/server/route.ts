@@ -13,34 +13,7 @@ import { setActivityMeta, type ActivityChange } from "@/features/activity/server
 import { revalidateTag, unstable_cache } from "next/cache";
 import { buildFallback } from "@/lib/build-phase";
 import { purgeCdn } from "@/lib/cdn-purge";
-
-// Credentials that must never leave the server through the public GET.
-// The public endpoint exposes only a "<key>_set" flag for each so the admin
-// UI can show configured state; raw values are served by /secrets below.
-// (cloudinary_cloud_name stays public — it is visible in every image URL.)
-const SECRET_SETTING_KEYS = [
-  "steadfast_api_key",
-  "steadfast_secret_key",
-  "bdcourier_api_key",
-  "cloudinary_api_key",
-  "cloudinary_api_secret",
-  "google_sheets_client_email",
-  "google_sheets_private_key",
-  "google_sheets_spreadsheet_id",
-  "bkash_app_key",
-  "bkash_app_secret",
-  "bkash_username",
-  "bkash_password",
-] as const;
-
-// Safety net for credential-shaped rows that aren't in the list above (the
-// DB contains orphaned logins like fraud_steadfast_* / fraud_pathao_* from
-// older versions). Anything matching this never leaves the public GET.
-const SECRET_KEY_PATTERN = /password|secret|api_key|token|_pass$|^fraud_/i;
-
-const isSecretKey = (key: string) =>
-  (SECRET_SETTING_KEYS as readonly string[]).includes(key) ||
-  SECRET_KEY_PATTERN.test(key);
+import { SECRET_SETTING_KEYS, isSecretKey, secretKeysIn } from "@/features/settings/secret-keys";
 
 /**
  * The public settings map — every non-secret row, plus a `<key>_set` flag for
@@ -227,6 +200,13 @@ const app = new Hono()
       const updates = Object.entries(body).filter(([, v]) => v !== undefined) as [string, string | number][];
 
       const changedKeys = updates.map(([key]) => key);
+      // Reading credentials is ADMIN-only (/secrets); changing them must be
+      // too, or settings:write could swap the bKash merchant account or the
+      // courier login for one the caller controls.
+      const lockedKeys = secretKeysIn(changedKeys);
+      if (lockedKeys.length > 0 && user?.role !== "ADMIN") {
+        return c.json({ error: "Only an admin can change credentials", keys: lockedKeys }, 403);
+      }
       const before = changedKeys.length
         ? await db.query.siteSettings.findMany({ where: inArray(siteSettings.key, changedKeys) })
         : [];
