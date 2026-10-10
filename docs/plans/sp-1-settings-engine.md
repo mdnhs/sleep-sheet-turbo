@@ -29,7 +29,7 @@
   2. Check that the emitted SQL holds only the intended change. If it holds more, the snapshot has drifted; see `db/migrations/README.md`.
   3. The owner applies the SQL with `psql`.
   4. Commit the SQL together with `db/migrations/meta/*`.
-  - The latest existing migration is `0033_user_token_version`; SP-1's only migration is `0034`.
+  - The latest existing migration is `0034_checkout_drafts`; SP-1's only migration is `0035`.
   - Never run `pnpm db:migrate` or `pnpm db:push`.
 - **Tests.** Use vitest, put `*.test.ts` beside the code, and import with the `@/` alias. Run with `pnpm test <path>`.
 - **Commits.**
@@ -52,7 +52,7 @@ The five failure modes most likely to hurt real users, each pinned by a test in 
 2. **Ordinary settings saves by non-admins start failing.** A MODERATOR with `settings:write` saving the Website, SEO, Store profile or Business rules page must not get a 403. Pinned in Task 5 by "lets a settings:write user save ordinary settings" and in Task 7 by "a settings:write user can save every store-profile and business-rules field".
 3. **The homepage title or description changes on deploy.** `seo_default_title` and `seo_default_description` were saved by the SEO form but never read. Task 8 wires them, so a stale saved value would replace the live title. Pinned in Task 8 by "falls back to the built-in title when none is saved", plus the owner's pre-deploy psql check (Deployment order, step 2).
 4. **Titles are doubled or `og:title` gets a suffix** ("X | Store | Store") after the root metadata becomes dynamic. Pinned in Task 8 by "does not template og:title or twitter:title" and in Task 9 by "puts the store name in the title exactly once".
-5. **GTM stops loading** (GA4, Ads and Meta tracking lost) when the hardcoded container fallback is removed. Pinned in Task 12 by "loads nothing rather than a hardcoded container", plus the backfill in migration `0034` and the owner's check (Deployment order, step 3).
+5. **GTM stops loading** (GA4, Ads and Meta tracking lost) when the hardcoded container fallback is removed. Pinned in Task 12 by "loads nothing rather than a hardcoded container", plus the backfill in migration `0035` and the owner's check (Deployment order, step 3).
 
 **Deferred, on purpose** (noted so a reviewer does not flag them as gaps):
 - `public: false` is used only for the new `ai` group. Keys that are admin-only in spirit but served today (`pos_*`, `social_manager_url`) keep today's exposure; tightening them needs an authenticated dashboard read (SP-7).
@@ -77,7 +77,7 @@ No task changes the table structure. Four steps need the owner.
    DELETE FROM site_settings WHERE key = 'seo_default_title';
    ```
 3. **Before the push that contains Task 12:**
-   - Apply `db/migrations/0034_settings_white_label.sql`. It backfills `gtm_web_id` and `gtm_server_url` if they are missing or empty, and deletes the four dead keys. Then check:
+   - Apply `db/migrations/0035_settings_white_label.sql`. It backfills `gtm_web_id` and `gtm_server_url` if they are missing or empty, and deletes the four dead keys. Then check:
      ```sql
      SELECT key, value FROM site_settings WHERE key IN ('gtm_web_id','gtm_server_url');
      ```
@@ -4272,7 +4272,7 @@ EOF
 - Create: `features/google-sheets/product-cache-webhook.test.ts`
 - Create: `mcp-server/src/tools/ga4-property.ts`
 - Create: `mcp-server/src/tools/ga4-property.test.ts`
-- Create (generated, custom): `db/migrations/0034_settings_white_label.sql`, plus updates to `db/migrations/meta/_journal.json` and a new `db/migrations/meta/0034_snapshot.json`
+- Create (generated, custom): `db/migrations/0035_settings_white_label.sql`, plus updates to `db/migrations/meta/_journal.json` and a new `db/migrations/meta/0035_snapshot.json`
 - Modify: `components/google-analytics.tsx:45-67,104,162`
 - Modify: `features/seo/components/seo-form.tsx` (remove `seo_site_name`; add `gtm_server_url`)
 - Modify: `features/google-sheets/server/route.ts:200-203`
@@ -4501,7 +4501,7 @@ Generate the data migration:
 
 Run: `pnpm db:generate --custom --name settings_white_label`
 (drizzle-kit `generate` does not connect to the database. If it complains about `DATABASE_URL`, prefix the command with `DATABASE_URL=postgres://x:x@127.0.0.1:1/x`.)
-Expected: an empty `db/migrations/0034_settings_white_label.sql`, plus a journal entry. Fill it with exactly:
+Expected: an empty `db/migrations/0035_settings_white_label.sql`, plus a journal entry. Fill it with exactly:
 
 ```sql
 -- SP-1 Task 12. Data only; the site_settings table is unchanged.
@@ -4541,7 +4541,7 @@ Expected: only `lib/settings/defaults.ts` (`DEFAULT_SITE_URL`).
 - [ ] **Step 8: Commit**
 
 ```bash
-git add lib/gtm/container.ts lib/gtm/container.test.ts lib/gtm/index.ts components/google-analytics.tsx features/google-sheets/product-cache-webhook.ts features/google-sheets/product-cache-webhook.test.ts features/google-sheets/server/route.ts mcp-server/src/tools/ga4-property.ts mcp-server/src/tools/ga4-property.test.ts mcp-server/src/tools/ga4.ts lib/print-receipt.ts "app/(client)/orders/[orderId]/order-actions.tsx" next.config.ts lib/settings/registry.ts lib/settings/registry.test.ts features/seo/components/seo-form.tsx lib/cdn-purge.ts db/migrations/0034_settings_white_label.sql db/migrations/meta
+git add lib/gtm/container.ts lib/gtm/container.test.ts lib/gtm/index.ts components/google-analytics.tsx features/google-sheets/product-cache-webhook.ts features/google-sheets/product-cache-webhook.test.ts features/google-sheets/server/route.ts mcp-server/src/tools/ga4-property.ts mcp-server/src/tools/ga4-property.test.ts mcp-server/src/tools/ga4.ts lib/print-receipt.ts "app/(client)/orders/[orderId]/order-actions.tsx" next.config.ts lib/settings/registry.ts lib/settings/registry.test.ts features/seo/components/seo-form.tsx lib/cdn-purge.ts db/migrations/0035_settings_white_label.sql db/migrations/meta
 git commit -F - <<'EOF'
 fix(white-label): drop hardcoded GTM, n8n, GA4 and LUXSTORE fallbacks
 
@@ -4549,7 +4549,7 @@ GTM's container and first-party host now come only from settings
 (gtm_server_url is finally read), the n8n product-cache sync returns
 503 when its webhook is unset, and the MCP GA4 tools require a
 property. The LUXSTORE receipt default, the luxstore image host and the
-four dead settings keys are removed. Migration 0034 backfills the two
+four dead settings keys are removed. Migration 0035 backfills the two
 GTM keys and deletes the dead rows; the owner applies it before deploy.
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
