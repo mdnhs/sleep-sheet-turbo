@@ -1,59 +1,43 @@
-// Must be the host the site is actually served from. Vercel serves the apex
-// (sleepsheetbd.com) and redirects www → apex, so a www default made every
-// canonical, sitemap URL, og:url and JSON-LD url point at a redirect — Google
-// then has to guess which host is canonical.
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://sleepsheetbd.com";
+// Defaults only. Render paths read the store profile instead
+// (getStoreProfile / getSiteSeo on the server, useStoreProfile on the
+// client); this object keeps its old shape so the remaining callers that
+// need only siteUrl, themeColor or defaultImage keep compiling.
+import { DEFAULT_SITE_URL, SEO_DEFAULTS, STORE_DEFAULTS } from "@/lib/settings/defaults";
+
+export const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || DEFAULT_SITE_URL;
 
 export const seoConfig = {
-  siteName: "Sleep Sheet",
+  siteName: STORE_DEFAULTS.name,
   siteUrl,
-  // Brand + shop intent only. The "… Price in Bangladesh" keywords belong to
-  // the category pages (/categories/comforters, /categories/bedsheet); when the
-  // homepage title targeted them too, three or four of our own pages competed
-  // for the same query and none of them ranked.
-  defaultTitle: "Sleep Sheet — Comforter & Bed Sheet Online Shop in Bangladesh",
-  defaultDescription:
-    "১০০% টুইল কটন কম্ফোর্টার সেট ও কিং সাইজ বেডশিট অনলাইনে কিনুন। ক্যাশ অন ডেলিভারি, সারা বাংলাদেশে হোম ডেলিভারি আর ৭ দিনের রিপ্লেসমেন্ট গ্যারান্টি।",
-  // 1200×630 share card rendered by app/og-image.png/route.tsx.
-  defaultImage: "/og-image.png",
-  // Matches <html lang="bn"> and the Bangladesh audience — was en_US.
-  defaultLocale: "bn_BD",
-  themeColor: "#0f172a",
+  defaultTitle: SEO_DEFAULTS.title,
+  defaultDescription: SEO_DEFAULTS.description,
+  defaultImage: SEO_DEFAULTS.image,
+  defaultLocale: STORE_DEFAULTS.locale,
+  themeColor: SEO_DEFAULTS.themeColor,
   organization: {
-    name: "Sleep Sheet",
+    name: STORE_DEFAULTS.name,
     url: siteUrl,
-    // Absolute: Google's logo guidelines for Organization require a full URL.
-    logo: `${siteUrl}/logo.webp`,
-    description: "Premium bedding and comforter sets in Bangladesh, with cash on delivery nationwide.",
-    foundingDate: "2024",
-    founders: [],
-    // Fallback only — the root layout builds sameAs from the social_* site
-    // settings, which list the accounts that actually exist (no Twitter,
-    // YouTube or Pinterest account today).
-    sameAs: [
-      "https://www.facebook.com/sleepsheet2025",
-      "https://www.instagram.com/sleepsheet2025",
-    ],
+    logo: `${siteUrl}${STORE_DEFAULTS.logoUrl}`,
+    description: STORE_DEFAULTS.description,
+    foundingDate: STORE_DEFAULTS.foundingYear,
+    founders: [] as string[],
+    sameAs: [STORE_DEFAULTS.social.facebook, STORE_DEFAULTS.social.instagram],
   },
   address: {
-    streetAddress: "Hope Market, Mirpur 10",
-    addressLocality: "Dhaka",
-    addressRegion: "Dhaka",
-    postalCode: "1216",
+    streetAddress: STORE_DEFAULTS.address,
+    addressLocality: STORE_DEFAULTS.city,
+    addressRegion: STORE_DEFAULTS.city,
+    postalCode: STORE_DEFAULTS.postalCode,
     addressCountry: "BD",
   },
   contact: {
-    telephone: "+8801570241052",
-    email: "sleepsheet2025@gmail.com",
+    telephone: STORE_DEFAULTS.phone,
+    email: STORE_DEFAULTS.email,
     contactType: "customer service",
   },
-  // Fallbacks for when site settings haven't loaded. Twitter, YouTube and
-  // Pinterest were listed here but don't exist (social_twitter/_youtube are
-  // empty in settings), so the footer and contact page linked to dead
-  // profiles.
   socialLinks: {
-    facebook: "https://www.facebook.com/sleepsheet2025",
-    instagram: "https://www.instagram.com/sleepsheet2025",
+    facebook: STORE_DEFAULTS.social.facebook,
+    instagram: STORE_DEFAULTS.social.instagram,
   },
   verification: {
     google: process.env.NEXT_PUBLIC_GOOGLE_VERIFICATION || "",

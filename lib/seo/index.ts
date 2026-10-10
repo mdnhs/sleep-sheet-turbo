@@ -1,4 +1,4 @@
-export { seoConfig } from "./config"
+export { seoConfig, siteUrl } from "./config"
 export type { BreadcrumbItem, SeoMetadata, ProductSeoData, CategorySeoData, BlogSeoData } from "./types"
 export { generateMetadata, generateProductMetadata, generateCategoryMetadata, generateBlogMetadata, generatePaginatedMetadata } from "./metadata"
 export {
