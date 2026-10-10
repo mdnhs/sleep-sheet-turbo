@@ -318,7 +318,7 @@ const ProductCard = ({ product, priority = false }: ProductCardProps) => {
             <div className="flex items-center gap-1.5 shrink-0">
               <span className="text-[14px] text-slate-600 dark:text-slate-400 font-medium">
                 {product.rating}{" "}
-                <span className="text-slate-400 dark:text-slate-500 font-normal">
+                <span className="text-slate-500 dark:text-slate-400 font-normal">
                   ({product.reviewCount})
                 </span>
               </span>

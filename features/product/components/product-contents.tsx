@@ -120,7 +120,7 @@ function ProductContents({
       {isLoading && allProducts.length === 0 ? (
         <ProductGridSkeleton />
       ) : (
-        <div className="animate-in fade-in duration-300">
+        <div>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-1.5 sm:gap-3">
             {allProducts.map((product, index: number) => (
               <ProductCard

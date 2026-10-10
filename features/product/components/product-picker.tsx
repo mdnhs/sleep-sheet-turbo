@@ -509,7 +509,7 @@ function ProductPicker({ product }: ProductPickerProps) {
                     }`}
                   >
                     <span>{color.name}</span>
-                    <span className="text-[11px] opacity-80 font-semibold">
+                    <span className="text-[11px] font-semibold">
                       ({formatAmount(color.price ?? product.price ?? 0)})
                     </span>
                   </button>
@@ -675,6 +675,8 @@ function ProductPicker({ product }: ProductPickerProps) {
             variant="outline"
             size="icon"
             disabled={isAdding || isRemoving}
+            aria-label={isInWishlist ? "Remove from wishlist" : "Add to wishlist"}
+            aria-pressed={isInWishlist}
             className="h-12 w-12 lg:h-14 lg:w-14 shrink-0 rounded-full border-border bg-background hover:bg-secondary/50 transition-colors ml-auto"
             onClick={(e) => {
               triggerHaptic("selection");
@@ -743,7 +745,7 @@ function ProductPicker({ product }: ProductPickerProps) {
             href={whatsappOrderHref}
             target="_blank" 
             rel="noopener noreferrer"
-            className="flex items-center justify-center h-12 rounded-full font-medium border border-green-500 bg-white dark:bg-slate-900 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/30 transition-colors text-sm"
+            className="flex items-center justify-center h-12 rounded-full font-medium border border-green-500 bg-white dark:bg-slate-900 text-green-700 dark:text-green-500 hover:bg-green-50 dark:hover:bg-green-900/30 transition-colors text-sm"
           >
             <MessageCircle className="mr-2 h-4 w-4" fill="currentColor" />
             {t("whatsappOrder")}

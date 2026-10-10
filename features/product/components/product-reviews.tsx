@@ -136,7 +136,7 @@ export function ProductReviews({ product }: ProductReviewsProps) {
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 mb-1.5">
-                        <h4 className="font-semibold text-sm text-foreground">{toTitleCase(review.name)}</h4>
+                        <h3 className="font-semibold text-sm text-foreground">{toTitleCase(review.name)}</h3>
                         <span className="text-xs text-muted-foreground shrink-0">{formatDate(review.date)}</span>
                       </div>
                       <div className="flex mb-2">

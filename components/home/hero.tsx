@@ -153,7 +153,9 @@ function Hero() {
   });
 
   return (
-    <section className="w-full bg-[#F4F4F4] dark:bg-background py-3 md:py-4 relative overflow-hidden animate-in fade-in duration-300">
+    // No fade-in on this section: it holds the LCP image, and an opacity-0
+    // start delays the moment Chrome counts it as painted.
+    <section className="w-full bg-[#F4F4F4] dark:bg-background py-3 md:py-4 relative overflow-hidden">
       <div className="container mx-auto px-4">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 h-auto lg:h-[320px] xl:h-[400px]">
           {/* Left: Main Slider (Carousel) */}

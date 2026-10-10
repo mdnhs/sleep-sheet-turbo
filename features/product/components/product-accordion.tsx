@@ -147,7 +147,7 @@ export function ProductAccordion({ product }: ProductAccordionProps) {
                   )}
                 </div>
 
-                <div className="mt-2 bg-orange-500/10 text-orange-600 dark:text-orange-400 text-[11px] font-bold px-2.5 py-1.5 rounded-lg flex items-center justify-center gap-1.5">
+                <div className="mt-2 bg-orange-500/10 text-orange-800 dark:text-orange-400 text-[11px] font-bold px-2.5 py-1.5 rounded-lg flex items-center justify-center gap-1.5">
                   <CalendarClock className="h-3.5 w-3.5" />
                   {t("estDelivery")}: {outsideRangeStr}
                 </div>

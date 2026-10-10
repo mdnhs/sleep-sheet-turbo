@@ -6,6 +6,7 @@ import { Play } from "lucide-react";
 import BrandedVideoPlayer from "@/components/product/branded-video-player";
 import OptimizedImage from "@/components/ui/optimized-image";
 import { autoplayAllowed, productVideoPoster, productVideoUrl } from "@/lib/product-video";
+import { afterLoadIdle } from "@/lib/after-load-idle";
 
 // The lightbox library (plus 6 plugins and their CSS) is only needed once the
 // user taps the image, so it is loaded on demand instead of shipping in the
@@ -47,17 +48,25 @@ function SwitchImage({ product }: SwitchImageProps) {
       events.forEach((e) => document.removeEventListener(e, unmute));
     };
 
-    el.muted = false;
-    void el.play().catch(() => {
-      if (cancelled) return;
-      // Sound-on autoplay refused: play silently, unmute on the first gesture.
-      el.muted = true;
-      void el.play().catch(() => {});
-      events.forEach((e) => document.addEventListener(e, unmute, { once: true }));
-    });
+    const start = () => {
+      el.muted = false;
+      void el.play().catch(() => {
+        if (cancelled) return;
+        // Sound-on autoplay refused: play silently, unmute on the first gesture.
+        el.muted = true;
+        void el.play().catch(() => {});
+        events.forEach((e) => document.addEventListener(e, unmute, { once: true }));
+      });
+    };
+
+    // A tap on the thumbnail plays right away. The automatic start waits for
+    // load + idle: the MP4 is 1–2 MB, and streaming it while the page is still
+    // painting delayed LCP on phones. The poster covers the wait.
+    const cancelIdle = videoSound ? (start(), () => {}) : afterLoadIdle(start);
 
     return () => {
       cancelled = true;
+      cancelIdle();
       events.forEach((e) => document.removeEventListener(e, unmute));
     };
   }, [showVideo, videoSound, video]);

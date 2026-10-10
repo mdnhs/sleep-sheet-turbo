@@ -8,6 +8,7 @@ import { useLanguage } from "@/hooks/use-language";
 import { floorToNearest50 } from "@/lib/utils";
 import { autoplayAllowed, productVideoPoster, productVideoUrl } from "@/lib/product-video";
 import type { ProductVideoItem } from "@/lib/types";
+import { afterLoadIdle } from "@/lib/after-load-idle";
 
 // Poster widths for the srcset: half-width phone cards (~160px at 2–3x DPR)
 // up to the 20vw desktop column.
@@ -58,20 +59,31 @@ const ProductVideoCard = memo(function ProductVideoCard({
     if (!card || !video) return;
     if (!controlled && !autoplayAllowed()) return;
 
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (controlled) {
-          onVisibleRatio?.(item.id, entry.isIntersecting ? entry.intersectionRatio : 0);
-        } else if (entry.isIntersecting && !pausedRef.current) {
-          void video.play().catch(() => {});
-        } else {
-          video.pause();
-        }
-      },
-      { threshold: controlled ? [0, 0.6] : 0.6 },
-    );
-    observer.observe(card);
-    return () => observer.disconnect();
+    // Start watching only once the page has loaded and gone idle. Observing at
+    // hydration meant the visible carousel cards began streaming their MP4s
+    // (1–2 MB each) while the hero image was still painting, and on a phone
+    // connection that pushed the home page's LCP past 10s in Lighthouse.
+    let observer: IntersectionObserver | undefined;
+    const start = () => {
+      observer = new IntersectionObserver(
+        ([entry]) => {
+          if (controlled) {
+            onVisibleRatio?.(item.id, entry.isIntersecting ? entry.intersectionRatio : 0);
+          } else if (entry.isIntersecting && !pausedRef.current) {
+            void video.play().catch(() => {});
+          } else {
+            video.pause();
+          }
+        },
+        { threshold: controlled ? [0, 0.6] : 0.6 },
+      );
+      observer.observe(card);
+    };
+    const cancel = afterLoadIdle(start);
+    return () => {
+      cancel();
+      observer?.disconnect();
+    };
   }, [controlled, item.id, onVisibleRatio]);
 
   useEffect(() => {
