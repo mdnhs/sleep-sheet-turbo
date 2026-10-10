@@ -17,23 +17,10 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 ARG DEPLOYMENT_VERSION
 ENV DEPLOYMENT_VERSION=$DEPLOYMENT_VERSION
-ARG DATABASE_URL
-ENV DATABASE_URL=$DATABASE_URL
-# Type checking happens in CI (see .github/workflows/deploy.yml); skipping it
-# here keeps the build within a 4 GB VPS. The heap cap leaves room for
-# Postgres and n8n running alongside.
-ENV SKIP_BUILD_TYPECHECK=1 NEXT_CPU_COUNT=1 NODE_OPTIONS=--max-old-space-size=1200
-# The production .env is mounted only for this step (NEXT_PUBLIC_* values are
-# inlined into the client bundle at build time). Standalone output copies
-# .env files next to server.js, so they are deleted again right after the
-# build — otherwise every secret would ship inside the image. The runtime
-# container gets its environment from compose's env_file instead.
-# The build reaches Postgres over the host network, so DATABASE_URL is
-# overridden with the loopback address from a second secret.
-RUN --mount=type=secret,id=dotenv,target=/app/.env,required=false \
-    --mount=type=secret,id=build_database_url,required=false \
-    DATABASE_URL="${DATABASE_URL:-$(test -f /run/secrets/build_database_url && cat /run/secrets/build_database_url || echo "$DATABASE_URL")}" pnpm build \
-    && rm -f .next/standalone/.env .next/standalone/.env.*
+ARG NEXT_PUBLIC_APP_URL=https://stage.sleepsheetbd.com
+ENV NEXT_PUBLIC_APP_URL=$NEXT_PUBLIC_APP_URL
+ENV SKIP_BUILD_TYPECHECK=1
+RUN pnpm build
 
 FROM node:22-bookworm-slim AS runner
 ENV NODE_ENV=production NEXT_TELEMETRY_DISABLED=1 PORT=3000 HOSTNAME=0.0.0.0

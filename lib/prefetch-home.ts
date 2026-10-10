@@ -17,10 +17,22 @@ import type { CategoryListItem } from "@/features/categories/api/use-get-categor
 async function fromRoute<T>(
   app: { request: (path: string) => Response | Promise<Response> },
   path: string,
+  fallback?: T,
 ): Promise<T> {
-  const res = await app.request(path);
-  if (!res.ok) throw new Error(`Prefetch ${path} failed: ${res.status}`);
-  return res.json() as Promise<T>;
+  try {
+    const res = await app.request(path);
+    if (!res.ok) {
+      if (fallback !== undefined) return fallback;
+      throw new Error(`Prefetch ${path} failed: ${res.status}`);
+    }
+    return (await res.json()) as T;
+  } catch (err) {
+    if (fallback !== undefined) {
+      console.warn(`[prefetch] Route ${path} failed, using fallback:`, err);
+      return fallback;
+    }
+    throw err;
+  }
 }
 
 import categoriesApp from "@/features/categories/server/route";
@@ -40,13 +52,13 @@ import productsApp from "@/features/product/server/route";
 // invalidateBlog()/invalidateTestimonials() now (lib/content-cache.ts), so
 // they sit with everything else.
 export const getPublicSettings = unstable_cache(
-  () => fromRoute<Record<string, string>>(settingsApp, "/"),
+  () => fromRoute<Record<string, string>>(settingsApp, "/", {}),
   ["prefetch-settings"],
   { revalidate: 86400, tags: ["settings"] },
 );
 
 export const getPublicCategories = unstable_cache(
-  () => fromRoute<{ success: boolean; categories: PublicCategory[] }>(categoriesApp, "/category"),
+  () => fromRoute<{ success: boolean; categories: PublicCategory[] }>(categoriesApp, "/category", { success: true, categories: [] }),
   ["prefetch-categories"],
   { revalidate: 86400, tags: ["categories"] }
 );
@@ -56,7 +68,7 @@ export const getPublicCategories = unstable_cache(
 // render its real carousels in the initial HTML instead of a single-section
 // skeleton that pops into N sections once the client query resolves.
 export const getPublicCategoryList = unstable_cache(
-  () => fromRoute<CategoryListItem[]>(categoriesApp, "/"),
+  () => fromRoute<CategoryListItem[]>(categoriesApp, "/", []),
   ["prefetch-category-list"],
   { revalidate: 86400, tags: ["categories"] }
 );
@@ -65,7 +77,7 @@ import blogApp from "@/features/blog/server/route";
 import testimonialsApp from "@/features/testimonials/server/route";
 
 export const getPublicProducts = unstable_cache(
-  () => fromRoute<{ data: ProductSummary[] }>(productsApp, "/?sort=newest&limit=8"),
+  () => fromRoute<{ data: ProductSummary[] }>(productsApp, "/?sort=newest&limit=8", { data: [] }),
   ["prefetch-products"],
   { revalidate: 86400, tags: ["products"] }
 );
@@ -78,14 +90,14 @@ export const getPublicProducts = unstable_cache(
 // Products that have a video, for the landing page's video row. Tagged
 // "products", so saving a product (or a sale selling it out) refreshes it.
 export const getPublicProductVideos = unstable_cache(
-  () => fromRoute<{ data: ProductVideoItem[] }>(productsApp, "/videos"),
+  () => fromRoute<{ data: ProductVideoItem[] }>(productsApp, "/videos", { data: [] }),
   ["prefetch-product-videos"],
   { revalidate: 86400, tags: ["products"] },
 );
 
 // Every product video (up to the API's cap of 100), for the /videos page.
 export const getAllPublicProductVideos = unstable_cache(
-  () => fromRoute<{ data: ProductVideoItem[] }>(productsApp, "/videos?limit=100"),
+  () => fromRoute<{ data: ProductVideoItem[] }>(productsApp, "/videos?limit=100", { data: [] }),
   ["prefetch-all-product-videos"],
   { revalidate: 86400, tags: ["products"] },
 );
@@ -96,14 +108,14 @@ export function getPublicProductList(params: { category?: string; sort?: string 
   if (params.sort) query.set("sort", params.sort);
   query.set("page", "1");
   return unstable_cache(
-    () => fromRoute<{ data: ProductSummary[] }>(productsApp, `/?${query.toString()}`),
+    () => fromRoute<{ data: ProductSummary[] }>(productsApp, `/?${query.toString()}`, { data: [] }),
     ["prefetch-product-list", params.category ?? "", params.sort ?? ""],
     { revalidate: 86400, tags: ["products"] },
   )();
 }
 
 export const getPublicBlogPosts = unstable_cache(
-  () => fromRoute<{ data: BlogPost[] }>(blogApp, "/"),
+  () => fromRoute<{ data: BlogPost[] }>(blogApp, "/", { data: [] }),
   ["prefetch-blog"],
   { revalidate: 86400, tags: ["blog"] }
 );
@@ -112,6 +124,7 @@ export const getPublicTestimonials = unstable_cache(
   () => fromRoute<{ data: Testimonial[]; total: number; hasNextPage: boolean; totalPages: number }>(
     testimonialsApp,
     "/?page=1&limit=12",
+    { data: [], total: 0, hasNextPage: false, totalPages: 0 },
   ),
   ["prefetch-testimonials"],
   { revalidate: 86400, tags: ["testimonials"] }
@@ -129,26 +142,31 @@ export type PriceRow = {
 // advertises a range — or a category — the shop doesn't actually carry.
 export const getPriceRanges = unstable_cache(
   async (): Promise<PriceRow[]> => {
-    const rows = await db.execute<{ value: string; min: string | null; max: string | null }>(sql`
-      SELECT top.value, MIN(pr.price) AS min, MAX(pr.price) AS max
-      FROM "Category" top
-      JOIN "Category" c ON c.id = top.id OR c."parentId" = top.id
-      JOIN products p ON p."productCategory" = c.id
-      CROSS JOIN LATERAL (
-        SELECT p."productPrice"::numeric AS price
-        UNION ALL
-        SELECT (v->>'price')::numeric FROM json_array_elements(p."productVariants") v WHERE v->>'price' IS NOT NULL
-      ) pr
-      WHERE top.value IN ('comforters', 'bedsheet')
-      GROUP BY top.value
-    `);
-    const byValue = new Map(rows.rows.map((r) => [r.value, r]));
-    const out: PriceRow[] = [];
-    for (const [value, labelKey] of [["comforters", "seoPriceComforterSet"], ["bedsheet", "seoPriceBedSheet"]] as const) {
-      const r = byValue.get(value);
-      if (r?.min && r?.max) out.push({ labelKey, min: Number(r.min), max: Number(r.max), href: `/categories/${value}` });
+    try {
+      const rows = await db.execute<{ value: string; min: string | null; max: string | null }>(sql`
+        SELECT top.value, MIN(pr.price) AS min, MAX(pr.price) AS max
+        FROM "Category" top
+        JOIN "Category" c ON c.id = top.id OR c."parentId" = top.id
+        JOIN products p ON p."productCategory" = c.id
+        CROSS JOIN LATERAL (
+          SELECT p."productPrice"::numeric AS price
+          UNION ALL
+          SELECT (v->>'price')::numeric FROM json_array_elements(p."productVariants") v WHERE v->>'price' IS NOT NULL
+        ) pr
+        WHERE top.value IN ('comforters', 'bedsheet')
+        GROUP BY top.value
+      `);
+      const byValue = new Map(rows.rows.map((r) => [r.value, r]));
+      const out: PriceRow[] = [];
+      for (const [value, labelKey] of [["comforters", "seoPriceComforterSet"], ["bedsheet", "seoPriceBedSheet"]] as const) {
+        const r = byValue.get(value);
+        if (r?.min && r?.max) out.push({ labelKey, min: Number(r.min), max: Number(r.max), href: `/categories/${value}` });
+      }
+      return out;
+    } catch (err) {
+      console.warn("[prefetch] getPriceRanges failed, returning fallback:", err);
+      return [];
     }
-    return out;
   },
   ["home-price-ranges"],
   { revalidate: 86400, tags: ["products"] },

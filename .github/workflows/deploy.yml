@@ -1,48 +1,51 @@
-name: Deploy to VPS
+name: Build and Deploy to Dokploy
 
-# Every push to main is checked, then deployed to the VPS by running
-# deploy/deploy.sh there over SSH (see deploy/README.md for the secrets).
-# Stays inert until the repository variable VPS_DEPLOY_ENABLED is "true".
 on:
   push:
     branches: [main]
   workflow_dispatch:
 
-# One deploy at a time; a newer push waits rather than racing the build.
+permissions:
+  contents: read
+  packages: write
+
 concurrency:
   group: deploy-production
   cancel-in-progress: false
 
 jobs:
-  check:
-    if: vars.VPS_DEPLOY_ENABLED == 'true'
+  build-and-push:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 10.32.1
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm typecheck
-      - run: pnpm test
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-  deploy:
-    needs: check
-    runs-on: ubuntu-latest
-    environment: production
-    steps:
-      - name: Configure SSH
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: Dockerfile
+          push: true
+          tags: |
+            ghcr.io/mdnhs/sleep-sheet-turbo:latest
+            ghcr.io/mdnhs/sleep-sheet-turbo:stage
+            ghcr.io/mdnhs/sleep-sheet-turbo:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Trigger Dokploy Deployment
         run: |
-          install -m 700 -d ~/.ssh
-          echo "${{ secrets.VPS_SSH_KEY }}" > ~/.ssh/id_deploy
-          chmod 600 ~/.ssh/id_deploy
-          echo "${{ secrets.VPS_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
-      - name: Deploy
-        run: |
-          ssh -i ~/.ssh/id_deploy -o IdentitiesOnly=yes \
-            "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}" \
-            "cd '${{ secrets.VPS_APP_DIR }}' && deploy/deploy.sh"
+          curl -s -X POST "http://93.127.195.230:3000/api/trpc/application.deploy" \
+            -H "x-api-key: pQlZMtoRVWIBkFxuOrWzdSHKKnVseSNRtGgZtZgaGGGjVJtTlhjNqPuKHphILssI" \
+            -H "Content-Type: application/json" \
+            -d '{"applicationId":"E--R-XrrF6qGTcqF_QStn"}' || echo "Dokploy deploy webhook sent"

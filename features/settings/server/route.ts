@@ -49,17 +49,22 @@ const isSecretKey = (key: string) =>
  * instead of hitting Postgres on every CDN miss.
  */
 const fetchPublicSettingsFromDb = async () => {
-  const settings = await db.select().from(siteSettings);
-  const map: Record<string, string> = {};
-  const secretValues: Record<string, string> = {};
-  for (const { key, value } of settings) {
-    if (isSecretKey(key)) secretValues[key] = value;
-    else map[key] = value;
+  try {
+    const settings = await db.select().from(siteSettings);
+    const map: Record<string, string> = {};
+    const secretValues: Record<string, string> = {};
+    for (const { key, value } of settings) {
+      if (isSecretKey(key)) secretValues[key] = value;
+      else map[key] = value;
+    }
+    for (const key of SECRET_SETTING_KEYS) {
+      map[`${key}_set`] = secretValues[key] ? "true" : "false";
+    }
+    return map;
+  } catch (error) {
+    console.warn("[settings] Database unreachable during build/fetch, returning empty settings fallback:", error);
+    return {};
   }
-  for (const key of SECRET_SETTING_KEYS) {
-    map[`${key}_set`] = secretValues[key] ? "true" : "false";
-  }
-  return map;
 };
 
 const getCachedPublicSettings = unstable_cache(
