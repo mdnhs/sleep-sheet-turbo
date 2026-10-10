@@ -130,6 +130,8 @@ bKash, Nagad, COD, Steadfast/Pathao/RedX, districts/thanas and Bangla are core f
 ## 4. Sub-projects
 
 ### SP-0: Safety (security + quality gate), ~1 week
+**Status: done 2026-10-11** (deployed `cfcd01e`). Still open: drop `api_keys.rawKey` (0032) after soak, Dokploy backup destination + schedule, close Postgres port 5434, Cloudflare-only origin firewall. See `deploy/README.md` §6–8.
+
 **Goal:** close the verified security holes and stop broken code from reaching production.
 
 **Scope** (each item is a task in `plan.md`)
