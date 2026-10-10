@@ -186,7 +186,9 @@ export default async function ProductDetailPage({ params }: Props) {
         // priority, behind the LCP image.
         // For non-video products, Next.js's `<Image priority fetchPriority="high">` inside SwitchImage
         // automatically outputs the exact responsive transformed preload tag.
-        <link rel="preload" as="image" href={productVideoPoster(product.video)} />
+        // Width must match the poster SwitchImage renders (640), or the
+        // preloaded file is never used and the browser downloads both.
+        <link rel="preload" as="image" href={productVideoPoster(product.video, 640)} />
       )}
       <div className="container mx-auto px-4 py-2 lg:py-4">
         <nav
