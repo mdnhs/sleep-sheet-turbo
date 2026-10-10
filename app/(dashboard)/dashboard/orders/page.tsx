@@ -93,6 +93,8 @@ import { LANDING_SOURCE_LABELS, type LandingSource } from "@/lib/traffic-source"
 import { useRouter } from "next/navigation";
 import { useWebsiteSettings } from "@/hooks/use-website-settings";
 import { useSettings } from "@/features/settings/api/use-settings";
+import { businessRulesFromSettings } from "@/lib/settings/business-rules";
+import { useStoreProfile } from "@/hooks/use-store-profile";
 import { cn, formatDate, calculateItemAddOnCost, colorHasAddOn } from "@/lib/utils";
 import { orderBoughtPrice, orderDiscount, orderProfit, totalAfterSubtotalChange } from "@/lib/order-totals";
 import { useQueryClient } from "@tanstack/react-query";
@@ -761,6 +763,8 @@ function OrdersPageContent() {
   const { symbol: currencySymbol, formatAmount } = useCurrency();
   const { siteName, logoUrl, footerPhone } = useWebsiteSettings();
   const { data: settings } = useSettings();
+  const { invoiceLanguage } = businessRulesFromSettings(settings);
+  const { timezone } = useStoreProfile();
 
   // Read once into a local so the memo's dependency is exactly what it uses.
   const fbPagesSetting = settings?.pos_facebook_pages;
@@ -1241,7 +1245,8 @@ function OrdersPageContent() {
           order={placedOrderData}
           shippingInfo={shippingInfoData}
           siteName={siteName}
-          language="bn"
+          language={invoiceLanguage}
+          timeZone={timezone}
           logoUrl={logoUrl}
           phoneNumber={footerPhone}
         />
@@ -1336,7 +1341,8 @@ function OrdersPageContent() {
         <BulkInvoicePDF
           orders={ordersData}
           siteName={siteName}
-          language="bn"
+          language={invoiceLanguage}
+          timeZone={timezone}
           logoUrl={logoUrl}
           phoneNumber={footerPhone}
         />

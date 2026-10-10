@@ -6,6 +6,7 @@ import { calculateItemUnitPrice } from "@/lib/utils";
 import { parseUserAgent } from "@/lib/user-agent-parser";
 import { stockDecrementQuery, insufficientStockProductId, invalidateStockCache, soldOutProductIds } from "@/lib/stock";
 import { getSetting } from "@/lib/settings-cache";
+import { getSetting as getTypedSetting } from "@/lib/settings/read";
 import { rateLimit } from "@/lib/rate-limit";
 import cuid from "cuid";
 
@@ -232,7 +233,8 @@ const app = new Hono()
       // stockDecrementQuery raises if any item is short on stock, which rolls
       // the whole batch back. That is also what makes the
       // order-number retry below safe: a collision rolls the whole thing back.
-      const { order, orderNumber, stockResult } = await withOrderNumber("ORD", async (orderNumber) => {
+      const orderPrefix = await getTypedSetting("order_number_prefix");
+      const { order, orderNumber, stockResult } = await withOrderNumber(orderPrefix, async (orderNumber) => {
         const orderId = cuid();
         const [[order], , stockResult] = await batch((tx) => [
           tx.insert(orders).values({
@@ -438,7 +440,8 @@ const app = new Hono()
       emailDomain: "guest.local",
     });
 
-    const { order, orderNumber, stockResult } = await withOrderNumber("ORD", async (orderNumber) => {
+    const orderPrefix = await getTypedSetting("order_number_prefix");
+    const { order, orderNumber, stockResult } = await withOrderNumber(orderPrefix, async (orderNumber) => {
       const orderId = cuid();
       const [[order], , stockResult] = await batch((tx) => [
         tx.insert(orders).values({

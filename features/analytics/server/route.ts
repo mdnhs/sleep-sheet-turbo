@@ -622,7 +622,7 @@ const app = new Hono()
   }
 
   try {
-    const threshold = 10;
+    const threshold = await getSetting("low_stock_threshold");
     const data = await db.select({
       id: products.id,
       name: products.name,
@@ -659,7 +659,7 @@ const app = new Hono()
 
   try {
     const startOfYear = new Date(new Date().getFullYear(), 0, 1);
-    const LOW_STOCK_THRESHOLD = 10;
+    const LOW_STOCK_THRESHOLD = await getSetting("low_stock_threshold");
 
     const [
       clvRows,

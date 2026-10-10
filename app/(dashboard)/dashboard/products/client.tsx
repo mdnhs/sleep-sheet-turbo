@@ -44,6 +44,8 @@ import {
 } from "@/components/ui/select"
 import { useGetProducts, useGetDuplicateProducts, useGetVideoStats } from "@/features/product/api/use-get-products"
 import { useGetCategories } from "@/features/categories/api/use-get-categories"
+import { useSettings } from "@/features/settings/api/use-settings"
+import { businessRulesFromSettings } from "@/lib/settings/business-rules"
 import { useDeleteProduct } from "@/features/dashboard/api/use-delete-product"
 import { useBulkDeleteProducts } from "@/features/dashboard/api/use-bulk-delete-products"
 import { useBulkUpdateFeatured } from "@/features/dashboard/api/use-bulk-update-featured"
@@ -97,6 +99,8 @@ function optimizedImage(src: string | undefined, width: number) {
 
 export default function ProductsClientPage() {
   const { formatAmount } = useCurrency()
+  const { data: settings } = useSettings()
+  const { defaultProductCategory } = businessRulesFromSettings(settings)
   const { mutate: deleteProduct, isPending: isDeleting } = useDeleteProduct()
   const { mutate: bulkDelete, isPending: isBulkDeleting } = useBulkDeleteProducts()
   const { mutate: updateFeatured, isPending: isUpdatingFeatured } = useBulkUpdateFeatured()
@@ -107,7 +111,7 @@ export default function ProductsClientPage() {
   const [debouncedSearch, setDebouncedSearch] = useState(searchQuery)
   const [page, setPage] = useQueryState("page", parseAsInteger.withDefault(1))
   const [limit, setLimit] = useQueryState("limit", parseAsInteger.withDefault(10))
-  const [categoryId, setCategoryId] = useQueryState("category", parseAsString.withDefault("Comforters"))
+  const [categoryId, setCategoryId] = useQueryState("category", parseAsString.withDefault(defaultProductCategory || "all"))
   const [featuredFilter, setFeaturedFilter] = useQueryState("featured", parseAsString.withDefault("all"))
   const [sort, setSort] = useQueryState("sort", parseAsString.withDefault("newest"))
   const [detailsId, setDetailsId] = useState<string | null>(null)

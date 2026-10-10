@@ -13,6 +13,7 @@ import { stockDecrementQuery, insufficientStockProductId, invalidateStockCache, 
 import { setActivityMeta } from "@/features/activity/server/log-activity";
 import { findOrCreateCustomerByPhone } from '@/lib/customers';
 import { withOrderNumber } from '@/lib/order-number';
+import { getSetting } from "@/lib/settings/read";
 import { isUniqueViolation } from '@/lib/db-errors';
 import cuid from 'cuid';
 
@@ -132,7 +133,8 @@ const app = new Hono()
     // which rolls the whole thing back. That is also what makes the
     // order-number retry safe: a collision rolls everything back, so the retry
     // starts clean.
-    const { order, stockResult } = await withOrderNumber('POS', async (orderNumber) => {
+    const orderPrefix = await getSetting("pos_order_number_prefix");
+    const { order, stockResult } = await withOrderNumber(orderPrefix, async (orderNumber) => {
       const orderId = cuid();
       setActivityMeta(c, { name: `#${orderNumber}` });
 
