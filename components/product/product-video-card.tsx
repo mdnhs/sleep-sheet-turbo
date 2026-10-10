@@ -9,6 +9,7 @@ import { floorToNearest50 } from "@/lib/utils";
 import { autoplayAllowed, productVideoPoster, productVideoUrl } from "@/lib/product-video";
 import type { ProductVideoItem } from "@/lib/types";
 import { afterLoadIdle } from "@/lib/after-load-idle";
+import { useAfterLoadIdle } from "@/hooks/use-after-load-idle";
 
 // Poster widths for the srcset: half-width phone cards (~160px at 2–3x DPR)
 // up to the 20vw desktop column.
@@ -46,6 +47,10 @@ const ProductVideoCard = memo(function ProductVideoCard({
   const videoRef = useRef<HTMLVideoElement>(null);
   const [muted, setMuted] = useState(true);
   const [playing, setPlaying] = useState(false);
+  // Non-priority posters wait for load + idle. `loading="lazy"` didn't hold
+  // them back: Chrome's lazy-load margin is 1250px+ on mobile, so a whole
+  // carousel of ~40 KB stills downloaded alongside the page's LCP image.
+  const posterReady = useAfterLoadIdle() || !!priority;
 
   const controlled = active !== undefined;
   const pausedRef = useRef(false);
@@ -110,7 +115,7 @@ const ProductVideoCard = memo(function ProductVideoCard({
       ref={cardRef}
       className="group relative aspect-[9/16] w-full overflow-hidden rounded-2xl bg-black"
     >
-      {!playing && (
+      {!playing && posterReady && (
         // A plain <img> with a hand-built srcset: the poster is a Cloudinary
         // video-frame transform, which the custom next/image loader can't
         // resize (it only handles /image/upload/ URLs), so next/image either

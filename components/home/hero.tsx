@@ -6,6 +6,7 @@ import { ChevronLeft, ChevronRight, ArrowRight } from "lucide-react";
 import { useWebsiteSettings } from "@/hooks/use-website-settings";
 import { cn, getOptimizedImageUrl } from "@/lib/utils";
 import FallbackImage from "@/components/ui/fallback-image";
+import { useAfterLoadIdle } from "@/hooks/use-after-load-idle";
 
 function HeroSkeleton() {
   return (
@@ -69,6 +70,11 @@ function Hero() {
     isLoading,
   } = useWebsiteSettings();
   const [currentSlide, setCurrentSlide] = useState(0);
+  // Slides after the first sit at opacity 0 inside the viewport, so lazy
+  // loading still fetched them at hydration — right as the first slide (the
+  // LCP image) was painting. Mount their images only after load + idle; the
+  // autoplay interval (6s) never reaches them before that.
+  const restReady = useAfterLoadIdle();
   const [isDragging, setIsDragging] = useState(false);
   const slideCount = heroSlides?.length ?? 0;
   // Drag tracking lives in a ref, not state — it changes on every pointermove
@@ -174,6 +180,7 @@ function Hero() {
                 className={`absolute inset-0 w-full h-full transition-opacity duration-1000 ease-in-out ${index === currentSlide ? "opacity-100 z-10" : "opacity-0 z-0"
                   }`}
               >
+                {(index === 0 || restReady) && (
                 <FallbackImage
                   loader={({ src, width }) => getOptimizedImageUrl(src, width)}
                   src={slide.image}
@@ -196,6 +203,7 @@ function Hero() {
                   })}
                   className="object-cover transition-transform duration-[15000ms] ease-linear scale-100 group-hover:scale-110"
                 />
+                )}
               </div>
             ))}
 
