@@ -59,6 +59,7 @@ function HeroSkeleton() {
 
 function Hero() {
   const {
+    settings,
     heroTitle,
     heroSubtitle,
     heroCtaText,
@@ -119,7 +120,13 @@ function Hero() {
     setIsDragging(false);
   };
 
-  if (isLoading) {
+  const hasSettings = Boolean(
+    settings &&
+    typeof settings === "object" &&
+    Object.keys(settings).length > 0
+  );
+
+  if (isLoading || !hasSettings) {
     return <HeroSkeleton />;
   }
 

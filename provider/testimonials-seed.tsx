@@ -15,7 +15,15 @@ export function TestimonialsSeed({
   children: React.ReactNode;
 }) {
   const queryClient = useQueryClient();
-  if (queryClient.getQueryData(["testimonials", undefined]) === undefined) {
+  const hasValidTestimonials = Boolean(
+    testimonials &&
+    typeof testimonials === "object" &&
+    "data" in testimonials &&
+    Array.isArray((testimonials as { data?: unknown[] }).data) &&
+    (testimonials as { data: unknown[] }).data.length > 0
+  );
+
+  if (hasValidTestimonials && queryClient.getQueryData(["testimonials", undefined]) === undefined) {
     queryClient.setQueryData(["testimonials", undefined], testimonials);
   }
   return children;

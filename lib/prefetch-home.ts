@@ -52,7 +52,13 @@ import productsApp from "@/features/product/server/route";
 // invalidateBlog()/invalidateTestimonials() now (lib/content-cache.ts), so
 // they sit with everything else.
 export const getPublicSettings = unstable_cache(
-  () => fromRoute<Record<string, string>>(settingsApp, "/", {}),
+  async () => {
+    const data = await fromRoute<Record<string, string>>(settingsApp, "/");
+    if (!data || Object.keys(data).length === 0 || (!data.site_name && !data.hero_slides)) {
+      throw new Error("Settings not available from DB");
+    }
+    return data;
+  },
   ["prefetch-settings"],
   { revalidate: 86400, tags: ["settings"] },
 );
@@ -121,11 +127,16 @@ export const getPublicBlogPosts = unstable_cache(
 );
 
 export const getPublicTestimonials = unstable_cache(
-  () => fromRoute<{ data: Testimonial[]; total: number; hasNextPage: boolean; totalPages: number }>(
-    testimonialsApp,
-    "/?page=1&limit=12",
-    { data: [], total: 0, hasNextPage: false, totalPages: 0 },
-  ),
+  async () => {
+    const data = await fromRoute<{ data: Testimonial[]; total: number; hasNextPage: boolean; totalPages: number }>(
+      testimonialsApp,
+      "/?page=1&limit=12",
+    );
+    if (!data || !Array.isArray(data.data) || data.data.length === 0) {
+      throw new Error("Testimonials not available from DB");
+    }
+    return data;
+  },
   ["prefetch-testimonials"],
   { revalidate: 86400, tags: ["testimonials"] }
 );

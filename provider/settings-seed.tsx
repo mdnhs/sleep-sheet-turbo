@@ -10,11 +10,18 @@ export function SettingsSeed({
   settings,
   children,
 }: {
-  settings: Record<string, string>;
+  settings?: Record<string, string> | null;
   children: React.ReactNode;
 }) {
   const queryClient = useQueryClient();
-  if (queryClient.getQueryData(["settings"]) === undefined) {
+  const hasValidSettings = Boolean(
+    settings &&
+    typeof settings === "object" &&
+    Object.keys(settings).length > 0 &&
+    (settings.site_name || settings.hero_slides || settings.logo_url)
+  );
+
+  if (hasValidSettings && queryClient.getQueryData(["settings"]) === undefined) {
     queryClient.setQueryData(["settings"], settings);
   }
   return children;

@@ -31,18 +31,29 @@ export default async function ClientGroupLayout({
     getPublicTestimonials().catch(() => null),
   ]);
 
-  if (!settings) {
-    // Settings unavailable (e.g. DB hiccup): fall back to client-side fetching.
-    return <ClientLayout>{children}</ClientLayout>;
-  }
-
-  const seeded = (
-    <SettingsSeed settings={settings}>
-      <ClientLayout>{children}</ClientLayout>
-    </SettingsSeed>
+  const hasValidSettings = Boolean(
+    settings &&
+    typeof settings === "object" &&
+    Object.keys(settings).length > 0 &&
+    (settings.site_name || settings.hero_slides || settings.logo_url)
   );
 
-  return testimonials ? (
+  const hasValidTestimonials = Boolean(
+    testimonials &&
+    typeof testimonials === "object" &&
+    "data" in testimonials &&
+    Array.isArray((testimonials as { data?: unknown[] }).data) &&
+    (testimonials as { data: unknown[] }).data.length > 0
+  );
+
+  const content = <ClientLayout>{children}</ClientLayout>;
+  const seeded = (hasValidSettings && settings) ? (
+    <SettingsSeed settings={settings}>{content}</SettingsSeed>
+  ) : (
+    content
+  );
+
+  return hasValidTestimonials ? (
     <TestimonialsSeed testimonials={testimonials}>{seeded}</TestimonialsSeed>
   ) : (
     seeded
