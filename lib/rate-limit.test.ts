@@ -62,4 +62,21 @@ describe("rateLimit", () => {
     expect(second).toBeUndefined();
     expect(repeat).toEqual({ body: { message: expect.any(String) }, status: 429 });
   });
+
+  it("can't be dodged by rotating a forged X-Forwarded-For", async () => {
+    const middleware = rateLimit(`test-${Math.random()}`, 1, 60_000);
+    const next = async () => {};
+    const ctx = (forged: string) => {
+      const h: Record<string, string> = { "cf-connecting-ip": "9.9.9.9", "x-forwarded-for": forged };
+      return {
+        req: { header: (name: string) => h[name] },
+        json: (body: unknown, status: number) => ({ body, status }),
+      };
+    };
+
+    await middleware(ctx("1.1.1.1") as never, next);
+    const blocked = await middleware(ctx("2.2.2.2") as never, next);
+
+    expect(blocked).toEqual({ body: { message: expect.any(String) }, status: 429 });
+  });
 });

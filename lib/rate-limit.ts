@@ -1,4 +1,5 @@
 import { createMiddleware } from "hono/factory";
+import { getClientIp } from "@/lib/client-ip";
 
 /**
  * Per-IP sliding-window rate limit. In-process, same tradeoff as the session
@@ -34,16 +35,9 @@ function hit(key: string, limit: number, windowMs: number): boolean {
   return true;
 }
 
-// cf-connecting-ip first: production sits behind Cloudflare + Traefik, so the
-// first x-forwarded-for entry can be the Cloudflare edge IP, which would put
-// many visitors in one bucket. Cloudflare sets cf-connecting-ip to the real client.
+// Behind Cloudflare + Traefik, so key on CF-Connecting-IP (see lib/client-ip.ts).
 function clientIp(c: { req: { header: (name: string) => string | undefined } }): string {
-  return (
-    c.req.header("cf-connecting-ip")?.trim() ||
-    c.req.header("x-forwarded-for")?.split(",")[0]?.trim() ||
-    c.req.header("x-real-ip") ||
-    "unknown"
-  );
+  return getClientIp((name) => c.req.header(name)) ?? "unknown";
 }
 
 /** Hono middleware: `limit` requests per `windowMs` per client IP, scoped by `name`. */

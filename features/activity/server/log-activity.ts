@@ -3,6 +3,7 @@ import { createMiddleware } from "hono/factory";
 import { HTTPException } from "hono/http-exception";
 import { after } from "next/server";
 import { db } from "@/db";
+import { getClientIp } from "@/lib/client-ip";
 import { sweepRetention } from "@/lib/data-retention";
 import { activityLogs } from "@/db/schema";
 
@@ -137,9 +138,7 @@ function composeAction(base: string, name: string | null | undefined): string {
 const EXCLUDED_PATHS = [/^\/api\/steadfast\/track-batch$/, /^\/api\/activity/];
 
 function clientIp(headers: Headers): string {
-  const forwarded = headers.get("x-forwarded-for");
-  if (forwarded) return forwarded.split(",")[0].trim();
-  return headers.get("x-real-ip") ?? "unknown";
+  return getClientIp((name) => headers.get(name)) ?? "unknown";
 }
 
 async function record(c: Context, user: SessionUser, status: number) {

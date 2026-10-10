@@ -1,13 +1,13 @@
 import { db } from "@/db";
 import { blockedIps } from "@/db/schema";
 import { eq } from "drizzle-orm";
+import { getClientIp } from "@/lib/client-ip";
 
 /** The client IP a request came from, as stored on orders. */
 export function clientIpFromHeaders(headers: {
   get?: (name: string) => string | null;
 }): string | null {
-  const get = (n: string) => headers.get?.(n) ?? null;
-  return get("x-forwarded-for")?.split(",")[0]?.trim() || get("x-real-ip") || null;
+  return getClientIp((name) => headers.get?.(name));
 }
 
 /** True when this IP has been blocked from ordering. Null/unknown IP is never blocked. */

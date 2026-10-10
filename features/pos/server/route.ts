@@ -7,6 +7,7 @@ import bcrypt from 'bcryptjs';
 import { zValidator } from '@hono/zod-validator';
 import { sessionMiddleware } from '@/lib/session-middleware';
 import { can } from '@/lib/permissions';
+import { getClientIp } from '@/lib/client-ip';
 import { parseUserAgent } from '@/lib/user-agent-parser';
 import { stockDecrementQuery, insufficientStockProductId, invalidateStockCache, soldOutProductIds } from '@/lib/stock';
 import { setActivityMeta } from "@/features/activity/server/log-activity";
@@ -122,7 +123,7 @@ const app = new Hono()
     }
 
     const userAgentHeader = c.req.header("user-agent") || null;
-    const clientIp = c.req.header("x-forwarded-for")?.split(",")[0]?.trim() || c.req.header("x-real-ip") || null;
+    const clientIp = getClientIp((name) => c.req.header(name));
     const parsedUa = parseUserAgent(userAgentHeader);
 
     // Order + its line items + the card payment record + the stock decrement
