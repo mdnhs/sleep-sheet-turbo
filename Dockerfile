@@ -30,8 +30,8 @@ ENV SKIP_BUILD_TYPECHECK=1 NODE_OPTIONS=--max-old-space-size=2560
 # container gets its environment from compose's env_file instead.
 # The build reaches Postgres over the host network, so DATABASE_URL is
 # overridden with the loopback address from a second secret.
-RUN --mount=type=secret,id=dotenv,target=/app/.env,optional=true \
-    --mount=type=secret,id=build_database_url,optional=true \
+RUN --mount=type=secret,id=dotenv,target=/app/.env,required=false \
+    --mount=type=secret,id=build_database_url,required=false \
     DATABASE_URL="${DATABASE_URL:-$(test -f /run/secrets/build_database_url && cat /run/secrets/build_database_url || echo "$DATABASE_URL")}" pnpm build \
     && rm -f .next/standalone/.env .next/standalone/.env.*
 
