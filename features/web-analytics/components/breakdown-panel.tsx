@@ -8,6 +8,7 @@ import { useCurrency } from "@/hooks/use-currency";
 import { useWaBreakdown, type WaQuery } from "../api/use-web-analytics";
 import { NONE, type Dimension } from "../lib/dimensions";
 import { formatCount, keyLabel } from "../lib/format";
+import { CardPager, usePage } from "./card-pager";
 import { RowIcon } from "./row-icon";
 
 export interface BreakdownTab {
@@ -27,7 +28,8 @@ export function BreakdownPanel({
   onSelect: (dim: Dimension, value: string) => void;
 }) {
   const [active, setActive] = React.useState<Dimension>(tabs[0].dim);
-  const { data, isLoading } = useWaBreakdown(q, active);
+  const [page, setPage] = usePage(`${active}|${JSON.stringify(q)}`);
+  const { data, isLoading, isPlaceholderData } = useWaBreakdown(q, active, page);
   const { formatAmount } = useCurrency();
   const rows = data?.rows ?? [];
   const max = Math.max(1, ...rows.map((row) => row.visitors));
@@ -105,6 +107,7 @@ export function BreakdownPanel({
             ))}
           </ul>
         )}
+        <CardPager page={page} hasMore={data?.hasMore ?? false} loading={isPlaceholderData} onChange={setPage} />
       </CardContent>
     </Card>
   );

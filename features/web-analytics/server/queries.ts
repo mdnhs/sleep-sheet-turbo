@@ -150,6 +150,7 @@ export async function getBreakdown(
   f: Filters,
   dim: Dimension,
   limit: number,
+  offset = 0,
 ): Promise<BreakdownRow[]> {
   const column = sql.identifier(DIMENSIONS[dim]);
   // Order events carry the session's landing attributes, so grouping them by
@@ -176,7 +177,7 @@ export async function getBreakdown(
     SELECT v.key, v.visitors, COALESCE(o.orders, 0) AS orders, COALESCE(o.revenue, 0) AS revenue
     FROM v LEFT JOIN o ON o.key IS NOT DISTINCT FROM v.key
     ORDER BY v.visitors DESC, v.key ASC NULLS LAST
-    LIMIT ${limit}
+    LIMIT ${limit} OFFSET ${offset}
   `);
   return rows.map((row) => ({
     key: row.key,
@@ -220,7 +221,7 @@ export async function getFunnel(ex: Db, r: Range, f: Filters): Promise<Funnel> {
   };
 }
 
-export async function getProducts(ex: Db, r: Range, f: Filters, limit: number): Promise<ProductRow[]> {
+export async function getProducts(ex: Db, r: Range, f: Filters, limit: number, offset = 0): Promise<ProductRow[]> {
   const { rows } = await ex.execute<{ product_id: string; name: string; image: string | null; views: string; added: string; orders: string }>(sql`
     WITH ${qualifyingCte(r, f)}
     a AS (
@@ -246,8 +247,8 @@ export async function getProducts(ex: Db, r: Range, f: Filters, limit: number): 
     FROM a
     JOIN products p ON p.id = a.product_id
     LEFT JOIN b ON b.product_id = a.product_id
-    ORDER BY a.views DESC, a.added DESC
-    LIMIT ${limit}
+    ORDER BY a.views DESC, a.added DESC, a.product_id
+    LIMIT ${limit} OFFSET ${offset}
   `);
   return rows.map((row) => ({
     productId: row.product_id,

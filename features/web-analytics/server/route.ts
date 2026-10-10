@@ -38,8 +38,11 @@ const app = new Hono()
     const parsed = toRangeAndFilters(query);
     if (!parsed) return c.json(invalidRange, 400);
     try {
-      const rows = await runAnalyticsQuery((tx) => getBreakdown(tx, parsed.range, parsed.filters, query.dim, query.limit));
-      return c.json({ rows });
+      // One extra row tells the client whether a next page exists.
+      const rows = await runAnalyticsQuery((tx) =>
+        getBreakdown(tx, parsed.range, parsed.filters, query.dim, query.limit + 1, query.offset),
+      );
+      return c.json({ rows: rows.slice(0, query.limit), hasMore: rows.length > query.limit });
     } catch (err) {
       console.error("Web analytics breakdown failed:", err);
       return c.json(failed, 500);
@@ -62,8 +65,10 @@ const app = new Hono()
     const parsed = toRangeAndFilters(query);
     if (!parsed) return c.json(invalidRange, 400);
     try {
-      const rows = await runAnalyticsQuery((tx) => getProducts(tx, parsed.range, parsed.filters, query.limit));
-      return c.json({ rows });
+      const rows = await runAnalyticsQuery((tx) =>
+        getProducts(tx, parsed.range, parsed.filters, query.limit + 1, query.offset),
+      );
+      return c.json({ rows: rows.slice(0, query.limit), hasMore: rows.length > query.limit });
     } catch (err) {
       console.error("Web analytics products failed:", err);
       return c.json(failed, 500);

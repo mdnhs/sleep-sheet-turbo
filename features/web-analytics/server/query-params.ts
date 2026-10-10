@@ -18,10 +18,12 @@ export const rangeQuerySchema = z.object({
 export const breakdownQuerySchema = rangeQuerySchema.extend({
   dim: z.enum(DIMENSION_KEYS as [Dimension, ...Dimension[]]),
   limit: z.coerce.number().int().min(1).max(50).default(10),
+  offset: z.coerce.number().int().min(0).max(10_000).default(0),
 });
 
 export const productsQuerySchema = rangeQuerySchema.extend({
   limit: z.coerce.number().int().min(1).max(50).default(20),
+  offset: z.coerce.number().int().min(0).max(10_000).default(0),
 });
 
 export type RangeQuery = z.infer<typeof rangeQuerySchema>;

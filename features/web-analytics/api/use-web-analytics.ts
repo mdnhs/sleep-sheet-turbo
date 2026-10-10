@@ -11,6 +11,11 @@ export interface WaQuery {
   filters: Filters;
 }
 
+export interface Paged<T> {
+  rows: T[];
+  hasMore: boolean;
+}
+
 const api = client.api["web-analytics"];
 const params = (q: WaQuery) => ({ from: q.from, to: q.to, ...q.filters });
 
@@ -25,13 +30,17 @@ export const useWaOverview = (q: WaQuery) =>
     placeholderData: keepPreviousData,
   });
 
-export const useWaBreakdown = (q: WaQuery, dim: Dimension) =>
+export const BREAKDOWN_PAGE_SIZE = 10;
+
+export const useWaBreakdown = (q: WaQuery, dim: Dimension, page: number) =>
   useQuery({
-    queryKey: ["web-analytics", "breakdown", dim, q],
+    queryKey: ["web-analytics", "breakdown", dim, q, page],
     queryFn: async () => {
-      const res = await api.breakdown.$get({ query: { ...params(q), dim, limit: "10" } });
+      const res = await api.breakdown.$get({
+        query: { ...params(q), dim, limit: String(BREAKDOWN_PAGE_SIZE), offset: String(page * BREAKDOWN_PAGE_SIZE) },
+      });
       if (!res.ok) throw new Error("Failed to load breakdown");
-      return (await res.json()) as { rows: BreakdownRow[] };
+      return (await res.json()) as Paged<BreakdownRow>;
     },
     placeholderData: keepPreviousData,
   });
@@ -47,13 +56,17 @@ export const useWaFunnel = (q: WaQuery) =>
     placeholderData: keepPreviousData,
   });
 
-export const useWaProducts = (q: WaQuery) =>
+export const PRODUCTS_PAGE_SIZE = 10;
+
+export const useWaProducts = (q: WaQuery, page: number) =>
   useQuery({
-    queryKey: ["web-analytics", "products", q],
+    queryKey: ["web-analytics", "products", q, page],
     queryFn: async () => {
-      const res = await api.products.$get({ query: { ...params(q), limit: "20" } });
+      const res = await api.products.$get({
+        query: { ...params(q), limit: String(PRODUCTS_PAGE_SIZE), offset: String(page * PRODUCTS_PAGE_SIZE) },
+      });
       if (!res.ok) throw new Error("Failed to load products");
-      return (await res.json()) as { rows: ProductRow[] };
+      return (await res.json()) as Paged<ProductRow>;
     },
     placeholderData: keepPreviousData,
   });

@@ -6,9 +6,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useWaProducts, type WaQuery } from "../api/use-web-analytics";
 import { getOptimizedImageUrl } from "@/lib/utils";
 import { formatCount, formatPercent } from "../lib/format";
+import { CardPager, usePage } from "./card-pager";
 
 export function ProductsTable({ q }: { q: WaQuery }) {
-  const { data, isLoading } = useWaProducts(q);
+  const [page, setPage] = usePage(JSON.stringify(q));
+  const { data, isLoading, isPlaceholderData } = useWaProducts(q, page);
   const rows = data?.rows ?? [];
 
   return (
@@ -60,6 +62,7 @@ export function ProductsTable({ q }: { q: WaQuery }) {
             </TableBody>
           </Table>
         )}
+        <CardPager page={page} hasMore={data?.hasMore ?? false} loading={isPlaceholderData} onChange={setPage} />
       </CardContent>
     </Card>
   );

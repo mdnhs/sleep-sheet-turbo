@@ -228,6 +228,17 @@ describe.skipIf(!RUN)("web analytics queries (database)", () => {
     });
   });
 
+  it("pages a breakdown with limit and offset", async () => {
+    await withRollback(async (tx) => {
+      await seedScenario(tx);
+      const keys = async (offset: number) =>
+        (await getBreakdown(tx, DAY_RANGE, {}, "path", 1, offset)).map((r) => r.key);
+      expect(await keys(0)).toEqual(["/"]);
+      expect(await keys(1)).toEqual(["/shop/a"]);
+      expect(await keys(2)).toEqual([]);
+    });
+  });
+
   it("builds the funnel, leaving out the cancelled order", async () => {
     await withRollback(async (tx) => {
       await seedScenario(tx);
