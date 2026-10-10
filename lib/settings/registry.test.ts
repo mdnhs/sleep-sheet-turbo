@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { z } from "zod";
+import { SECRET_SETTING_KEYS } from "@/features/settings/secret-keys";
 import {
   SETTINGS,
   SETTING_KEYS,
@@ -27,11 +28,8 @@ const LEGACY_KEYS = [
   "social_instagram", "social_twitter", "social_youtube", "social_tiktok", "footer_copyright",
 ];
 
-const CREDENTIALS = [
-  "steadfast_api_key", "steadfast_secret_key", "bdcourier_api_key", "cloudinary_api_key", "cloudinary_api_secret",
-  "google_sheets_client_email", "google_sheets_private_key", "google_sheets_spreadsheet_id", "bkash_app_key",
-  "bkash_app_secret", "bkash_username", "bkash_password", "ai_api_key",
-];
+// The credentials the app already treated as secret, plus the new AI key.
+const CREDENTIALS: string[] = [...SECRET_SETTING_KEYS, "ai_api_key"];
 
 describe("settings registry", () => {
   it("accepts every key the settings forms sent before SP-1", () => {
@@ -91,6 +89,21 @@ describe("settings registry", () => {
   it("reads flags and numbers into typed values", () => {
     expect(SETTINGS.payment_method_cod.schema.parse("false")).toBe(false);
     expect(SETTINGS.shipping_inside_dhaka.schema.parse("80")).toBe(80);
+  });
+
+  it("trims the bKash credentials but leaves other secrets byte-exact", () => {
+    for (const key of ["bkash_app_key", "bkash_app_secret", "bkash_username", "bkash_password"] as const) {
+      expect(SETTINGS[key].schema.parse("  x \n"), key).toBe("x");
+    }
+    expect(SETTINGS.google_sheets_private_key.schema.parse("  x \n")).toBe("  x \n");
+    expect(SETTINGS.steadfast_api_key.schema.parse("  x \n")).toBe("  x \n");
+  });
+
+  it("defaults card and due on (a missing row means enabled) and bkash off", () => {
+    expect(SETTINGS.payment_method_card.default).toBe(true);
+    expect(SETTINGS.payment_method_due.default).toBe(true);
+    expect(SETTINGS.payment_method_cod.default).toBe(true);
+    expect(SETTINGS.payment_method_bkash.default).toBe(false);
   });
 
   it("knows which groups hold credentials", () => {

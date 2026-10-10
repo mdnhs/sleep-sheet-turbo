@@ -56,8 +56,23 @@ function plain<G extends SettingGroup, S extends z.ZodType>(
 // Not trimmed: a pasted PEM private key keeps its exact bytes.
 const secretText = z.string().max(10_000);
 
-function secret<G extends SettingGroup>(group: G): SettingDef<G, typeof secretText, true> {
-  return { group, schema: secretText, default: "", secret: true, public: false, write: "admin" };
+// The bKash credentials were trimmed by the legacy PATCH validator; keep that.
+const trimmedSecretText = z.string().trim().max(10_000);
+
+function secret<G extends SettingGroup>(group: G): SettingDef<G, typeof secretText, true>;
+function secret<G extends SettingGroup>(
+  group: G,
+  options: { trim: true },
+): SettingDef<G, typeof trimmedSecretText, true>;
+function secret<G extends SettingGroup>(group: G, options?: { trim?: boolean }) {
+  return {
+    group,
+    schema: options?.trim ? trimmedSecretText : secretText,
+    default: "",
+    secret: true,
+    public: false,
+    write: "admin",
+  };
 }
 
 function isTimeZone(value: string): boolean {
@@ -132,17 +147,18 @@ export const SETTINGS = {
   shipping_inside_dhaka: plain("checkout", amount, SHIPPING_ZONES.inside_dhaka.cost),
   shipping_outside_dhaka: plain("checkout", amount, SHIPPING_ZONES.outside_dhaka.cost),
   currency: plain("checkout", z.string().trim().min(1).max(10), "BDT"),
-  payment_method_card: plain("checkout", flag, false),
+  // Card and due default on: a missing row has always meant enabled (POS, settings UI).
+  payment_method_card: plain("checkout", flag, true),
   payment_method_cod: plain("checkout", flag, true),
-  payment_method_due: plain("checkout", flag, false),
+  payment_method_due: plain("checkout", flag, true),
   payment_method_bkash: plain("checkout", flag, false),
 
   // ── payments
   bkash_mode: plain("payments", z.enum(["sandbox", "live"]), "sandbox"),
-  bkash_app_key: secret("payments"),
-  bkash_app_secret: secret("payments"),
-  bkash_username: secret("payments"),
-  bkash_password: secret("payments"),
+  bkash_app_key: secret("payments", { trim: true }),
+  bkash_app_secret: secret("payments", { trim: true }),
+  bkash_username: secret("payments", { trim: true }),
+  bkash_password: secret("payments", { trim: true }),
 
   // ── integrations (cloudinary_cloud_name is public: it is in every image URL)
   cloudinary_cloud_name: plain("integrations", text, ""),
