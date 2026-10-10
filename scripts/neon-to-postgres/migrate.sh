@@ -31,7 +31,7 @@ fi
 # straight into Postgres (SSH tunnel to the VPS's 127.0.0.1:5432) instead.
 if [[ "$TARGET_DATABASE_URL" =~ :6432/ && "${ALLOW_POOLER:-}" != 1 ]]; then
   echo "target is the PgBouncer port (6432) — connect to Postgres directly" >&2
-  echo "(see deploy/postgres/README.md), or set ALLOW_POOLER=1 to override" >&2
+  echo "(see deploy/README.md), or set ALLOW_POOLER=1 to override" >&2
   exit 1
 fi
 

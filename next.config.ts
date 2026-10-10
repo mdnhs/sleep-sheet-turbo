@@ -1,6 +1,13 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Self-hosted on the VPS as a Docker image (see Dockerfile): standalone
+  // output ships only the traced files plus a minimal server.js.
+  output: "standalone",
+  // The git commit being deployed. After a deploy, a browser still holding
+  // the previous build's JS gets a full reload instead of requesting chunks
+  // that no longer exist.
+  deploymentId: process.env.DEPLOYMENT_VERSION,
   experimental: {
     optimizePackageImports: ["lucide-react", "date-fns", "@tabler/icons-react"],
   },

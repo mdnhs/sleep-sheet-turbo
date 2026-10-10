@@ -1,0 +1,120 @@
+# Production stack for sleepsheetbd.com on the VPS (see README.md here).
+#
+#   app      – Next.js standalone server, on 127.0.0.1:${APP_HOST_PORT};
+#              the VPS's reverse proxy (shared with n8n) forwards to it
+#   postgres – the database; loopback only, never public
+#   backup   – nightly pg_dump with rotation into ./backups
+#   cron     – scheduled jobs that used to be Vercel Cron
+#
+# All settings come from ./.env (copy .env.example). deploy.sh builds and
+# (re)starts everything; GitHub Actions runs it on every push to main.
+name: sleepsheet
+
+services:
+  app:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+      # `next build` prerenders product/blog pages from the database, which
+      # it reaches on the host's loopback (see the postgres port below).
+      network: host
+      args:
+        DEPLOYMENT_VERSION: ${DEPLOYMENT_VERSION:-dev}
+      secrets:
+        - dotenv
+        - build_database_url
+    image: sleepsheet-app:latest
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:${APP_HOST_PORT:-3000}:3000"
+    # Let in-flight requests and after() callbacks finish on redeploy.
+    stop_grace_period: 30s
+    networks: [internal]
+
+  postgres:
+    image: postgres:18-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_INITDB_ARGS: "--auth-host=scram-sha-256"
+    command:
+      - postgres
+      - -c
+      - shared_preload_libraries=pg_stat_statements
+      - -c
+      - max_connections=50
+      - -c
+      - shared_buffers=512MB
+      - -c
+      - timezone=UTC
+    # Loopback only: for the image build, migrations and an SSH tunnel —
+    # never reachable from the internet.
+    ports:
+      - "127.0.0.1:${POSTGRES_HOST_PORT:-5432}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql
+    networks: [internal]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backup:
+    image: prodrigestivill/postgres-backup-local:18
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_EXTRA_OPTS: "--format=custom"
+      SCHEDULE: "0 3 * * *"   # 03:00 UTC = 09:00 Dhaka
+      BACKUP_KEEP_DAYS: 7
+      BACKUP_KEEP_WEEKS: 4
+      BACKUP_KEEP_MONTHS: 6
+    volumes:
+      - ./backups:/backups
+    networks: [internal]
+
+  cron:
+    image: alpine:3.22
+    restart: unless-stopped
+    depends_on: [app]
+    environment:
+      CRON_SECRET: ${CRON_SECRET}
+    # Was vercel.json's cron: customer audience sync to Google Sheets, daily
+    # at 21:00 UTC (03:00 Dhaka). busybox crond does not pass the container
+    # environment to jobs, so the secret is written into the crontab line.
+    command:
+      - sh
+      - -c
+      - >-
+        apk add --no-cache curl >/dev/null &&
+        printf '0 21 * * * curl -fsS -m 300 -H "Authorization: Bearer %s" http://app:3000/api/audiences/cron-sync\n' "$$CRON_SECRET" | crontab - &&
+        exec crond -f -l 8
+    networks: [internal]
+
+secrets:
+  dotenv:
+    file: ./.env
+  build_database_url:
+    file: ./.build_database_url
+
+volumes:
+  pgdata:
+
+networks:
+  internal:

@@ -1,0 +1,13 @@
+.git
+.next
+node_modules
+.env
+.env.*
+!.env.example
+.vercel
+.claude
+.kilo
+deploy
+scripts/neon-to-postgres/dumps
+coverage
+*.log

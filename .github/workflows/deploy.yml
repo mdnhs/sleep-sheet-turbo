@@ -1,0 +1,48 @@
+name: Deploy to VPS
+
+# Every push to main is checked, then deployed to the VPS by running
+# deploy/deploy.sh there over SSH (see deploy/README.md for the secrets).
+# Stays inert until the repository variable VPS_DEPLOY_ENABLED is "true".
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# One deploy at a time; a newer push waits rather than racing the build.
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  check:
+    if: vars.VPS_DEPLOY_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.32.1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm typecheck
+      - run: pnpm test
+
+  deploy:
+    needs: check
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Configure SSH
+        run: |
+          install -m 700 -d ~/.ssh
+          echo "${{ secrets.VPS_SSH_KEY }}" > ~/.ssh/id_deploy
+          chmod 600 ~/.ssh/id_deploy
+          echo "${{ secrets.VPS_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
+      - name: Deploy
+        run: |
+          ssh -i ~/.ssh/id_deploy -o IdentitiesOnly=yes \
+            "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}" \
+            "cd '${{ secrets.VPS_APP_DIR }}' && deploy/deploy.sh"

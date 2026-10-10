@@ -1,0 +1,3 @@
+.env
+.build_database_url
+backups/

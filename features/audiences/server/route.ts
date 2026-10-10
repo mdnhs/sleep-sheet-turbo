@@ -132,18 +132,14 @@ async function isAuthorized(c: Context): Promise<boolean> {
     ? authHeader.slice(7).trim()
     : queryToken;
 
-  // Check matching environment secret if configured
+  // Check matching environment secret if configured. This is also how the
+  // scheduled sync authenticates (cron sends `Authorization: Bearer
+  // $CRON_SECRET`). An `x-vercel-cron` header used to be trusted on its own
+  // when CRON_SECRET was unset — any client can send that header, so it
+  // granted the customer export to anyone; it is no longer accepted.
   const syncSecret = process.env.AUDIENCE_SYNC_SECRET || process.env.CRON_SECRET;
   if (syncSecret && rawToken && rawToken === syncSecret) {
     return true;
-  }
-
-  // Vercel Cron automatic trigger
-  const isVercelCron = c.req.header("x-vercel-cron") === "1";
-  if (isVercelCron) {
-    if (!process.env.CRON_SECRET || rawToken === process.env.CRON_SECRET) {
-      return true;
-    }
   }
 
   // Check API key (sk_live_...)
