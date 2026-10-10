@@ -21,6 +21,8 @@ import {
   videoObjectSchema,
   structuredDataScript,
 } from "@/lib/seo";
+import { seoStore } from "@/lib/seo/page-metadata";
+import { getStoreProfile } from "@/lib/settings/store";
 import { proseTableClasses } from "@/lib/prose-table-classes";
 
 type Props = { params: Promise<{ slug: string }> };
@@ -46,15 +48,20 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const product = await getProductBySlug(slug);
   if (!product) return { title: "Product not found" };
 
-  return generateProductMetadata({
-    name: product.name,
-    description: metaDescription(product.description || ""),
-    slug: product.slug,
-    images: product.images,
-    price: product.price,
-    rating: product.rating,
-    reviewCount: product.reviewCount,
-  });
+  const store = await seoStore();
+
+  return generateProductMetadata(
+    {
+      name: product.name,
+      description: metaDescription(product.description || ""),
+      slug: product.slug,
+      images: product.images,
+      price: product.price,
+      rating: product.rating,
+      reviewCount: product.reviewCount,
+    },
+    store,
+  );
 }
 
 import { getPublicProductList, getPublicProductVideos, getPublicProducts, getPublicSettings } from "@/lib/prefetch-home";
@@ -80,6 +87,7 @@ export async function generateStaticParams() {
 
 export default async function ProductDetailPage({ params }: Props) {
   const { slug } = await params;
+  const store = await getStoreProfile();
   // React cache() memoizes getProductBySlug between generateMetadata and page render.
   const product = await getProductBySlug(slug);
   if (!product) notFound();
@@ -151,7 +159,8 @@ export default async function ProductDetailPage({ params }: Props) {
           reviewCount: product.reviewCount,
           availability: product.stock > 0 ? "InStock" : "OutOfStock",
           url: `${seoConfig.siteUrl}/shop/${product.slug}`,
-          brand: seoConfig.siteName,
+          brand: store.name,
+          sellerName: store.name,
           shippingRates,
           // The first page of reviews, the same ones product-reviews renders
           // from this product object on load.

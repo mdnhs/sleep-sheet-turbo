@@ -1,19 +1,15 @@
-import type { Metadata } from "next";
 import Link from "next/link";
-import {
-  breadcrumbSchema,
-  collectionPageSchema,
-  generateMetadata as buildMetadata,
-  seoConfig,
-  structuredDataScript,
-} from "@/lib/seo";
+import { breadcrumbSchema, collectionPageSchema, seoConfig, structuredDataScript } from "@/lib/seo";
+import { pageMetadata } from "@/lib/seo/page-metadata";
+import { getStoreProfile } from "@/lib/settings/store";
 import { getSitemapPageData, type SitemapProduct } from "@/lib/seo/sitemap-page-data";
 
-export const metadata: Metadata = buildMetadata({
-  title: "Sitemap — All Pages, Categories & Products",
-  description: `Every page, product category, product and blog guide at ${seoConfig.siteName} — comforters, bed sheets and pillow covers — in one place.`,
-  canonical: "/sitemap",
-});
+export const generateMetadata = () =>
+  pageMetadata((store) => ({
+    title: "Sitemap — All Pages, Categories & Products",
+    description: `Every page, product category, product and blog guide at ${store.name} — comforters, bed sheets and pillow covers — in one place.`,
+    canonical: "/sitemap",
+  }));
 
 // Same set the XML sitemap lists (lib/seo/sitemap.ts) — pages that are
 // noindexed or disallowed in robots.txt (/sale, /track-order, sign-in) are
@@ -48,6 +44,7 @@ function SectionLink({ href, label }: { href: string; label: string }) {
 }
 
 export default async function SitemapPage() {
+  const store = await getStoreProfile();
   const data = await getSitemapPageData().catch(() => ({ categories: [], products: [], posts: [], hasVideos: false }));
 
   // The video page is noindexed while empty, so it is only listed once a product has a video.
@@ -77,8 +74,8 @@ export default async function SitemapPage() {
       {structuredDataScript(
         "sitemap-page",
         collectionPageSchema(
-          `Sitemap | ${seoConfig.siteName}`,
-          `Every page, category, product and guide at ${seoConfig.siteName}.`,
+          `Sitemap | ${store.name}`,
+          `Every page, category, product and guide at ${store.name}.`,
           url,
           ld,
         ),
@@ -100,7 +97,7 @@ export default async function SitemapPage() {
 
         <h1 className="text-3xl sm:text-4xl font-bold mb-2">Sitemap</h1>
         <p className="text-muted-foreground mb-6">
-          Every page, category, product and guide at {seoConfig.siteName}
+          Every page, category, product and guide at {store.name}
           {data.products.length > 0 && <> — {data.products.length} products across {parents.length} categories</>}.
         </p>
 

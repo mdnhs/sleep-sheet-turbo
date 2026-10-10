@@ -25,6 +25,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { toast } from 'sonner';
 import { getOptimizedImageUrl, extractTags } from '@/lib/utils';
 import { proseTableClasses } from '@/lib/prose-table-classes';
+import { useStoreProfile } from '@/hooks/use-store-profile';
 import { seoConfig, articleSchema, breadcrumbSchema, structuredDataScript } from '@/lib/seo';
 import type { BlogPost } from '@/app/(client)/blog/blog-client';
 import FallbackImage from "@/components/ui/fallback-image";
@@ -39,6 +40,7 @@ const TAGS = [
 ];
 
 export default function BlogPostClient({ slug, initialPost }: { slug: string; initialPost?: BlogPost }) {
+  const store = useStoreProfile();
   const { data: fetchedPost, isLoading } = useGetPost(slug);
   const { data: allPostsData } = useGetPosts({ limit: '5' });
   const [isLiked, setIsLiked] = useState(false);
@@ -180,7 +182,7 @@ export default function BlogPostClient({ slug, initialPost }: { slug: string; in
           publishedAt: post.createdAt,
           updatedAt: post.createdAt,
           url: postUrl,
-        })
+        }, store)
       )}
       {structuredDataScript('breadcrumbs', breadcrumbSchema(blogBreadcrumbs))}
 
@@ -338,7 +340,7 @@ export default function BlogPostClient({ slug, initialPost }: { slug: string; in
                 All Tags
               </h3>
               <div className="flex flex-wrap gap-1.5 sm:gap-2">
-                {extractTags(post.title, post.content).map((tag) => (
+                {extractTags(post.title, post.content, `${store.name} Bangladesh`).map((tag) => (
                   <Link
                     key={tag}
                     href={`/blog?tag=${encodeURIComponent(tag)}`}

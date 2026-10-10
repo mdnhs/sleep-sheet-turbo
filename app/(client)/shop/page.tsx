@@ -1,21 +1,25 @@
 import ProductContents from "@/features/product/components/product-contents";
 import ProductSidebar, { ProductSidebarSkeleton } from "@/features/product/components/products-sidebar";
 import React, { Suspense } from "react";
-import { seoConfig, generateMetadata, collectionPageSchema, breadcrumbSchema, structuredDataScript } from "@/lib/seo";
+import { seoConfig, collectionPageSchema, breadcrumbSchema, structuredDataScript } from "@/lib/seo";
+import { pageMetadata } from "@/lib/seo/page-metadata";
+import { getStoreProfile } from "@/lib/settings/store";
 import ProductGridFallback from "@/features/product/components/product-grid-fallback";
 import ShopHeader from "@/components/shop/shop-header";
 import ShopSeoContent from "@/components/shop/shop-seo-content";
 
 import { getPublicProducts, getPriceRanges } from "@/lib/prefetch-home";
 
-export const metadata = generateMetadata({
-  title: "All Products",
-  description: `Shop all products online in Bangladesh at ${seoConfig.siteName}. 100% twill cotton fabric, cash on delivery, home delivery all over Bangladesh.`,
-  canonical: `${seoConfig.siteUrl}/shop`,
-})
+export const generateMetadata = () =>
+  pageMetadata((store) => ({
+    title: "All Products",
+    description: `Shop all products online in Bangladesh at ${store.name}. 100% twill cotton fabric, cash on delivery, home delivery all over Bangladesh.`,
+    canonical: `${seoConfig.siteUrl}/shop`,
+  }))
 
 async function ProductsPage() {
-  const [productsRes, priceRows] = await Promise.all([
+  const [store, productsRes, priceRows] = await Promise.all([
+    getStoreProfile(),
     getPublicProducts().catch(() => null),
     getPriceRanges().catch(() => []),
   ]);
@@ -25,7 +29,7 @@ async function ProductsPage() {
     <div className="w-full bg-[#F4F4F4] dark:bg-gray-800 min-h-screen">
       <div className="container mx-auto py-1 sm:py-4 px-1.5 sm:px-4 min-h-[80vh]">
         {structuredDataScript("collection-page", collectionPageSchema(
-          "All Products | " + seoConfig.siteName,
+          `All Products | ${store.name}`,
           "Browse our complete collection of premium bedding, mattresses, pillows, and sleep accessories.",
           `${seoConfig.siteUrl}/shop`,
           products.map((p) => ({

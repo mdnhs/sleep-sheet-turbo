@@ -1,17 +1,17 @@
-import type { Metadata } from "next";
 import Link from "next/link";
 import { Tag } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { seoConfig, generateMetadata as buildMetadata } from "@/lib/seo";
+import { pageMetadata } from "@/lib/seo/page-metadata";
 
-export const metadata: Metadata = buildMetadata({
-  title: "Sale",
-  description: `Sales and special offers at ${seoConfig.siteName}.`,
-  canonical: "/sale",
-  // Nothing to show yet — don't index an empty placeholder. Remove this
-  // once a real campaign is live on this page.
-  noIndex: true,
-});
+export const generateMetadata = () =>
+  pageMetadata((store) => ({
+    title: "Sale",
+    description: `Sales and special offers at ${store.name}.`,
+    canonical: "/sale",
+    // Nothing to show yet — don't index an empty placeholder. Remove this
+    // once a real campaign is live on this page.
+    noIndex: true,
+  }));
 
 const SalePage = () => {
   return (

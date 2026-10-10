@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { seoStore } from "@/lib/seo/page-metadata";
+import { getStoreProfile } from "@/lib/settings/store";
 import { getVideoItems, VideosContent, videosMetadata } from "./videos-content";
 
 // Cached with ISR for 24 hours at Vercel Edge CDN.
@@ -12,9 +14,9 @@ import { getVideoItems, VideosContent, videosMetadata } from "./videos-content";
 export const revalidate = 86400;
 
 export async function generateMetadata(): Promise<Metadata> {
-  return videosMetadata(await getVideoItems());
+  return videosMetadata(await getVideoItems(), await seoStore());
 }
 
 export default async function VideosPage() {
-  return <VideosContent items={await getVideoItems()} />;
+  return <VideosContent items={await getVideoItems()} storeName={(await getStoreProfile()).name} />;
 }

@@ -7,6 +7,7 @@ export const revalidate = 86400;
 import BlogPostClient from './blog-post-client';
 import type { BlogPost } from '@/app/(client)/blog/blog-client';
 import { seoConfig } from "@/lib/seo";
+import { getStoreProfile } from "@/lib/settings/store";
 import { db } from "@/db";
 import { posts, users } from "@/db/schema";
 import { eq } from "drizzle-orm";
@@ -58,6 +59,7 @@ export function generateStaticParams(): Array<{ slug: string }> {
 
 export async function generateMetadata({ params }: Props) {
   const { slug } = await params;
+  const store = await getStoreProfile();
 
   try {
     // The same cached, "blog"-tagged read as the page body (it carries every
@@ -67,11 +69,10 @@ export async function generateMetadata({ params }: Props) {
     if (post) {
       const cleanSummary = post.summary || post.content.replace(/<[^>]*>/g, "").slice(0, 160).trim();
       const description = cleanSummary.length > 155 ? `${cleanSummary.slice(0, 155)}...` : cleanSummary;
-      const tags = extractTags(post.title, post.content);
+      const tags = extractTags(post.title, post.content, `${store.name} Bangladesh`);
 
       return {
-        // The root layout's title template already appends "| Sleep Sheet";
-        // adding it here too produced "… | Sleep Sheet | Sleep Sheet".
+        // The root layout's title template already appends the store name.
         title: post.title,
         description,
         keywords: tags.join(", "),
@@ -98,7 +99,7 @@ export async function generateMetadata({ params }: Props) {
   const fallbackTitle = slug.replace(/-/g, " ");
   return {
     title: `${fallbackTitle} | Blog`,
-    description: `Read ${fallbackTitle} on ${seoConfig.siteName}`,
+    description: `Read ${fallbackTitle} on ${store.name}`,
     alternates: {
       canonical: `${seoConfig.siteUrl}/blog/${slug}`,
     },

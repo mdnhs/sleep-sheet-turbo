@@ -42,6 +42,7 @@ export interface ProductSeoData {
   sku?: string
   gtin?: string
   brand?: string
+  sellerName?: string
   category?: string
   categorySlug?: string
   images?: string[]

@@ -3,6 +3,8 @@ import { seoConfig, siteUrl } from "./config"
 import type { SiteSeo, StoreProfile } from "@/lib/settings/store-profile"
 import type { BreadcrumbItem, ProductSeoData, CategorySeoData, BlogSeoData } from "./types"
 
+export type Publisher = Pick<StoreProfile, "name" | "logoUrl">
+
 export function jsonLd<T>(schema: T): string {
   return JSON.stringify({
     "@context": "https://schema.org",
@@ -65,17 +67,13 @@ export function websiteSchema(store: StoreProfile, seo: SiteSeo) {
   })
 }
 
-export function webpageSchema(title: string, description: string, url: string) {
+export function webpageSchema(title: string, description: string, url: string, publisher: Publisher) {
   return jsonLd({
     "@type": "WebPage",
     name: title,
     description,
     url,
-    publisher: {
-      "@type": "Organization",
-      name: seoConfig.organization.name,
-      logo: seoConfig.organization.logo,
-    },
+    publisher: { "@type": "Organization", name: publisher.name, logo: absoluteUrl(publisher.logoUrl) },
     inLanguage: "en",
     dateModified: new Date().toISOString(),
   })
@@ -134,7 +132,9 @@ export function productSchema(product: ProductSeoData) {
     availability: `https://schema.org/${product.availability || "InStock"}`,
     itemCondition: "https://schema.org/NewCondition",
     url: product.url,
-    seller: { "@type": "Organization", name: seoConfig.siteName },
+    ...(product.sellerName || product.brand
+      ? { seller: { "@type": "Organization", name: product.sellerName || product.brand } }
+      : {}),
     hasMerchantReturnPolicy: returnPolicy,
     ...(product.shippingRates ? { shippingDetails: shippingDetails(product.shippingRates) } : {}),
     ...(product.compareAtPrice && product.compareAtPrice > product.price
@@ -212,7 +212,7 @@ export function collectionPageSchema(
   })
 }
 
-export function articleSchema(post: BlogSeoData) {
+export function articleSchema(post: BlogSeoData, publisher: Publisher) {
   const schema: Record<string, unknown> = {
     "@type": "Article",
     "@id": `${post.url}#article`,
@@ -224,15 +224,15 @@ export function articleSchema(post: BlogSeoData) {
     dateModified: post.updatedAt || post.publishedAt,
     author: {
       "@type": "Person",
-      name: post.author?.name || seoConfig.organization.name,
+      name: post.author?.name || publisher.name,
       ...(post.author?.url ? { url: post.author.url } : {}),
     },
     publisher: {
       "@type": "Organization",
-      name: seoConfig.organization.name,
+      name: publisher.name,
       logo: {
         "@type": "ImageObject",
-        url: seoConfig.organization.logo || `${seoConfig.siteUrl}/logo.png`,
+        url: absoluteUrl(publisher.logoUrl),
       },
     },
     mainEntityOfPage: {

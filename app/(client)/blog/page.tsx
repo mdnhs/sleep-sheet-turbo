@@ -7,26 +7,31 @@ export const revalidate = 86400;
 import React, { Suspense } from 'react';
 import BlogClientPage from './blog-client';
 import BlogListFallback from './blog-list-fallback';
-import { seoConfig, generateMetadata, webpageSchema, breadcrumbSchema, structuredDataScript } from "@/lib/seo";
+import { seoConfig, webpageSchema, breadcrumbSchema, structuredDataScript } from "@/lib/seo";
+import { pageMetadata } from "@/lib/seo/page-metadata";
+import { getStoreProfile } from "@/lib/settings/store";
 
-export const metadata = generateMetadata({
-  title: "Blog",
-  description: `Read our latest stories, sleep tips, product guides, and news from ${seoConfig.siteName}.`,
-  canonical: `${seoConfig.siteUrl}/blog`,
-})
+export const generateMetadata = () =>
+  pageMetadata((store) => ({
+    title: "Blog",
+    description: `Read our latest stories, sleep tips, product guides, and news from ${store.name}.`,
+    canonical: `${seoConfig.siteUrl}/blog`,
+  }))
 
 import { getPublicBlogPosts } from "@/lib/prefetch-home";
 
 export default async function BlogPage() {
+  const store = await getStoreProfile();
   const postsRes = await getPublicBlogPosts().catch(() => null);
   const posts = postsRes?.data || [];
 
   return (
     <>
       {structuredDataScript("blog-listing", webpageSchema(
-        "Blog | " + seoConfig.siteName,
+        `Blog | ${store.name}`,
         "Read our latest stories, sleep tips, product guides, and news.",
         `${seoConfig.siteUrl}/blog`,
+        store,
       ))}
       {structuredDataScript(
         "breadcrumbs",

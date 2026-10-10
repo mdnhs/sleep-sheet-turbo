@@ -1,6 +1,7 @@
 export { seoConfig, siteUrl } from "./config"
 export type { BreadcrumbItem, SeoMetadata, ProductSeoData, CategorySeoData, BlogSeoData } from "./types"
-export { generateMetadata, generateProductMetadata, generateCategoryMetadata, generateBlogMetadata, generatePaginatedMetadata } from "./metadata"
+export type { SeoStore, MetadataParams } from "./metadata"
+export { generateMetadata, generateProductMetadata, generateCategoryMetadata, generateBlogMetadata, generatePaginatedMetadata, stripStoreSuffix } from "./metadata"
 export {
   jsonLd,
   organizationSchema,

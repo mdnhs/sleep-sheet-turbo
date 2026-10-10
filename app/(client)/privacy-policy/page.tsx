@@ -1,28 +1,27 @@
-import type { Metadata } from "next";
-import {
-  seoConfig,
-  generateMetadata as buildMetadata,
-  webpageSchema,
-  breadcrumbSchema,
-  structuredDataScript,
-} from "@/lib/seo";
+import { seoConfig, webpageSchema, breadcrumbSchema, structuredDataScript } from "@/lib/seo";
+import { pageMetadata } from "@/lib/seo/page-metadata";
+import { getStoreProfile } from "@/lib/settings/store";
 import PrivacyPolicyBody from "@/components/privacy-policy/privacy-policy-body";
 
-export const metadata: Metadata = buildMetadata({
-  title: "Privacy Policy",
-  description: `How ${seoConfig.siteName} collects, uses, and protects your personal information.`,
-  canonical: "/privacy-policy",
-});
+export const generateMetadata = () =>
+  pageMetadata((store) => ({
+    title: "Privacy Policy",
+    description: `How ${store.name} collects, uses, and protects your personal information.`,
+    canonical: "/privacy-policy",
+  }));
 
-const PrivacyPolicyPage = () => {
+const PrivacyPolicyPage = async () => {
+  const store = await getStoreProfile();
+
   return (
     <div className="container mx-auto px-4 py-12">
       {structuredDataScript(
         "webpage",
         webpageSchema(
           "Privacy Policy",
-          "How Sleep Sheet collects, uses, and protects your personal information.",
+          `How ${store.name} collects, uses, and protects your personal information.`,
           `${seoConfig.siteUrl}/privacy-policy`,
+          store,
         ),
       )}
       {structuredDataScript(

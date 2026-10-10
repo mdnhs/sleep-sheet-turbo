@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { seoStore } from "@/lib/seo/page-metadata";
+import { getStoreProfile } from "@/lib/settings/store";
 import { getVideoItems, VideosContent, videosMetadata } from "../../videos-content";
 
 // What a shared /videos?v=<slug> link is actually served from: a beforeFiles
@@ -22,9 +24,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   // An unknown slug (e.g. a deleted video) falls back to the plain /videos
   // preview, as the old ?v= handling did.
-  return videosMetadata(await getVideoItems(), slug);
+  return videosMetadata(await getVideoItems(), await seoStore(), slug);
 }
 
 export default async function VideoSharePage() {
-  return <VideosContent items={await getVideoItems()} />;
+  return <VideosContent items={await getVideoItems()} storeName={(await getStoreProfile()).name} />;
 }

@@ -6,6 +6,7 @@ import {
   jsonLd,
   seoConfig,
   structuredDataScript,
+  type SeoStore,
 } from "@/lib/seo";
 import { getAllPublicProductVideos } from "@/lib/prefetch-home";
 import { productVideoOgImage, productVideoPoster, productVideoUrl, videoShareUrl } from "@/lib/product-video";
@@ -22,36 +23,42 @@ export async function getVideoItems(): Promise<ProductVideoItem[]> {
   return res?.data ?? [];
 }
 
-export function videosMetadata(items: ProductVideoItem[], sharedSlug?: string): Metadata {
+export function videosMetadata(items: ProductVideoItem[], store: SeoStore, sharedSlug?: string): Metadata {
   // A shared link (/videos?v=<slug>) previews as that one video — its name,
   // blurb and a frame as the image — while the canonical stays the main /videos
   // page, so the per-video URLs don't compete with it in search results.
   const current = sharedSlug ? items.find((item) => item.slug === sharedSlug) : undefined;
   if (current) {
-    const meta = buildMetadata({
-      title: `${current.name} – Product Video`,
-      description: current.description || `Watch ${current.name} on ${seoConfig.siteName}.`,
-      canonical: pageUrl,
-      openGraph: { image: productVideoOgImage(current.video), imageAlt: `${current.name} – product video` },
-    });
+    const meta = buildMetadata(
+      {
+        title: `${current.name} – Product Video`,
+        description: current.description || `Watch ${current.name} on ${store.name}.`,
+        canonical: pageUrl,
+        openGraph: { image: productVideoOgImage(current.video), imageAlt: `${current.name} – product video` },
+      },
+      store,
+    );
     return { ...meta, openGraph: { ...meta.openGraph, url: videoShareUrl(seoConfig.siteUrl, current.slug) } };
   }
 
   const description = items.length
-    ? `Watch ${items.length} ${seoConfig.siteName} product videos — twill cotton comforters, bed sheets and pillow covers in action, with prices. Order online, cash on delivery all over Bangladesh.`
-    : `Watch ${seoConfig.siteName} comforters, bed sheets and more in action — product videos you can order from.`;
+    ? `Watch ${items.length} ${store.name} product videos — twill cotton comforters, bed sheets and pillow covers in action, with prices. Order online, cash on delivery all over Bangladesh.`
+    : `Watch ${store.name} comforters, bed sheets and more in action — product videos you can order from.`;
 
-  return buildMetadata({
-    title: "Comforter & Bed Sheet Product Videos",
-    description,
-    canonical: pageUrl,
-    // A video frame as the share image, so a link to this page previews well.
-    openGraph: items[0]
-      ? { image: productVideoOgImage(items[0].video), imageAlt: `${items[0].name} – product video` }
-      : undefined,
-    // Nothing to show yet: an empty page is a thin one, keep it out of the index.
-    noIndex: items.length === 0,
-  });
+  return buildMetadata(
+    {
+      title: "Comforter & Bed Sheet Product Videos",
+      description,
+      canonical: pageUrl,
+      // A video frame as the share image, so a link to this page previews well.
+      openGraph: items[0]
+        ? { image: productVideoOgImage(items[0].video), imageAlt: `${items[0].name} – product video` }
+        : undefined,
+      // Nothing to show yet: an empty page is a thin one, keep it out of the index.
+      noIndex: items.length === 0,
+    },
+    store,
+  );
 }
 
 function VideosGridFallback() {
@@ -71,14 +78,14 @@ function VideosGridFallback() {
   );
 }
 
-export function VideosContent({ items }: { items: ProductVideoItem[] }) {
+export function VideosContent({ items, storeName }: { items: ProductVideoItem[]; storeName: string }) {
   // CollectionPage -> ItemList -> VideoObject, one per video. Each points at the
   // product page that also shows the video (it is that page's first gallery slide).
   const collection = jsonLd({
     "@type": "CollectionPage",
-    name: `Product Videos | ${seoConfig.siteName}`,
+    name: `Product Videos | ${storeName}`,
     url: pageUrl,
-    description: `Product videos from ${seoConfig.siteName}.`,
+    description: `Product videos from ${storeName}.`,
     mainEntity: {
       "@type": "ItemList",
       numberOfItems: items.length,

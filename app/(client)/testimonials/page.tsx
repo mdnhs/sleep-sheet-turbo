@@ -6,14 +6,17 @@ export const revalidate = 86400;
 
 import { Suspense } from "react";
 import TestimonialsClientPage from "./testimonials-client";
-import { seoConfig, generateMetadata, webpageSchema, breadcrumbSchema, structuredDataScript } from "@/lib/seo";
+import { seoConfig, webpageSchema, breadcrumbSchema, structuredDataScript } from "@/lib/seo";
+import { pageMetadata } from "@/lib/seo/page-metadata";
+import { getStoreProfile } from "@/lib/settings/store";
 import { getPublicTestimonials } from "@/lib/prefetch-home";
 
-export const metadata = generateMetadata({
-  title: "Customer Reviews",
-  description: `Real reviews from ${seoConfig.siteName} customers — see what people are saying about our comforter sets, bed sheets, and pillow covers.`,
-  canonical: `${seoConfig.siteUrl}/testimonials`,
-});
+export const generateMetadata = () =>
+  pageMetadata((store) => ({
+    title: "Customer Reviews",
+    description: `Real reviews from ${store.name} customers — see what people are saying about our comforter sets, bed sheets, and pillow covers.`,
+    canonical: `${seoConfig.siteUrl}/testimonials`,
+  }));
 
 // Mirrors TestimonialsClientPage: breadcrumb row (text-xs + mb-6), centered
 // heading block (text-4xl/md:text-5xl title + mb-4, text-lg subtitle, mb-10)
@@ -44,15 +47,17 @@ function TestimonialsFallback() {
 }
 
 export default async function TestimonialsPage() {
+  const store = await getStoreProfile();
   const testimonialsRes = await getPublicTestimonials().catch(() => null);
   const testimonials = testimonialsRes?.data || [];
 
   return (
     <>
       {structuredDataScript("testimonials-listing", webpageSchema(
-        "Customer Reviews | " + seoConfig.siteName,
-        "Real reviews from Sleep Sheet customers.",
+        `Customer Reviews | ${store.name}`,
+        `Real reviews from ${store.name} customers.`,
         `${seoConfig.siteUrl}/testimonials`,
+        store,
       ))}
       {structuredDataScript(
         "breadcrumbs",

@@ -6,6 +6,7 @@ import { useQueryState } from 'nuqs';
 import { X } from 'lucide-react';
 import { extractTags } from '@/lib/utils';
 import { useLanguage } from '@/hooks/use-language';
+import { useStoreProfile } from '@/hooks/use-store-profile';
 import { BlogGridSkeleton } from './blog-list-fallback';
 import FallbackImage from "@/components/ui/fallback-image";
 
@@ -18,6 +19,7 @@ interface BlogClientPageProps {
 
 export default function BlogClientPage({ initialPosts }: BlogClientPageProps = {}) {
   const { t } = useLanguage();
+  const store = useStoreProfile();
   const { data: postsData, isLoading } = useGetPosts(undefined, {
     // An empty seed (the build has no database) must not count as data, or
     // React Query treats it as fresh and never fetches the real posts.
@@ -40,7 +42,7 @@ export default function BlogClientPage({ initialPosts }: BlogClientPageProps = {
   // a DB column, so this can't be pushed into the query.
   const visiblePosts = activeTag
     ? publishedPosts.filter((p) =>
-        extractTags(p.title, p.content).some(
+        extractTags(p.title, p.content, `${store.name} Bangladesh`).some(
           (t: string) => t.toLowerCase() === activeTag.toLowerCase()
         )
       )

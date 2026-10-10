@@ -12,8 +12,11 @@ import {
   generateCategoryMetadata,
   collectionPageSchema,
   breadcrumbSchema,
+  stripStoreSuffix,
   structuredDataScript,
 } from "@/lib/seo";
+import { seoStore } from "@/lib/seo/page-metadata";
+import { getStoreProfile } from "@/lib/settings/store";
 import { proseTableClasses } from "@/lib/prose-table-classes";
 import { getPublicProductList } from "@/lib/prefetch-home";
 
@@ -32,28 +35,28 @@ export function generateStaticParams(): Array<{ value: string }> {
   return [];
 }
 
-// seoTitle is admin-entered and some already end in "| Sleep Sheet" — the
-// metadata helper appends the site name itself, so strip it here to avoid
-// "… | Sleep Sheet | Sleep Sheet" in the <title>.
-function categoryTitle(category: { seoTitle: string | null; label: string }): string {
-  return (category.seoTitle || category.label).replace(/\s*\|\s*sleep\s*sheet.*$/i, "").trim() || category.label;
+// seoTitle is admin-entered and some already end in "| <store name>" — the
+// metadata helper appends the store name itself, so strip it here.
+function categoryTitle(category: { seoTitle: string | null; label: string }, storeName: string): string {
+  return stripStoreSuffix(category.seoTitle || category.label, storeName) || category.label;
 }
 
 // Visible H1: the keyword part of the SEO title (before the first " — ",
 // " - " or " | "), e.g. "Comforter Price in Bangladesh", so the heading
 // carries the search phrase instead of just the bare category label.
-function categoryHeading(category: { seoTitle: string | null; label: string }): string {
-  return categoryTitle(category).split(/\s+[—–|-]\s+/)[0].trim() || category.label;
+function categoryHeading(category: { seoTitle: string | null; label: string }, storeName: string): string {
+  return categoryTitle(category, storeName).split(/\s+[—–|-]\s+/)[0].trim() || category.label;
 }
 
-function categoryDescription(label: string): string {
-  return `Shop ${label} online in Bangladesh at ${seoConfig.siteName}. 100% twill cotton fabric, cash on delivery, home delivery all over Bangladesh.`;
+function categoryDescription(label: string, storeName: string): string {
+  return `Shop ${label} online in Bangladesh at ${storeName}. 100% twill cotton fabric, cash on delivery, home delivery all over Bangladesh.`;
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { value } = await params;
   const category = await getCategoryByValue(value);
   if (!category) return { title: "Category not found" };
+  const store = await seoStore();
 
   // An empty category is a thin page Google treats as a soft 404 — keep it
   // out of the index until it has products (it's also left out of the
@@ -61,21 +64,25 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const hasProducts =
     (await getCategoryProductsPreview([category.id, ...category.children.map((c) => c.id)], 1)).length > 0;
 
-  return generateCategoryMetadata({
-    noIndex: !hasProducts,
-    // Custom copy (written per-category in the dashboard) wins over the
-    // generic auto-generated sentence, same idea as competitor category
-    // pages that hand-write unique title/description instead of templating.
-    name: categoryTitle(category),
-    description: category.seoDescription || categoryDescription(category.label),
-    slug: category.value,
-  });
+  return generateCategoryMetadata(
+    {
+      noIndex: !hasProducts,
+      // Custom copy (written per-category in the dashboard) wins over the
+      // generic auto-generated sentence, same idea as competitor category
+      // pages that hand-write unique title/description instead of templating.
+      name: categoryTitle(category, store.name),
+      description: category.seoDescription || categoryDescription(category.label, store.name),
+      slug: category.value,
+      },
+    store,
+  );
 }
 
 export default async function CategoryPage({ params }: Props) {
   const { value } = await params;
   const category = await getCategoryByValue(value);
   if (!category) notFound();
+  const store = await getStoreProfile();
 
   const categoryIds = [category.id, ...category.children.map((c) => c.id)];
   const [previewProducts, initialProducts] = await Promise.all([
@@ -84,7 +91,7 @@ export default async function CategoryPage({ params }: Props) {
   ]);
 
   const categoryUrl = `${seoConfig.siteUrl}/categories/${category.value}`;
-  const description = category.seoDescription || categoryDescription(category.label);
+  const description = category.seoDescription || categoryDescription(category.label, store.name);
 
   const breadcrumbs = [
     { name: "Home", url: "/" },
@@ -116,7 +123,7 @@ export default async function CategoryPage({ params }: Props) {
         </nav>
 
         <h1 className="font-heading text-2xl lg:text-3xl font-semibold tracking-tight text-foreground mb-6">
-          {categoryHeading(category)}{" "}
+          {categoryHeading(category, store.name)}{" "}
           <span className="text-muted-foreground text-base font-normal">({category.productCount})</span>
         </h1>
 

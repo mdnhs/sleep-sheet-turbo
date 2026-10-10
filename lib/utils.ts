@@ -39,11 +39,11 @@ export function generateSlug(text: string): string {
     .replace(/^-+|-+$/g, "");
 }
 
-export function extractTags(title: string, content?: string): string[] {
+export function extractTags(title: string, content?: string, brandTag?: string): string[] {
   const genericTags = [
     "Best Comforters in Bangladesh",
     "Best Price Comforters in BD",
-    "Sleep Sheet Bangladesh",
+    ...(brandTag ? [brandTag] : []),
     "Premium Bedding Set BD",
     "Home Textile Bangladesh",
   ];

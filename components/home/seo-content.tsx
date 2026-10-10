@@ -1,6 +1,7 @@
 import { faqSchema, structuredDataScript } from "@/lib/seo";
 import { getPublicSettings, getPriceRanges, type PriceRow } from "@/lib/prefetch-home";
 import { SHIPPING_ZONES } from "@/features/checkout/constants";
+import { storeProfileFromSettings } from "@/lib/settings/store-profile";
 import SeoContentBody from "./seo-content-body";
 
 // Server component: the FAQPage JSON-LD below is emitted in English always,
@@ -10,9 +11,9 @@ import SeoContentBody from "./seo-content-body";
 // copy). Keeping the schema static avoids the rich-result target flipping
 // to Bengali on first server render, since useLanguage() defaults to "bn"
 // before it reads localStorage client-side.
-const buildFaqs = (insideDhaka: number, outsideDhaka: number) => [
+const buildFaqs = (insideDhaka: number, outsideDhaka: number, storeName: string) => [
   {
-    question: "What is included in the Sleep Sheet 5-piece comforter set?",
+    question: `What is included in the ${storeName} 5-piece comforter set?`,
     answer:
       "Each 5-piece comforter set includes 1 comforter, 1 bed sheet, 2 pillow covers, and 1 kolbalish (bolster) cover, made from premium twill cotton fabric.",
   },
@@ -29,10 +30,10 @@ const buildFaqs = (insideDhaka: number, outsideDhaka: number) => [
   {
     question: "Is there a replacement guarantee?",
     answer:
-      "Yes, every Sleep Sheet product comes with a 7-day replacement guarantee. If there is any defect, we will replace the product free of charge.",
+      `Yes, every ${storeName} product comes with a 7-day replacement guarantee. If there is any defect, we will replace the product free of charge.`,
   },
   {
-    question: "What fabric are Sleep Sheet products made of?",
+    question: `What fabric are ${storeName} products made of?`,
     answer:
       "All our bed sheets and comforters are made from 100% twill cotton — a diagonal-weave cotton that stays soft, breathable, and color-fast through years of washing.",
   },
@@ -57,6 +58,7 @@ export default async function SeoContent() {
   const faqs = buildFaqs(
     Number(settings?.shipping_inside_dhaka ?? SHIPPING_ZONES.inside_dhaka.cost),
     Number(settings?.shipping_outside_dhaka ?? SHIPPING_ZONES.outside_dhaka.cost),
+    storeProfileFromSettings(settings).name,
   );
 
   return (

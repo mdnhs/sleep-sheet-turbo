@@ -1,20 +1,18 @@
-import type { Metadata } from "next";
-import {
-  seoConfig,
-  generateMetadata as buildMetadata,
-  webpageSchema,
-  breadcrumbSchema,
-  structuredDataScript,
-} from "@/lib/seo";
+import { seoConfig, webpageSchema, breadcrumbSchema, structuredDataScript } from "@/lib/seo";
+import { pageMetadata } from "@/lib/seo/page-metadata";
+import { getStoreProfile } from "@/lib/settings/store";
 import ShippingReturnsBody from "@/components/shipping-returns/shipping-returns-body";
 
-export const metadata: Metadata = buildMetadata({
-  title: "Shipping & Returns",
-  description: `Delivery times, delivery charges, and our 7-day replacement guarantee at ${seoConfig.siteName}.`,
-  canonical: "/shipping-returns",
-});
+export const generateMetadata = () =>
+  pageMetadata((store) => ({
+    title: "Shipping & Returns",
+    description: `Delivery times, delivery charges, and our 7-day replacement guarantee at ${store.name}.`,
+    canonical: "/shipping-returns",
+  }));
 
-const ShippingReturnsPage = () => {
+const ShippingReturnsPage = async () => {
+  const store = await getStoreProfile();
+
   return (
     <div className="container mx-auto px-4 py-12">
       {structuredDataScript(
@@ -23,6 +21,7 @@ const ShippingReturnsPage = () => {
           "Shipping & Returns",
           "Delivery times, delivery charges, and our replacement guarantee.",
           `${seoConfig.siteUrl}/shipping-returns`,
+          store,
         ),
       )}
       {structuredDataScript(

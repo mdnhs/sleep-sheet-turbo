@@ -41,6 +41,7 @@ async function Page() {
           seo.title,
           seo.description,
           seoConfig.siteUrl,
+          store,
         ),
       )}
       {structuredDataScript("local-business", localBusinessSchema(store))}
