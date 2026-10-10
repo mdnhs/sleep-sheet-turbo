@@ -35,6 +35,9 @@ export async function GET() {
     })
   } catch (error) {
     console.error("Google Merchant feed generation error:", error)
-    return new NextResponse("Google Merchant feed generation failed", { status: 500 })
+    // Rethrow rather than return a 500: a returned response would be cached
+    // as this route's ISR output for a day, while a throw keeps the last good
+    // feed in place for Merchant Center / Meta to keep reading.
+    throw error
   }
 }

@@ -19,7 +19,9 @@ interface BlogClientPageProps {
 export default function BlogClientPage({ initialPosts }: BlogClientPageProps = {}) {
   const { t } = useLanguage();
   const { data: postsData, isLoading } = useGetPosts(undefined, {
-    initialData: initialPosts
+    // An empty seed (the build has no database) must not count as data, or
+    // React Query treats it as fresh and never fetches the real posts.
+    initialData: initialPosts?.length
       ? {
           data: initialPosts,
           total: initialPosts.length,

@@ -52,6 +52,9 @@ export async function GET(request: NextRequest) {
     })
   } catch (error) {
     console.error("Feed generation error:", error)
-    return new NextResponse("Feed generation failed", { status: 500 })
+    // Rethrow rather than return a 500: a returned response would be cached
+    // as this route's ISR output for a day, while a throw keeps the last good
+    // feed in place for Merchant Center / Meta to keep reading.
+    throw error
   }
 }

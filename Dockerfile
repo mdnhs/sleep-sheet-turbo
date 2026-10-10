@@ -21,6 +21,10 @@ ARG NEXT_PUBLIC_APP_URL=https://sleepsheetbd.com
 ENV NEXT_PUBLIC_APP_URL=$NEXT_PUBLIC_APP_URL
 ENV SKIP_BUILD_TYPECHECK=1
 RUN pnpm build
+# The build has no database, so every unstable_cache entry it wrote is an empty
+# fallback. Standalone output ships .next/cache, which would serve those for a
+# day; drop it so the first real request reads Postgres (lib/build-phase.ts).
+RUN rm -rf .next/standalone/.next/cache
 
 FROM node:22-bookworm-slim AS runner
 ENV NODE_ENV=production NEXT_TELEMETRY_DISABLED=1 PORT=3000 HOSTNAME=0.0.0.0

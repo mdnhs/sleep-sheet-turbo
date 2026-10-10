@@ -2,6 +2,7 @@ import { db } from "@/db"
 import { products, specifications, categories } from "@/db/schema"
 import { eq, inArray } from "drizzle-orm"
 import type { RawProduct } from "./types"
+import { buildFallback } from "@/lib/build-phase"
 
 export async function fetchAllProducts(): Promise<RawProduct[]> {
   try {
@@ -53,7 +54,8 @@ export async function fetchAllProducts(): Promise<RawProduct[]> {
       specifications: specMap.get(r.id) || [],
     }))
   } catch (err) {
-    console.warn("[meta-catalog] Database unreachable in fetchAllProducts, returning empty array:", err)
-    return []
+    // An empty catalogue at runtime would be cached by the feeds and make Meta
+    // and Merchant Center drop every product; only the build gets [].
+    return buildFallback<RawProduct[]>(err, [], "fetchAllProducts")
   }
 }

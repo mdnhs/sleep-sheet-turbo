@@ -1,6 +1,7 @@
 import { unstable_cache } from "next/cache";
 import { sql } from "drizzle-orm";
 import { db } from "@/db";
+import { buildFallback } from "@/lib/build-phase";
 import settingsApp from "@/features/settings/server/route";
 import type { ProductSummary, ProductVideoItem } from "@/lib/types";
 import type { BlogPost } from "@/app/(client)/blog/blog-client";
@@ -14,6 +15,10 @@ import type { CategoryListItem } from "@/features/categories/api/use-get-categor
 // server HTML with real content instead of a skeleton, without shipping the
 // heavier product/category lists (those fetch client-side, off the critical
 // path, to keep hydration/Total Blocking Time down).
+//
+// `fallback` only applies during `next build` (see lib/build-phase.ts). At
+// runtime a failed read throws instead, so unstable_cache never stores an
+// empty list for a day — callers already .catch() and render without it.
 async function fromRoute<T>(
   app: { request: (path: string) => Response | Promise<Response> },
   path: string,
@@ -21,16 +26,10 @@ async function fromRoute<T>(
 ): Promise<T> {
   try {
     const res = await app.request(path);
-    if (!res.ok) {
-      if (fallback !== undefined) return fallback;
-      throw new Error(`Prefetch ${path} failed: ${res.status}`);
-    }
+    if (!res.ok) throw new Error(`Prefetch ${path} failed: ${res.status}`);
     return (await res.json()) as T;
   } catch (err) {
-    if (fallback !== undefined) {
-      console.warn(`[prefetch] Route ${path} failed, using fallback:`, err);
-      return fallback;
-    }
+    if (fallback !== undefined) return buildFallback(err, fallback, `prefetch ${path}`);
     throw err;
   }
 }
@@ -175,8 +174,7 @@ export const getPriceRanges = unstable_cache(
       }
       return out;
     } catch (err) {
-      console.warn("[prefetch] getPriceRanges failed, returning fallback:", err);
-      return [];
+      return buildFallback(err, [], "getPriceRanges");
     }
   },
   ["home-price-ranges"],

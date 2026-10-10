@@ -1,3 +1,4 @@
+import { isBuildPhase } from "@/lib/build-phase"
 import { seoConfig } from "./config"
 import { productVideoOgImage, productVideoUrl } from "@/lib/product-video"
 import { db } from "@/db"
@@ -175,6 +176,9 @@ export async function generateProductsSitemap() {
       })),
     )
   } catch (err) {
+    // Empty is only acceptable during the build (lib/build-phase.ts); at runtime
+    // throwing keeps the last good cached sitemap instead of an empty one.
+    if (!isBuildPhase()) throw err
     console.warn("[sitemap] Failed to generate products sitemap, returning empty:", err)
     return buildSitemap([])
   }
@@ -199,6 +203,7 @@ export async function generateCategoriesSitemap() {
       })),
     )
   } catch (err) {
+    if (!isBuildPhase()) throw err
     console.warn("[sitemap] Failed to generate categories sitemap, returning empty:", err)
     return buildSitemap([])
   }
@@ -221,6 +226,7 @@ export async function generateBlogsSitemap() {
       })),
     )
   } catch (err) {
+    if (!isBuildPhase()) throw err
     console.warn("[sitemap] Failed to generate blogs sitemap, returning empty:", err)
     return buildSitemap([])
   }
@@ -252,6 +258,7 @@ export async function generateImagesSitemap() {
 
     return buildSitemap(entries, true)
   } catch (err) {
+    if (!isBuildPhase()) throw err
     console.warn("[sitemap] Failed to generate images sitemap, returning empty:", err)
     return buildSitemap([], true)
   }
@@ -306,6 +313,7 @@ export async function generateVideosSitemap() {
 
     return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:video="http://www.google.com/schemas/sitemap-video/1.1">\n${body}\n</urlset>`
   } catch (err) {
+    if (!isBuildPhase()) throw err
     console.warn("[sitemap] Failed to generate videos sitemap, returning empty:", err)
     return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:video="http://www.google.com/schemas/sitemap-video/1.1">\n</urlset>`
   }

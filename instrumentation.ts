@@ -6,5 +6,12 @@ export async function register() {
   if (process.env.NEXT_RUNTIME === "nodejs") {
     const { validateEnv } = await import("@/lib/env");
     validateEnv();
+
+    // Replace the database-less pages from the CI build once the production
+    // server is up (not during `next build` or `next dev`).
+    if (process.env.NODE_ENV === "production" && process.env.NEXT_PHASE !== "phase-production-build") {
+      const { scheduleStartupRevalidation } = await import("@/lib/startup-revalidate");
+      scheduleStartupRevalidation();
+    }
   }
 }

@@ -11,6 +11,7 @@ import { inArray } from "drizzle-orm";
 import { can } from "@/lib/permissions";
 import { setActivityMeta, type ActivityChange } from "@/features/activity/server/log-activity";
 import { revalidateTag, unstable_cache } from "next/cache";
+import { buildFallback } from "@/lib/build-phase";
 
 // Credentials that must never leave the server through the public GET.
 // The public endpoint exposes only a "<key>_set" flag for each so the admin
@@ -62,8 +63,9 @@ const fetchPublicSettingsFromDb = async () => {
     }
     return map;
   } catch (error) {
-    console.warn("[settings] Database unreachable during build/fetch, returning empty settings fallback:", error);
-    return {};
+    // Empty only during the build; at runtime caching {} would hide the hero
+    // and logo for a day (lib/build-phase.ts).
+    return buildFallback<Record<string, string>>(error, {}, "settings");
   }
 };
 
