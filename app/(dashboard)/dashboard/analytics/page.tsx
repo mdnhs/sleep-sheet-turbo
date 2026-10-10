@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
-import AnalyticsClient from "./analytics-client";
+import AnalyticsTabs from "./analytics-tabs";
 
 export const metadata: Metadata = {
   title: "Analytics | Sleep Sheet Admin",
-  description: "Google Analytics 4 E-Commerce Funnel & Sales Planning Intelligence",
+  description: "Website visitors, sources, funnel and orders, plus Google Analytics 4 links",
 };
 
 export default function AnalyticsPage() {
-  return <AnalyticsClient />;
+  return <AnalyticsTabs />;
 }
