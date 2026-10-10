@@ -12,6 +12,10 @@ declare global {
 }
 
 const DEFAULT_GTM_ID = "GTM-PQ667JWQ";
+// First-party GTM: the server container on the Mumbai VPS serves gtm.js and
+// ns.html from our own subdomain, so blockers that match googletagmanager.com
+// no longer drop the container.
+const GTM_HOST = "https://ss.sleepsheetbd.com";
 
 export default function GoogleAnalytics() {
   const pathname = usePathname();
@@ -67,7 +71,7 @@ export default function GoogleAnalytics() {
         (window.dataLayer as unknown as unknown[]).push(arguments);
       };
 
-    const src = `https://www.googletagmanager.com/gtm.js?id=${gtmWebId}`;
+    const src = `${GTM_HOST}/gtm.js?id=${gtmWebId}`;
     let idleCallbackId: number | undefined;
     let timeoutId: number | undefined;
 
@@ -139,7 +143,7 @@ export default function GoogleAnalytics() {
           browsers running without JavaScript. */}
       <noscript>
         <iframe
-          src={`https://www.googletagmanager.com/ns.html?id=${gtmWebId}`}
+          src={`${GTM_HOST}/ns.html?id=${gtmWebId}`}
           height="0"
           width="0"
           style={{ display: "none", visibility: "hidden" }}
