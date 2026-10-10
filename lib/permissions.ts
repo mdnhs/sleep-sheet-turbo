@@ -257,3 +257,50 @@ export function landingPath(user: AuthUser): string | null {
   const hit = MODULE_ROUTES.find((r) => can(user, r.module, "read"));
   return hit?.path ?? null;
 }
+
+/** Every granular permission string the role editor can grant. */
+export const ALL_PERMISSIONS: ReadonlySet<string> = new Set(
+  (MODULES as readonly ModuleDef[]).flatMap((m) => [
+    ...m.actions.map((a) => `${m.key}:${a}`),
+    ...(m.extras ?? []).map((e) => `${m.key}:${e.key}`),
+  ])
+);
+
+/** A granular permission from MODULES, or a legacy flat string that is still honoured. */
+export function isKnownPermission(permission: string): boolean {
+  return (
+    ALL_PERMISSIONS.has(permission) ||
+    Object.prototype.hasOwnProperty.call(LEGACY_MAP, permission)
+  );
+}
+
+/**
+ * Does `actor` hold every permission in `wanted`? Both sides are expanded
+ * first, so legacy strings and write-implies-read/extras count. ADMIN holds
+ * everything.
+ */
+export function holdsAll(actor: AuthUser, wanted: readonly string[] | null | undefined): boolean {
+  if (!actor) return false;
+  if (actor.role === "ADMIN") return true;
+  const mine = expandPermissions(actor.permissions);
+  for (const p of expandPermissions(wanted ? [...wanted] : [])) {
+    if (!mine.has(p)) return false;
+  }
+  return true;
+}
+
+/**
+ * May `actor` change `target`'s role or password? Only an ADMIN may touch an
+ * ADMIN, and anyone else only users whose permissions they fully hold.
+ * Otherwise users:write is a path to every other permission: reset a
+ * stronger account's password, then sign in as it.
+ */
+export function canManageUser(
+  actor: AuthUser,
+  target: { role: string; permissions: readonly string[] | null | undefined }
+): boolean {
+  if (!actor) return false;
+  if (actor.role === "ADMIN") return true;
+  if (target.role === "ADMIN") return false;
+  return holdsAll(actor, target.permissions);
+}

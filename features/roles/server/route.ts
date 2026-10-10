@@ -5,8 +5,22 @@ import { eq, count } from "drizzle-orm";
 import { sessionMiddleware, invalidateAllSessions } from "@/lib/session-middleware";
 import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
-import { can } from "@/lib/permissions";
+import { can, holdsAll, isKnownPermission } from "@/lib/permissions";
 import { setActivityMeta, type ActivityChange } from "@/features/activity/server/log-activity";
+
+// A role editor may only grant what they hold, and only real permissions.
+// An unknown string is either a typo or an attempt to sneak access past the
+// role editor UI.
+function grantProblem(user: Parameters<typeof holdsAll>[0], permissions: string[]) {
+  const unknown = permissions.filter((p) => !isKnownPermission(p));
+  if (unknown.length > 0) {
+    return { status: 400 as const, body: { error: "Unknown permissions", permissions: unknown } };
+  }
+  if (!holdsAll(user, permissions)) {
+    return { status: 403 as const, body: { error: "You can't grant permissions you don't have" } };
+  }
+  return null;
+}
 
 const app = new Hono()
   .get("/", sessionMiddleware, async (c) => {
@@ -39,6 +53,9 @@ const app = new Hono()
       }
 
       const { name, permissions, landingUrl } = c.req.valid("json");
+
+      const problem = grantProblem(user, permissions);
+      if (problem) return c.json(problem.body, problem.status);
 
       const existing = await db.query.roles.findFirst({
         where: eq(roles.name, name),
@@ -79,6 +96,17 @@ const app = new Hono()
       const id = c.req.param("id");
       const { name, permissions, landingUrl } = c.req.valid("json");
 
+      const problem = grantProblem(user, permissions);
+      if (problem) return c.json(problem.body, problem.status);
+
+      const before = await db.query.roles.findFirst({ where: eq(roles.id, id) });
+      if (!before) {
+        return c.json({ error: "Role not found" }, 404);
+      }
+      if (!holdsAll(user, before.permissions)) {
+        return c.json({ error: "You can't edit a role with more access than you" }, 403);
+      }
+
       const existing = await db.query.roles.findFirst({
         where: eq(roles.name, name),
       });
@@ -86,8 +114,6 @@ const app = new Hono()
       if (existing && existing.id !== id) {
         return c.json({ error: "Role name already exists" }, 400);
       }
-
-      const before = await db.query.roles.findFirst({ where: eq(roles.id, id) });
 
       const [updated] = await db.update(roles).set({
         name,
@@ -130,6 +156,14 @@ const app = new Hono()
       }
 
       const id = c.req.param("id");
+
+      const role = await db.query.roles.findFirst({ where: eq(roles.id, id) });
+      if (!role) {
+        return c.json({ error: "Role not found" }, 404);
+      }
+      if (!holdsAll(user, role.permissions)) {
+        return c.json({ error: "You can't delete a role with more access than you" }, 403);
+      }
 
       // Check if role is in use
       const [usersWithRole] = await db

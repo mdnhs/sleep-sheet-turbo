@@ -5,7 +5,7 @@ import { eq, ne, or, and, desc, isNull, isNotNull, sql } from "drizzle-orm";
 import { sessionMiddleware, invalidateSessionUser } from "@/lib/session-middleware";
 import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
-import { can } from "@/lib/permissions";
+import { can, canManageUser, holdsAll } from "@/lib/permissions";
 import bcrypt from "bcryptjs";
 import { setActivityMeta } from "@/features/activity/server/log-activity";
 
@@ -83,6 +83,16 @@ const app = new Hono()
 
       const { name, email, password, roleId } = c.req.valid("json");
 
+      if (roleId) {
+        const role = await db.query.roles.findFirst({ where: eq(roles.id, roleId) });
+        if (!role) {
+          return c.json({ error: "Role not found" }, 404);
+        }
+        if (!holdsAll(user, role.permissions)) {
+          return c.json({ error: "You can't assign a role with more access than you" }, 403);
+        }
+      }
+
       const existingUser = await db.query.users.findFirst({
         where: eq(users.email, email),
       });
@@ -129,27 +139,39 @@ const app = new Hono()
       const id = c.req.param("id");
       const { roleId } = c.req.valid("json");
 
-      // Cannot change superadmin
       const targetUser = await db.query.users.findFirst({
         where: eq(users.id, id),
+        with: { assignedRole: true },
       });
 
       if (!targetUser) {
         return c.json({ error: "User not found" }, 404);
       }
-      
+
       if (targetUser.email === process.env.SUPER_ADMIN_EMAIL) {
         return c.json({ error: "Cannot change role of super admin" }, 400);
       }
 
-      const [oldRole, newRole] = await Promise.all([
-        targetUser.roleId
-          ? db.query.roles.findFirst({ where: eq(roles.id, targetUser.roleId), columns: { name: true } })
-          : null,
-        roleId
-          ? db.query.roles.findFirst({ where: eq(roles.id, roleId), columns: { name: true } })
-          : null,
-      ]);
+      // users:write must not be a path to more access: no changing your own
+      // role, no touching anyone stronger, no handing out a role you couldn't
+      // have been given yourself.
+      if (id === user!.id && user!.role !== "ADMIN") {
+        return c.json({ error: "You can't change your own role" }, 403);
+      }
+      if (!canManageUser(user, { role: targetUser.role, permissions: targetUser.assignedRole?.permissions })) {
+        return c.json({ error: "You can't manage a user with more access than you" }, 403);
+      }
+
+      const newRole = roleId
+        ? await db.query.roles.findFirst({ where: eq(roles.id, roleId) })
+        : null;
+      if (roleId && !newRole) {
+        return c.json({ error: "Role not found" }, 404);
+      }
+      if (newRole && !holdsAll(user, newRole.permissions)) {
+        return c.json({ error: "You can't assign a role with more access than you" }, 403);
+      }
+      const oldRole = targetUser.assignedRole;
 
       const [updated] = await db.update(users).set({
         roleId,
@@ -188,7 +210,10 @@ const app = new Hono()
       const id = c.req.param("id");
       const { newPassword } = c.req.valid("json");
 
-      const targetUser = await db.query.users.findFirst({ where: eq(users.id, id) });
+      const targetUser = await db.query.users.findFirst({
+        where: eq(users.id, id),
+        with: { assignedRole: true },
+      });
 
       if (!targetUser) {
         return c.json({ error: "User not found" }, 404);
@@ -196,6 +221,11 @@ const app = new Hono()
 
       if (targetUser.email === process.env.SUPER_ADMIN_EMAIL) {
         return c.json({ error: "Cannot reset password of super admin" }, 400);
+      }
+
+      // Resetting a stronger account's password is the same as taking it over.
+      if (!canManageUser(user, { role: targetUser.role, permissions: targetUser.assignedRole?.permissions })) {
+        return c.json({ error: "You can't manage a user with more access than you" }, 403);
       }
 
       const hashedPassword = await bcrypt.hash(newPassword, 10);

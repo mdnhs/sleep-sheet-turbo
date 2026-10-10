@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { can, isAllowed, expandPermissions, landingPath, perm } from "@/lib/permissions";
+import { can, isAllowed, expandPermissions, landingPath, perm, holdsAll, isKnownPermission, canManageUser } from "@/lib/permissions";
 
 describe("perm", () => {
   it("builds a module:action string", () => {
@@ -108,5 +108,62 @@ describe("landingPath", () => {
 
   it("returns null when the user can read nothing", () => {
     expect(landingPath({ role: "USER", permissions: [] })).toBeNull();
+  });
+});
+
+describe("isKnownPermission", () => {
+  it("accepts granular and legacy permissions", () => {
+    expect(isKnownPermission("orders:write")).toBe(true);
+    expect(isKnownPermission("orders:cancel")).toBe(true);
+    expect(isKnownPermission("manage_orders")).toBe(true);
+  });
+
+  it("rejects strings no module defines", () => {
+    expect(isKnownPermission("orders:view")).toBe(false);
+    expect(isKnownPermission("superuser")).toBe(false);
+    expect(isKnownPermission("toString")).toBe(false);
+  });
+});
+
+describe("holdsAll", () => {
+  const staff = { role: "USER", permissions: ["orders:write", "users:write"] };
+
+  it("lets ADMIN grant anything", () => {
+    expect(holdsAll({ role: "ADMIN" }, ["settings:write"])).toBe(true);
+  });
+
+  it("allows a subset of the actor's own permissions, after expansion", () => {
+    expect(holdsAll(staff, ["orders:read", "orders:cancel"])).toBe(true);
+    expect(holdsAll({ role: "USER", permissions: ["manage_orders"] }, ["orders:refund"])).toBe(true);
+  });
+
+  it("refuses anything the actor doesn't hold", () => {
+    expect(holdsAll(staff, ["settings:write"])).toBe(false);
+    expect(holdsAll(staff, ["orders:read", "roles:write"])).toBe(false);
+  });
+
+  it("refuses a signed-out actor", () => {
+    expect(holdsAll(null, [])).toBe(false);
+  });
+});
+
+describe("canManageUser", () => {
+  const manager = { role: "USER", permissions: ["users:write", "orders:write"] };
+
+  it("never lets a non-admin manage an ADMIN", () => {
+    expect(canManageUser(manager, { role: "ADMIN", permissions: [] })).toBe(false);
+  });
+
+  it("refuses a target with permissions the actor lacks", () => {
+    expect(canManageUser(manager, { role: "USER", permissions: ["settings:write"] })).toBe(false);
+  });
+
+  it("allows a target whose permissions the actor fully holds", () => {
+    expect(canManageUser(manager, { role: "USER", permissions: ["orders:read"] })).toBe(true);
+    expect(canManageUser(manager, { role: "USER", permissions: null })).toBe(true);
+  });
+
+  it("lets ADMIN manage anyone", () => {
+    expect(canManageUser({ role: "ADMIN" }, { role: "ADMIN", permissions: [] })).toBe(true);
   });
 });
