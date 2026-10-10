@@ -527,4 +527,10 @@ const ProductCard = ({ product, priority = false }: ProductCardProps) => {
   );
 };
 
-export default ProductCard;
+// Memoized: product grids (infinite scroll especially) re-render on every
+// page append and fetch-state change, and without this every card already on
+// the page re-rendered with them — a main-thread task that grew with the list
+// (30ms → 100ms+ in dev by ~80 cards) and stalled the main thread mid-scroll.
+// Product objects keep their identity across appends (react-query
+// structural sharing), so only the new cards render.
+export default React.memo(ProductCard);

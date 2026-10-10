@@ -8,7 +8,6 @@ import { ProductCardSkeleton } from "@/components/product/product-card-skeleton"
 import { Button } from "@/components/ui/button";
 import { useQueryState } from "nuqs";
 import { useInView } from "react-intersection-observer";
-import { Loader2 } from "lucide-react";
 
 import { MobileFilterSheet } from "./products-sidebar";
 import type { ProductSummary } from "@/lib/types";
@@ -117,11 +116,16 @@ function ProductContents({
           so this no longer needs a row (or that row's border) to sit in. */}
       <MobileFilterSheet initialCategory={initialCategory} />
 
-      {isLoading && allProducts.length === 0 ? (
+      {/* Skeleton while a new filter or sort loads, instead of leaving the
+          previous list up. */}
+      {isLoading ? (
         <ProductGridSkeleton />
       ) : (
         <div>
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-1.5 sm:gap-3">
+          <div
+            className="grid grid-cols-2 lg:grid-cols-4 gap-1.5 sm:gap-3"
+            aria-busy={isFetchingNextPage}
+          >
             {allProducts.map((product, index: number) => (
               <ProductCard
                 key={product.id}
@@ -129,6 +133,11 @@ function ProductContents({
                 priority={index < 4}
               />
             ))}
+            {/* Next page loading: placeholder cards where it will land. */}
+            {isFetchingNextPage &&
+              [...Array(4)].map((_, i) => (
+                <ProductCardSkeleton key={`next-page-skeleton-${i}`} />
+              ))}
           </div>
 
           {allProducts.length === 0 && (
@@ -161,17 +170,10 @@ function ProductContents({
         </div>
       )}
 
-      {/* Infinite Scroll Trigger */}
+      {/* Infinite Scroll Trigger (the skeleton cards above are its loading state) */}
       {hasNextPage && (
-        <div
-          ref={ref}
-          className="w-full flex items-center justify-center py-10 mt-4"
-        >
-          {isFetchingNextPage ? (
-            <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
-          ) : (
-            <div className="h-6" /> // Placeholder for the intersection observer
-          )}
+        <div ref={ref} aria-hidden="true" className="w-full py-10 mt-4">
+          <div className="h-6" />
         </div>
       )}
 
