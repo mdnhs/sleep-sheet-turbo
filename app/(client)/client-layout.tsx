@@ -3,6 +3,7 @@
 import Footer from "@/components/footer";
 import Navbar, { NavbarSkeleton } from "@/components/nav-bar";
 import { TrafficTracker } from "@/components/traffic-tracker";
+import { MotionProvider } from "@/components/motion-provider";
 import { CartProvider } from "@/provider/cart-provider";
 import { usePathname } from "next/navigation";
 import React, { useEffect, useRef, useState } from "react";
@@ -183,6 +184,7 @@ function ClientLayout({ children }: ClientLayoutProps) {
   return (
     <CartProvider>
       <TrafficTracker />
+      <MotionProvider />
       <div className="flex flex-col min-h-screen">
         <React.Suspense fallback={<NavbarSkeleton />}>
           <Navbar />
