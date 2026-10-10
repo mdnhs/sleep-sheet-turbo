@@ -12,13 +12,18 @@ import { AUTH_COOKIE, LEGACY_AUTH_COOKIE } from "@/features/auth/constants";
 
 process.env.JWT_SECRET = "test-secret";
 
-const app = new Hono().get("/me", sessionMiddleware, (c) => c.json({ user: c.get("user") }));
+const app = new Hono()
+  .get("/me", sessionMiddleware, (c) => c.json({ user: c.get("user") }))
+  .get("/public", sessionMiddleware, (c) => {
+    c.header("Cache-Control", "public, s-maxage=60, stale-while-revalidate=300");
+    return c.json({ ok: true });
+  });
 const row = (tokenVersion: number) => ({
   id: "u1", email: "a@b.c", name: "A", role: "ADMIN", phone: null, address: null,
   tokenVersion, assignedRole: null,
 });
 const tokenFor = (tv: number) => jwt.sign({ id: "u1", email: "a@b.c", tv }, process.env.JWT_SECRET!);
-const get = (cookie: string) => app.request("/me", { headers: { cookie } });
+const get = (cookie: string, path = "/me") => app.request(path, { headers: { cookie } });
 const setCookies = (res: Response) => res.headers.getSetCookie();
 
 describe("sessionMiddleware cookie rename", () => {
@@ -62,7 +67,31 @@ describe("sessionMiddleware cookie rename", () => {
     expect(sc.some((c) => c.startsWith(`${AUTH_COOKIE}=ey`))).toBe(false);
   });
 
+  it("makes a re-issuing response uncacheable, even if the route sets public caching", async () => {
+    findFirst.mockResolvedValue(row(0));
+    const t = tokenFor(0);
+    const res = await get(`${LEGACY_AUTH_COOKIE}=${t}`, "/public");
+    expect(res.headers.get("Cache-Control")).toBe("private, no-store");
+    expect(setCookies(res).some((c) => c.startsWith(`${AUTH_COOKIE}=${t}`))).toBe(true);
+  });
+
+  it("makes the cache-hit re-issue uncacheable too", async () => {
+    findFirst.mockResolvedValue(row(0));
+    const t = tokenFor(0);
+    await get(`${AUTH_COOKIE}=${t}`, "/public"); // primes the cache
+    const res = await get(`${LEGACY_AUTH_COOKIE}=${t}`, "/public");
+    expect(findFirst).toHaveBeenCalledTimes(1);
+    expect(res.headers.get("Cache-Control")).toBe("private, no-store");
+  });
+
+  it("keeps the route's own Cache-Control for a new-name session", async () => {
+    findFirst.mockResolvedValue(row(0));
+    const res = await get(`${AUTH_COOKIE}=${tokenFor(0)}`, "/public");
+    expect(res.headers.get("Cache-Control")).toBe("public, s-maxage=60, stale-while-revalidate=300");
+  });
+
   it("clears both cookies on an invalid token", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
     const res = await get(`${LEGACY_AUTH_COOKIE}=garbage`);
     expect((await res.json()).user).toBeNull();
     const sc = setCookies(res);

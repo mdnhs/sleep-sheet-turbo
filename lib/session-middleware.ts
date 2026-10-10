@@ -88,10 +88,17 @@ export const sessionMiddleware = createMiddleware<CustomContext>(async (c, next)
   }
   const token = session.token
   // Pre-rename cookie (features/auth/constants.ts): move it to the new name.
+  let migrated = false
   const migrateLegacyCookie = () => {
     if (!session.legacy) return
+    migrated = true
     setCookie(c, AUTH_COOKIE, token, SESSION_COOKIE_OPTIONS)
     deleteCookie(c, LEGACY_AUTH_COOKIE, { path: "/" })
+  }
+  // A response carrying a re-issued session token must never sit in a shared
+  // cache (some handlers, e.g. GET /api/products, send public s-maxage).
+  const protectMigratedResponse = () => {
+    if (migrated) c.res.headers.set('Cache-Control', 'private, no-store')
   }
 
   try {
@@ -104,7 +111,9 @@ export const sessionMiddleware = createMiddleware<CustomContext>(async (c, next)
     if (cached && cached.expiresAt > Date.now() && isTokenCurrent(decoded, cached)) {
       migrateLegacyCookie()
       c.set('user', cached.user)
-      return await next()
+      await next()
+      protectMigratedResponse()
+      return
     }
 
     const user = await db.query.users.findFirst({
@@ -144,4 +153,5 @@ export const sessionMiddleware = createMiddleware<CustomContext>(async (c, next)
   }
 
   await next()
+  protectMigratedResponse()
 })
