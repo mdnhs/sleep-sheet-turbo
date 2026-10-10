@@ -13,7 +13,7 @@ as realistically possible — without changing product behavior.
 ## Non-goals
 - No UI/design changes
 - No dependency version bumps
-- No security/correctness work (covered by `docs/brief.md` separately)
+- No security/correctness work (covered by `docs/audit-2026-09-21/brief.md` separately)
 - No API route splitting in this pass (too invasive, separate branch)
 
 ## Findings being addressed (sorted by impact)
