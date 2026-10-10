@@ -8,6 +8,12 @@ const nextConfig: NextConfig = {
   // the previous build's JS gets a full reload instead of requesting chunks
   // that no longer exist.
   deploymentId: process.env.DEPLOYMENT_VERSION,
+  // The Docker build skips Next's type check: CI runs `pnpm typecheck`
+  // before every deploy, and type-checking inside the image build is what
+  // runs the VPS out of memory.
+  typescript: {
+    ignoreBuildErrors: process.env.SKIP_BUILD_TYPECHECK === "1",
+  },
   experimental: {
     optimizePackageImports: ["lucide-react", "date-fns", "@tabler/icons-react"],
   },
