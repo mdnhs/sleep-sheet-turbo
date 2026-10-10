@@ -78,7 +78,15 @@ export function useBookCourier() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (json: BookRequestType["json"]) => {
-      const res = await client.api.steadfast.book["$post"]({ json });
+      let res = await client.api.steadfast.book["$post"]({ json });
+      if (res.status === 409) {
+        const conflict = (await res.json()) as { trackingNumber?: string | null };
+        const again = window.confirm(
+          `This order is already booked (tracking ${conflict.trackingNumber ?? "unknown"}). Book a second parcel anyway?`
+        );
+        if (!again) throw new Error("Not booked: the order already has a consignment");
+        res = await client.api.steadfast.book["$post"]({ json: { ...json, force: true } });
+      }
       if (!res.ok) {
         const err = await res.json();
         throw new Error(

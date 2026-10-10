@@ -12,6 +12,7 @@ import { orders, orderTimelineEvents, orderItems } from "@/db/schema";
 import type { OrderStatus } from "@/db/schema";
 import { eq, inArray, sql } from "drizzle-orm";
 import { isAllowed } from "@/lib/permissions";
+import { isAlreadyBooked } from "@/features/steadfast/booking-guard";
 
 // Once an order is in one of these, Steadfast will never move it again — see
 // the switch below (nothing maps to REFUNDED, and DELIVERED/CANCELLED are
@@ -159,6 +160,7 @@ const app = new Hono()
           orderItemId: z.string(),
           costPrice: z.number(),
         })).optional(),
+        force: z.boolean().optional(),
       })
     ),
     async (c) => {
@@ -167,7 +169,7 @@ const app = new Hono()
         return c.json({ error: "Unauthorized" }, 401);
       }
 
-      const { orderId, recipient_phone, note, costPrices } = c.req.valid("json");
+      const { orderId, recipient_phone, note, costPrices, force } = c.req.valid("json");
 
       const order = await db.query.orders.findFirst({
         where: eq(orders.id, orderId),
@@ -175,6 +177,15 @@ const app = new Hono()
       });
 
       if (!order) return c.json({ error: "Order not found" }, 404);
+
+      // Before anything is written (cost prices included): a second
+      // consignment means a second parcel and a second courier charge.
+      if (isAlreadyBooked(order, force)) {
+        return c.json(
+          { error: `Already booked (tracking ${order.trackingNumber})`, code: "ALREADY_BOOKED", trackingNumber: order.trackingNumber },
+          409
+        );
+      }
 
       if (costPrices && costPrices.length > 0) {
         // One statement for every line item instead of an UPDATE per item —
