@@ -1,4 +1,5 @@
 import {
+  Building2,
   CreditCard,
   DollarSign,
   Globe,
@@ -9,6 +10,7 @@ import {
   Share2,
   Shield,
   ShoppingBag,
+  SlidersHorizontal,
   Store,
   Truck,
   Users,
@@ -40,6 +42,8 @@ export const settingsNav: SettingsNavGroup[] = [
     title: "Store",
     icon: Store,
     items: [
+      { title: "Store Profile", href: "/dashboard/settings/store", icon: Building2, module: "settings" },
+      { title: "Business Rules", href: "/dashboard/settings/business", icon: SlidersHorizontal, module: "settings" },
       { title: "POS", href: "/dashboard/settings/pos", icon: Store, module: "settings" },
       { title: "Currency", href: "/dashboard/settings/currency", icon: DollarSign, module: "settings" },
       { title: "Payments", href: "/dashboard/settings/payments", icon: CreditCard, module: "settings" },
