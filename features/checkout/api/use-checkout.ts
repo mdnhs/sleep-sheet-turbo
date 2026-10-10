@@ -1,7 +1,7 @@
 import { client } from "@/lib/rpc";
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
-import {
+import type {
   PaymentInformationFormValues,
   ShippingInformationFormValues
 } from "../schema";

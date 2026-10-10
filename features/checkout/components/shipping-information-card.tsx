@@ -1,15 +1,11 @@
 "use client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { zodResolver } from "@hookform/resolvers/zod";
 import React, { useEffect, useMemo } from "react";
 import Image from "next/image";
 import { useForm, useWatch } from "react-hook-form";
-import {
-  DeliveryAndPaymentFormValues,
-  createDeliveryAndPaymentSchema,
-  SHIPPING_ZONES,
-  ShippingZone,
-} from "../schema";
+import type { DeliveryAndPaymentFormValues } from "../schema";
+import { SHIPPING_ZONES, type ShippingZone } from "../constants";
+import { deliveryAndPaymentResolver } from "../delivery-resolver";
 import {
   Form,
   FormControl,
@@ -61,7 +57,7 @@ function ShippingInformationCard({ initialSettings }: ShippingInformationCardPro
   const { t, language } = useLanguage();
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  const deliveryAndPaymentSchema = useMemo(() => createDeliveryAndPaymentSchema(t), [language]);
+  const deliveryAndPaymentSchema = useMemo(() => deliveryAndPaymentResolver(t), [language]);
 
   // Hard-disabled regardless of the payment_method_card setting: there is no
   // real payment gateway integrated, so this option must not be offered
@@ -81,7 +77,7 @@ function ShippingInformationCard({ initialSettings }: ShippingInformationCardPro
   }), [settings?.shipping_inside_dhaka, settings?.shipping_outside_dhaka]);
 
   const form = useForm<DeliveryAndPaymentFormValues>({
-    resolver: zodResolver(deliveryAndPaymentSchema),
+    resolver: deliveryAndPaymentSchema,
     mode: "onBlur",
     reValidateMode: "onChange",
     defaultValues: {
