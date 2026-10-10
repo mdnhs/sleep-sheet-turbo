@@ -9,7 +9,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useSettings, useUpdateSettings } from "@/features/settings/api/use-settings";
-import { toSettingsPatch, type SettingsSection } from "@/features/settings/settings-fields";
+import { toast } from "sonner";
+import { blankRequiredKeys, toSettingsPatch, type SettingsSection } from "@/features/settings/settings-fields";
 import type { SettingsPatch } from "@/lib/settings/registry";
 
 /** A settings page built from a field list. The server validates every value against the registry. */
@@ -21,6 +22,20 @@ export function SettingsFieldsForm({ sections, submitLabel }: { sections: Settin
   const form = useForm<Record<string, string>>({
     values: Object.fromEntries(fields.map((field) => [field.key, data?.[field.key] ?? ""])),
   });
+
+  function onSubmit(values: Record<string, string>) {
+    const patch = toSettingsPatch(fields, values, data);
+    const blank = blankRequiredKeys(fields, patch);
+    if (blank.length > 0) {
+      for (const key of blank) form.setError(key, { message: "Required: pick or enter a value" });
+      return;
+    }
+    if (Object.keys(patch).length === 0) {
+      toast.info("No changes to save");
+      return;
+    }
+    mutate(patch as SettingsPatch);
+  }
 
   if (isLoading) {
     return (
@@ -34,10 +49,7 @@ export function SettingsFieldsForm({ sections, submitLabel }: { sections: Settin
 
   return (
     <Form {...form}>
-      <form
-        onSubmit={form.handleSubmit((values) => mutate(toSettingsPatch(fields, values) as SettingsPatch))}
-        className="space-y-6"
-      >
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         {sections.map((section) => (
           <div key={section.title} className="rounded-3xl bg-white dark:bg-card p-6 space-y-4">
             <div>
@@ -73,7 +85,7 @@ export function SettingsFieldsForm({ sections, submitLabel }: { sections: Settin
                           <Input placeholder={setting.placeholder} {...field} />
                         )}
                       </FormControl>
-                      {!setting.options && setting.placeholder && (
+                      {!setting.options && !setting.required && setting.placeholder && (
                         <FormDescription className="text-xs">Empty uses: {setting.placeholder}</FormDescription>
                       )}
                       <FormMessage />
