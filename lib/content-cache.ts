@@ -1,5 +1,6 @@
 import { revalidatePath, revalidateTag } from "next/cache";
 import { purgeCdn } from "@/lib/cdn-purge";
+import { cacheTag, type CacheTagRoot } from "@/lib/cache-tag";
 
 /**
  * Cache invalidation for the two editorial content types.
@@ -21,9 +22,9 @@ import { purgeCdn } from "@/lib/cdn-purge";
  * expire 0 drops it now — which is what an edit needs.
  */
 
-function invalidate(tag: string): void {
+function invalidate(root: CacheTagRoot): void {
   try {
-    revalidateTag(tag, { expire: 0 });
+    revalidateTag(cacheTag(root), { expire: 0 });
   } catch {
     /* Ignore if invoked outside the Next.js request lifecycle */
   }

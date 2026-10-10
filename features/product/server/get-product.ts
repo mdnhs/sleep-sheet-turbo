@@ -5,6 +5,7 @@ import { products, reviews } from "@/db/schema";
 import { eq, desc, count, isNotNull } from "drizzle-orm";
 import { Product } from "@/lib/types";
 import { REVIEWS_PAGE_SIZE } from "@/features/review/constants";
+import { cacheTag } from "@/lib/cache-tag";
 
 // Rating/reviewCount used to be computed by pulling every review (full
 // comment text + joined user row) for the product and reducing over the
@@ -163,7 +164,7 @@ function formatProduct(
 const getCachedProductById = unstable_cache(
   fetchProductById,
   ["product-by-id"],
-  { revalidate: 86400, tags: ["products"] },
+  { revalidate: 86400, tags: [cacheTag("products")] },
 );
 
 export const getProductById = cache(
@@ -173,7 +174,7 @@ export const getProductById = cache(
 const getCachedProductBySlug = unstable_cache(
   fetchProductBySlug,
   ["product-by-slug"],
-  { revalidate: 86400, tags: ["products"] },
+  { revalidate: 86400, tags: [cacheTag("products")] },
 );
 
 export const getProductBySlug = cache(

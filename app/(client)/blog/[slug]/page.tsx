@@ -12,6 +12,7 @@ import { posts, users } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { extractTags } from "@/lib/utils";
 import { unstable_cache } from "next/cache";
+import { cacheTag } from "@/lib/cache-tag";
 
 // Tagged "blog" so the write routes' invalidateBlog() reaches this page.
 // Without a tag the route-level `revalidate` above would be the only way a
@@ -42,7 +43,7 @@ const getCachedPost = unstable_cache(
     return dbPost ? { ...dbPost, createdAt: dbPost.createdAt.toISOString() } : undefined;
   },
   ["blog-post-by-slug"],
-  { revalidate: 86400, tags: ["blog"] },
+  { revalidate: 86400, tags: [cacheTag("blog")] },
 );
 
 type Props = { params: Promise<{ slug: string }> };

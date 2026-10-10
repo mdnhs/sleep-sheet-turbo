@@ -2,6 +2,7 @@ import { unstable_cache } from "next/cache";
 import { asc, eq, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { categories, posts, products } from "@/db/schema";
+import { cacheTag } from "@/lib/cache-tag";
 
 export interface SitemapCategory {
   id: string;
@@ -69,5 +70,5 @@ export const getSitemapPageData = unstable_cache(
     };
   },
   ["sitemap-page-data"],
-  { revalidate: 86400, tags: ["products", "categories", "blog"] },
+  { revalidate: 86400, tags: [cacheTag("products"), cacheTag("categories"), cacheTag("blog")] },
 );

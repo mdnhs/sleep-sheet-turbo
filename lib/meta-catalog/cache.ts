@@ -1,6 +1,7 @@
 import type { CacheEntry, FeedFormat } from "./types"
 import { MetaCatalogConfig } from "./config"
 import { computeEtag } from "./utils"
+import { cacheTag } from "@/lib/cache-tag";
 
 const store = new Map<string, CacheEntry>()
 
@@ -48,8 +49,8 @@ import { purgeCdn } from "@/lib/cdn-purge";
 export function invalidateFeed(): void {
   store.clear();
   try {
-    revalidateTag("products", { expire: 0 });
-    revalidateTag("categories", { expire: 0 });
+    revalidateTag(cacheTag("products"), { expire: 0 });
+    revalidateTag(cacheTag("categories"), { expire: 0 });
   } catch {
     /* Ignore if invoked outside Next.js request lifecycle */
   }

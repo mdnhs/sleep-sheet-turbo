@@ -14,6 +14,7 @@ import { revalidateTag, unstable_cache } from "next/cache";
 import { buildFallback } from "@/lib/build-phase";
 import { purgeCdn } from "@/lib/cdn-purge";
 import { SECRET_SETTING_KEYS, isSecretKey, secretKeysIn } from "@/features/settings/secret-keys";
+import { cacheTag } from "@/lib/cache-tag";
 
 /**
  * The public settings map — every non-secret row, plus a `<key>_set` flag for
@@ -46,7 +47,7 @@ const fetchPublicSettingsFromDb = async () => {
 const getCachedPublicSettings = unstable_cache(
   fetchPublicSettingsFromDb,
   ["public-settings"],
-  { revalidate: 86400, tags: ["settings"] },
+  { revalidate: 86400, tags: [cacheTag("settings")] },
 );
 
 const app = new Hono()
@@ -73,7 +74,7 @@ const app = new Hono()
     // awake through the whole trading day.
     //
     // A long revalidate costs nothing in freshness: the PATCH below calls
-    // revalidateTag("settings", { expire: 0 }), so an admin edit drops this
+    // revalidateTag(cacheTag("settings"), { expire: 0 }), so an admin edit drops this
     // entry immediately. The timer is only the fallback for changes that
     // bypass that path (a direct DB edit, a seed script).
     const map = await getCachedPublicSettings();
@@ -250,7 +251,7 @@ const app = new Hono()
 
       try {
         // expire 0, not a named profile: see lib/meta-catalog/cache.ts.
-        revalidateTag("settings", { expire: 0 });
+        revalidateTag(cacheTag("settings"), { expire: 0 });
       } catch {
         /* Ignore if called outside Next request context */
       }

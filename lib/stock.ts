@@ -65,7 +65,7 @@ export function soldOutProductIds(result: unknown): string[] {
  * changed what the cache can show.
  *
  * This used to run on every sale. It calls invalidateFeed(), which fires
- * revalidateTag("products") and revalidateTag("categories"), throwing away
+ * revalidateTag(cacheTag("products")) and revalidateTag(cacheTag("categories")), throwing away
  * the cached home, shop, category, product detail and feed pages so the next
  * visitor regenerates all of them. Doing that because a stock count went from
  * 10 to 9 was the single largest source of ISR writes — the deploy's own

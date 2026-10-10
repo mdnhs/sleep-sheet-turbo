@@ -8,6 +8,7 @@ import type { BlogPost } from "@/app/(client)/blog/blog-client";
 import type { Testimonial } from "@/features/testimonials/api/use-get-testimonials";
 import type { PublicCategory } from "@/features/categories/api/use-get-category";
 import type { CategoryListItem } from "@/features/categories/api/use-get-categories";
+import { cacheTag } from "@/lib/cache-tag";
 
 // Runs the public settings Hono GET handler in-process (no HTTP round trip)
 // so the (client) layout can seed the ["settings"] React Query cache before
@@ -59,13 +60,13 @@ export const getPublicSettings = unstable_cache(
     return data;
   },
   ["prefetch-settings"],
-  { revalidate: 86400, tags: ["settings"] },
+  { revalidate: 86400, tags: [cacheTag("settings")] },
 );
 
 export const getPublicCategories = unstable_cache(
   () => fromRoute<{ success: boolean; categories: PublicCategory[] }>(categoriesApp, "/category", { success: true, categories: [] }),
   ["prefetch-categories"],
-  { revalidate: 86400, tags: ["categories"] }
+  { revalidate: 86400, tags: [cacheTag("categories")] }
 );
 
 // Flat category list (with parentId), same shape useGetCategories fetches
@@ -75,7 +76,7 @@ export const getPublicCategories = unstable_cache(
 export const getPublicCategoryList = unstable_cache(
   () => fromRoute<CategoryListItem[]>(categoriesApp, "/", []),
   ["prefetch-category-list"],
-  { revalidate: 86400, tags: ["categories"] }
+  { revalidate: 86400, tags: [cacheTag("categories")] }
 );
 
 import blogApp from "@/features/blog/server/route";
@@ -84,7 +85,7 @@ import testimonialsApp from "@/features/testimonials/server/route";
 export const getPublicProducts = unstable_cache(
   () => fromRoute<{ data: ProductSummary[] }>(productsApp, "/?sort=newest&limit=8", { data: [] }),
   ["prefetch-products"],
-  { revalidate: 86400, tags: ["products"] }
+  { revalidate: 86400, tags: [cacheTag("products")] }
 );
 
 // First page of a listing grid (category / bestsellers), matching exactly
@@ -97,14 +98,14 @@ export const getPublicProducts = unstable_cache(
 export const getPublicProductVideos = unstable_cache(
   () => fromRoute<{ data: ProductVideoItem[] }>(productsApp, "/videos", { data: [] }),
   ["prefetch-product-videos"],
-  { revalidate: 86400, tags: ["products"] },
+  { revalidate: 86400, tags: [cacheTag("products")] },
 );
 
 // Every product video (up to the API's cap of 100), for the /videos page.
 export const getAllPublicProductVideos = unstable_cache(
   () => fromRoute<{ data: ProductVideoItem[] }>(productsApp, "/videos?limit=100", { data: [] }),
   ["prefetch-all-product-videos"],
-  { revalidate: 86400, tags: ["products"] },
+  { revalidate: 86400, tags: [cacheTag("products")] },
 );
 
 export function getPublicProductList(params: { category?: string; sort?: string }) {
@@ -115,14 +116,14 @@ export function getPublicProductList(params: { category?: string; sort?: string 
   return unstable_cache(
     () => fromRoute<{ data: ProductSummary[] }>(productsApp, `/?${query.toString()}`, { data: [] }),
     ["prefetch-product-list", params.category ?? "", params.sort ?? ""],
-    { revalidate: 86400, tags: ["products"] },
+    { revalidate: 86400, tags: [cacheTag("products")] },
   )();
 }
 
 export const getPublicBlogPosts = unstable_cache(
   () => fromRoute<{ data: BlogPost[] }>(blogApp, "/", { data: [] }),
   ["prefetch-blog"],
-  { revalidate: 86400, tags: ["blog"] }
+  { revalidate: 86400, tags: [cacheTag("blog")] }
 );
 
 export const getPublicTestimonials = unstable_cache(
@@ -137,7 +138,7 @@ export const getPublicTestimonials = unstable_cache(
     return data;
   },
   ["prefetch-testimonials"],
-  { revalidate: 86400, tags: ["testimonials"] }
+  { revalidate: 86400, tags: [cacheTag("testimonials")] }
 );
 
 export type PriceRow = {
@@ -178,5 +179,5 @@ export const getPriceRanges = unstable_cache(
     }
   },
   ["home-price-ranges"],
-  { revalidate: 86400, tags: ["products"] },
+  { revalidate: 86400, tags: [cacheTag("products")] },
 );

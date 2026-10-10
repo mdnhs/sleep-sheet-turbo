@@ -13,6 +13,8 @@
 // ISR route handlers that read the database. revalidatePath("/", "layout")
 // covers the pages, but route handlers sit outside the layout tree and need
 // to be named.
+import { cacheTag } from "@/lib/cache-tag";
+
 export const DATA_ROUTE_HANDLERS = [
   "/sitemap.xml",
   "/sitemap-pages.xml",
@@ -26,7 +28,9 @@ export const DATA_ROUTE_HANDLERS = [
 ];
 
 // Every tag the storefront's unstable_cache reads use.
-export const DATA_CACHE_TAGS = ["settings", "categories", "products", "blog", "testimonials"];
+export const DATA_CACHE_TAGS = (["settings", "categories", "products", "blog", "testimonials"] as const).map(
+  (root) => cacheTag(root),
+);
 
 const WARM_PATHS = [
   "/",
