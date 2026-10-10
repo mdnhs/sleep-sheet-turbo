@@ -10,6 +10,7 @@ import { isAllowed } from "@/lib/permissions";
 import { rateLimit } from "@/lib/rate-limit";
 import { totalAfterSubtotalChange } from "@/lib/order-totals";
 import { sameOrderNumber, toOrderSummary } from "@/features/order/server/track-order";
+import { withoutCostPrices } from "@/features/order/server/customer-order";
 import { setActivityMeta, summarizeNames, titleCase, type ActivityChange } from "@/features/activity/server/log-activity";
 import {
   isPendingSql,
@@ -983,7 +984,7 @@ const app = new Hono()
     // always has the real values anyway.
     return c.json({
       order: {
-        ...order,
+        ...withoutCostPrices(order),
         shippingCost: order.deliveryCharge,
         ipAddress: null,
         userAgent: null,
