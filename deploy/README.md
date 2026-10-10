@@ -125,3 +125,39 @@ pre-cutover data; orders placed on the VPS since then must be copied back.
   `drizzle-kit migrate` — the tracking table is still empty.
 - **Updates:** `docker compose pull && docker compose up -d` for minor
   versions. A Postgres major upgrade needs dump/restore, not just a new tag.
+
+## 6. Backups (status 2026-10-11)
+
+Production runs on Dokploy (app `sleepsheet-stage` + Postgres `sleepsheet-postgres`,
+`postgres:18-alpine`). The compose `backup`/`cron` services described above are **not**
+part of the Dokploy setup, and Dokploy has **no backup schedule and no backup destination**
+configured yet.
+
+- Manual backup taken before the SP-0 deploy: `pg_dump -Fc` from the owner's machine,
+  kept in `~/sleep-sheet-backups/` (not in git — it contains customer data).
+- **Restore drill 2026-10-11:** the dump restored cleanly into a scratch database
+  (local Postgres 18); orders = 394, matching production at dump time.
+- To do: add an S3-compatible destination in Dokploy (Cloudflare R2 free tier works),
+  then a daily Postgres backup on `sleepsheet-postgres`, keep at least 14.
+
+## 7. Network exposure (status 2026-10-11)
+
+- Postgres is published on the VPS at port **5434** and is reachable from the internet
+  (password-protected only). Unless something outside Dokploy needs it, remove the
+  external port in Dokploy, or restrict it to known IPs.
+- **Origin firewall:** the app trusts `CF-Connecting-IP` (`lib/client-ip.ts`), which is
+  only unforgeable when the origin accepts web traffic from Cloudflare alone. That lock
+  is **not applied**, because `n8n`, `ss`, `vps`, `pos`, `product` are DNS-only (not
+  proxied) and would be cut off. Proxy those hostnames through Cloudflare first, then drop
+  non-Cloudflare traffic on 80/443 in the `DOCKER-USER` iptables chain (Docker-published
+  ports bypass ufw) using https://www.cloudflare.com/ips-v4 and /ips-v6.
+
+## 8. SP-0 release migrations (2026-10-11)
+
+Applied by hand, in this order (the numbers run opposite to the order):
+1. `0033_user_token_version.sql` — before the deploy (done 2026-10-11, together with
+   `UPDATE api_keys SET "rawKey" = NULL` and removing the dead `view_analytics` string
+   from the Owner role).
+2. Deploy `cfcd01e`.
+3. `0032_api_keys_drop_raw_key.sql` — after the deploy has soaked; dropping the column
+   earlier would break a rollback to the previous image.
