@@ -4,12 +4,13 @@ import jwt from "jsonwebtoken";
 import { db } from "@/db";
 import { users } from "@/db/schema";
 import { eq } from "drizzle-orm";
-import { AUTH_COOKIE } from "@/features/auth/constants";
+import { readSessionCookie } from "@/features/auth/constants";
 import { isTokenCurrent, type SessionClaims } from "@/lib/session-token";
 
 export async function getCurrentUser() {
   const cookieStore = cookies();
-  const token = (await cookieStore).get(AUTH_COOKIE)?.value;
+  const store = await cookieStore;
+  const token = readSessionCookie((name) => store.get(name)?.value)?.token;
 
   if (!token) return null;
 

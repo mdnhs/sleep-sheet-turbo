@@ -1,12 +1,12 @@
 
 import { createMiddleware } from 'hono/factory'
-import { getCookie, deleteCookie } from 'hono/cookie'
+import { getCookie, deleteCookie, setCookie } from 'hono/cookie'
 
 import jwt from 'jsonwebtoken'
 import { db } from '@/db'
 import { users } from '@/db/schema'
 import { eq } from 'drizzle-orm'
-import { AUTH_COOKIE } from '@/features/auth/constants'
+import { AUTH_COOKIE, LEGACY_AUTH_COOKIE, SESSION_COOKIE_OPTIONS, readSessionCookie } from '@/features/auth/constants'
 import { authenticateApiKey } from '@/lib/api-keys'
 import { authenticateOAuthToken } from '@/lib/oauth'
 import { isTokenCurrent, type SessionClaims } from '@/lib/session-token'
@@ -80,11 +80,18 @@ export const sessionMiddleware = createMiddleware<CustomContext>(async (c, next)
     return await next()
   }
 
-  const token = getCookie(c, AUTH_COOKIE)
+  const session = readSessionCookie((name) => getCookie(c, name))
 
-  if (!token) {
+  if (!session) {
     c.set('user', null)
     return await next()
+  }
+  const token = session.token
+  // Pre-rename cookie (features/auth/constants.ts): move it to the new name.
+  const migrateLegacyCookie = () => {
+    if (!session.legacy) return
+    setCookie(c, AUTH_COOKIE, token, SESSION_COOKIE_OPTIONS)
+    deleteCookie(c, LEGACY_AUTH_COOKIE, { path: "/" })
   }
 
   try {
@@ -95,6 +102,7 @@ export const sessionMiddleware = createMiddleware<CustomContext>(async (c, next)
     // created.
     const cached = sessionCache.get(decoded.id)
     if (cached && cached.expiresAt > Date.now() && isTokenCurrent(decoded, cached)) {
+      migrateLegacyCookie()
       c.set('user', cached.user)
       return await next()
     }
@@ -108,6 +116,7 @@ export const sessionMiddleware = createMiddleware<CustomContext>(async (c, next)
       sessionCache.delete(decoded.id)
       c.set('user', null)
       deleteCookie(c, AUTH_COOKIE, { path: "/" })
+      deleteCookie(c, LEGACY_AUTH_COOKIE, { path: "/" })
       return await next()
     }
 
@@ -125,11 +134,13 @@ export const sessionMiddleware = createMiddleware<CustomContext>(async (c, next)
     }
 
     sessionCache.set(user.id, { user: sessionUser, tokenVersion: user.tokenVersion, expiresAt: Date.now() + SESSION_CACHE_TTL_MS })
+    migrateLegacyCookie()
     c.set('user', sessionUser)
   } catch (err) {
     console.error('Invalid token', err)
     c.set('user', null)
     deleteCookie(c, AUTH_COOKIE, { path: "/" })
+    deleteCookie(c, LEGACY_AUTH_COOKIE, { path: "/" })
   }
 
   await next()

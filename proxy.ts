@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import jwt from "jsonwebtoken";
-import { AUTH_COOKIE } from "@/features/auth/constants";
+import { readSessionCookie } from "@/features/auth/constants";
 
 // Dashboard had no server-side guard at all: every /dashboard/** page relied
 // on its own page component calling getCurrentUser(), and several pages
@@ -16,7 +16,7 @@ import { AUTH_COOKIE } from "@/features/auth/constants";
 // MODERATOR see /dashboard/settings, etc.) stays enforced where it already
 // was: in each page component and in the API route guards.
 export function proxy(request: NextRequest) {
-  const token = request.cookies.get(AUTH_COOKIE)?.value;
+  const token = readSessionCookie((name) => request.cookies.get(name)?.value)?.token;
 
   if (!token || !isValidToken(token)) {
     return NextResponse.redirect(new URL("/signin", request.url));

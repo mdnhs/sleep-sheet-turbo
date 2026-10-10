@@ -3,7 +3,7 @@ import jwt from "jsonwebtoken";
 import { db } from "@/db";
 import { users } from "@/db/schema";
 import { eq } from "drizzle-orm";
-import { AUTH_COOKIE } from "@/features/auth/constants";
+import { readSessionCookie } from "@/features/auth/constants";
 import { isTokenCurrent, type SessionClaims } from "@/lib/session-token";
 
 /** Server Component / Server Action equivalent of session-middleware's
@@ -12,7 +12,7 @@ import { isTokenCurrent, type SessionClaims } from "@/lib/session-token";
  * their own way to read who's logged in via `next/headers`. */
 export async function getSessionUser() {
   const cookieStore = await cookies();
-  const token = cookieStore.get(AUTH_COOKIE)?.value;
+  const token = readSessionCookie((name) => cookieStore.get(name)?.value)?.token;
   if (!token) return null;
 
   try {

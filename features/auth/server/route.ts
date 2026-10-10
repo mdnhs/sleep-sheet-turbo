@@ -7,21 +7,13 @@ import bcrypt from "bcryptjs";
 import { db } from "@/db";
 import { users } from "@/db/schema";
 import { eq, sql } from "drizzle-orm";
-import { AUTH_COOKIE } from "../constants";
+import { AUTH_COOKIE, LEGACY_AUTH_COOKIE, SESSION_COOKIE_OPTIONS } from "../constants";
 import { sessionMiddleware, invalidateSessionUser } from "@/lib/session-middleware";
 import { rateLimit } from "@/lib/rate-limit";
 import { signSessionToken } from "@/lib/session-token";
 import { revokeUserCredentials, type RevokedCounts } from "@/lib/revoke-credentials";
 import { z } from "zod";
 import { getWishlistData } from "@/features/wishlist/server/get-wishlist-data";
-
-const SESSION_COOKIE_OPTIONS = {
-  httpOnly: true,
-  secure: process.env.NODE_ENV === "production",
-  sameSite: "Lax",
-  path: "/",
-  maxAge: 60 * 60 * 24 * 7, // 7 days, matches the JWT
-} as const;
 
 // Brute-force lockout: after this many wrong passwords in a row, the account
 // is locked for LOCKOUT_MINUTES. Counter resets on any successful login.
@@ -137,6 +129,7 @@ const app = new Hono()
 
       const token = signSessionToken(user);
       setCookie(c, AUTH_COOKIE, token, SESSION_COOKIE_OPTIONS);
+      deleteCookie(c, LEGACY_AUTH_COOKIE, { path: "/" });
 
       // Lightweight non-httpOnly flag allowing client code to skip /api/auth/current
       // round-trips entirely when a visitor is an anonymous guest.
@@ -166,6 +159,7 @@ const app = new Hono()
     deleteCookie(c, AUTH_COOKIE, {
       path: "/",
     });
+    deleteCookie(c, LEGACY_AUTH_COOKIE, { path: "/" });
     deleteCookie(c, "has_session", {
       path: "/",
     });
