@@ -16,6 +16,7 @@ concurrency:
 jobs:
   verify:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     env:
       # Dummy values: nothing here talks to a database or signs real tokens,
       # but some modules validate that these exist when imported.

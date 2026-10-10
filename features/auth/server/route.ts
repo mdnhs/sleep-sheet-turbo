@@ -14,8 +14,6 @@ import { signSessionToken } from "@/lib/session-token";
 import { z } from "zod";
 import { getWishlistData } from "@/features/wishlist/server/get-wishlist-data";
 
-// Brute-force lockout: after this many wrong passwords in a row, the account
-// is locked for LOCKOUT_MINUTES. Counter resets on any successful login.
 const SESSION_COOKIE_OPTIONS = {
   httpOnly: true,
   secure: process.env.NODE_ENV === "production",
@@ -24,6 +22,8 @@ const SESSION_COOKIE_OPTIONS = {
   maxAge: 60 * 60 * 24 * 7, // 7 days, matches the JWT
 } as const;
 
+// Brute-force lockout: after this many wrong passwords in a row, the account
+// is locked for LOCKOUT_MINUTES. Counter resets on any successful login.
 const MAX_FAILED_ATTEMPTS = 5;
 const LOCKOUT_MINUTES = 15;
 
