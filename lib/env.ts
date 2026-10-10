@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { isValidSettingsKey } from "@/lib/settings/crypto";
 
 // Every var the app reads via `process.env.X!` (non-null assertion) used to
 // fail with a confusing runtime error the first time that code path ran —
@@ -45,6 +46,15 @@ const envSchema = z.object({
   N8N_ERROR_WEBHOOK_URL: z.string().url().optional(),
   // n8n webhook for direct product cache sync from /dashboard/images
   N8N_PRODUCT_CACHE_WEBHOOK_URL: z.string().url().optional(),
+  // AES-256-GCM key for credentials in site_settings (lib/settings/crypto.ts).
+  // Optional: without it credentials stay plaintext. Malformed fails boot,
+  // rather than leaving every credential unreadable.
+  SETTINGS_ENCRYPTION_KEY: z
+    .string()
+    .optional()
+    .refine((value) => !value || !value.trim() || isValidSettingsKey(value), {
+      message: "must be 32 random bytes, base64-encoded (openssl rand -base64 32)",
+    }),
 });
 
 export type Env = z.infer<typeof envSchema>;
