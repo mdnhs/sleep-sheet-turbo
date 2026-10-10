@@ -10,9 +10,9 @@ const nextConfig: NextConfig = {
   // `|| undefined`: an empty string (ARG passed with no value) made Next emit
   // "?dpl=" on some chunk URLs but not others, so every chunk loaded twice.
   deploymentId: process.env.DEPLOYMENT_VERSION || undefined,
-  // The Docker build skips Next's type check: CI runs `pnpm typecheck`
-  // before every deploy, and type-checking inside the image build is what
-  // runs the VPS out of memory.
+  // The Docker build skips Next's type check: typecheck runs in the CI
+  // `verify` job, which the image build depends on, and type-checking inside
+  // the image build is what runs the VPS out of memory.
   typescript: {
     ignoreBuildErrors: process.env.SKIP_BUILD_TYPECHECK === "1",
   },

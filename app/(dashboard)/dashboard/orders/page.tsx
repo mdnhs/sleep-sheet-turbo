@@ -548,10 +548,7 @@ function ProductCombobox({
 }
 
 function OrdersPageContent() {
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const mounted = useHasMounted();
 
   const [search, setSearch] = useQueryState(
     "search",
@@ -765,15 +762,17 @@ function OrdersPageContent() {
   const { siteName, logoUrl, footerPhone } = useWebsiteSettings();
   const { data: settings } = useSettings();
 
+  // Read once into a local so the memo's dependency is exactly what it uses.
+  const fbPagesSetting = settings?.pos_facebook_pages;
   const configuredFbPages: { id: string; name: string }[] = React.useMemo(() => {
-    if (!settings?.pos_facebook_pages) return [{ id: "default", name: "Sleep Sheet" }];
+    if (!fbPagesSetting) return [{ id: "default", name: "Sleep Sheet" }];
     try {
-      const parsed = JSON.parse(settings.pos_facebook_pages);
+      const parsed = JSON.parse(fbPagesSetting);
       return Array.isArray(parsed) && parsed.length > 0 ? parsed : [{ id: "default", name: "Sleep Sheet" }];
     } catch {
       return [{ id: "default", name: "Sleep Sheet" }];
     }
-  }, [settings?.pos_facebook_pages]);
+  }, [fbPagesSetting]);
 
   const availableFacebookPages = React.useMemo(() => {
     const pageSet = new Set<string>();

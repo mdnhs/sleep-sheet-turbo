@@ -41,6 +41,7 @@ export const useGetProducts = (params?: ProductQueryParams) => {
 export interface UseGetInfiniteProductsOptions {
   initialData?: {
     pages: Array<{
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- pages come from two sources (server-rendered ProductSummary[] and the RPC response) whose row types differ; tightening this belongs to the SP-7 catalogue work.
       data: any[];
       totalCount?: number;
       currentPage?: number;

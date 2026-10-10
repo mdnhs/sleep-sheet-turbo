@@ -2,24 +2,21 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useCurrency } from "@/hooks/use-currency";
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { useLanguage } from "@/hooks/use-language";
+import { useHasMounted } from "@/hooks/use-has-mounted";
 import { useCartStore } from "@/features/cart/state/use-cart-store";
 import { enrichColorWithAddOnPrices } from "@/lib/utils";
 import FallbackImage from "@/components/ui/fallback-image";
 import { OrderSummarySkeleton } from "./checkout-skeleton";
 
 function OrderSummeryCard() {
-  const [mounted, setMounted] = useState(false);
+  const mounted = useHasMounted();
   const userItems = useCartStore((state) => state.items);
   const guestItems = useCartStore((state) => state.guestItems);
   const shippingCost = useCartStore((state) => state.shipping);
   const { formatAmount } = useCurrency();
   const { t } = useLanguage();
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   if (!mounted) {
     return <OrderSummarySkeleton />;

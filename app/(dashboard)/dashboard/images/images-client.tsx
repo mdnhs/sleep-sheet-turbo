@@ -159,8 +159,8 @@ export default function ImagesClientPage() {
         setSyncCategories({});
         setSyncProgress({ current: 0, total: 0, batch: 0, totalBatches: 0 });
       }, 1000);
-    } catch (err: any) {
-      toast.error(err.message || "Failed to sync products to n8n");
+    } catch (err) {
+      toast.error(err instanceof Error && err.message ? err.message : "Failed to sync products to n8n");
       setIsSyncing(false);
     }
   };

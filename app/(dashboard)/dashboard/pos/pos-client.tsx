@@ -137,6 +137,7 @@ export default function PosClientPage() {
 
   useEffect(() => {
     if (defaultFbPage && !reference) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- the default page arrives once settings load; reference stays user-editable afterward, so it can't be purely derived.
       setReference(defaultFbPage)
     }
   }, [defaultFbPage, reference])

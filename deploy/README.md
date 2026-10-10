@@ -105,8 +105,10 @@ pre-cutover data; orders placed on the VPS since then must be copied back.
   secrets `VPS_HOST`, `VPS_USER`, `VPS_SSH_KEY` (private `deploy_key`),
   `VPS_KNOWN_HOSTS` (`ssh-keyscan <vps-ip>`), `VPS_APP_DIR` (`/opt/sleepsheet`);
   variable `VPS_DEPLOY_ENABLED=true`. From then on every push to `main`
-  runs typecheck + tests and deploys. Each deploy restarts the app
-  container (a few seconds of 502 from the proxy).
+  runs typecheck, lint and tests in the CI `verify` job, which the image
+  build depends on, then deploys. (Typecheck is skipped inside the Docker
+  build itself.) Each deploy restarts the app container (a few seconds of
+  502 from the proxy).
 - Remove the Vercel-only pieces in one commit: `@vercel/analytics` /
   `@vercel/speed-insights` (`components/vercel-analytics.tsx`),
   `attachDatabasePool` in `db/index.ts`, `vercel.json`. Then disconnect the
