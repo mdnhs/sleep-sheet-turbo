@@ -246,6 +246,13 @@
       "when": 1791660932585,
       "tag": "0034_checkout_drafts",
       "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "7",
+      "when": 1791666918388,
+      "tag": "0035_settings_white_label",
+      "breakpoints": true
     }
   ]
 }

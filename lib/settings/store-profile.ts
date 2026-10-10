@@ -103,5 +103,7 @@ export function fillStore(
   store: Pick<StoreProfile, "name" | "nameBn">,
   language: "bn" | "en" = "en",
 ): string {
-  return text.replaceAll("{store}", language === "bn" ? store.nameBn : store.name);
+  const name = language === "bn" ? store.nameBn : store.name;
+  // A replacer function: a string would have `$&`, `$1` etc. in the name expanded.
+  return text.replaceAll("{store}", () => name);
 }

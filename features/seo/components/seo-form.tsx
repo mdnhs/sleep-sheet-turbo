@@ -1,6 +1,6 @@
 "use client";
 
-import { SEO_DEFAULTS, STORE_DEFAULTS } from "@/lib/settings/defaults";
+import { SEO_DEFAULTS } from "@/lib/settings/defaults";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -16,13 +16,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Globe, Search, Users, Bot, Shield, BarChart2 } from "lucide-react";
 
 const seoSchema = z.object({
-  seo_site_name: z.string().min(1, "Site name is required"),
   seo_default_title: z.string().min(1, "Default title is required"),
   seo_default_description: z.string().min(1, "Default description is required"),
   seo_default_image: z.string().optional(),
   seo_google_verification: z.string().optional(),
   seo_bing_verification: z.string().optional(),
   gtm_web_id: z.string().optional(),
+  gtm_server_url: z.string().optional(),
   seo_twitter_handle: z.string().optional(),
   seo_robots_ai_block: z.boolean(),
 });
@@ -36,13 +36,13 @@ export function SeoForm() {
   const form = useForm<SeoFormValues>({
     resolver: zodResolver(seoSchema),
     values: {
-      seo_site_name: data?.seo_site_name || STORE_DEFAULTS.name,
       seo_default_title: data?.seo_default_title || SEO_DEFAULTS.title,
       seo_default_description: data?.seo_default_description || SEO_DEFAULTS.description,
       seo_default_image: data?.seo_default_image || "",
       seo_google_verification: data?.seo_google_verification || "",
       seo_bing_verification: data?.seo_bing_verification || "",
       gtm_web_id: data?.gtm_web_id || "",
+      gtm_server_url: data?.gtm_server_url || "",
       seo_twitter_handle: data?.seo_twitter_handle || "",
       seo_robots_ai_block: data?.seo_robots_ai_block !== "false",
     },
@@ -50,13 +50,13 @@ export function SeoForm() {
 
   function onSubmit(values: SeoFormValues) {
     mutate({
-      seo_site_name: values.seo_site_name,
       seo_default_title: values.seo_default_title,
       seo_default_description: values.seo_default_description,
       seo_default_image: values.seo_default_image || undefined,
       seo_google_verification: values.seo_google_verification || undefined,
       seo_bing_verification: values.seo_bing_verification || undefined,
       gtm_web_id: values.gtm_web_id?.trim() || undefined,
+      gtm_server_url: values.gtm_server_url?.trim() || undefined,
       seo_twitter_handle: values.seo_twitter_handle || undefined,
       seo_robots_ai_block: values.seo_robots_ai_block ? "true" : "false",
     });
@@ -103,20 +103,6 @@ export function SeoForm() {
                 <h2 className="text-base font-bold tracking-tight">General SEO Configuration</h2>
               </div>
               <div className="space-y-4">
-                <FormField
-                  control={form.control}
-                  name="seo_site_name"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Site Name</FormLabel>
-                      <FormControl>
-                        <Input {...field} placeholder="Your store name" className="rounded-xl" />
-                      </FormControl>
-                      <FormDescription>Used in Open Graph, Twitter Cards, and schema.org markup</FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
                 <FormField
                   control={form.control}
                   name="seo_default_title"
@@ -184,6 +170,22 @@ export function SeoForm() {
                         <Input {...field} placeholder="e.g. GTM-XXXXXXX" className="rounded-xl font-mono text-sm" />
                       </FormControl>
                       <FormDescription>Loads GTM on the storefront. All tracking (Google Analytics, Meta Pixel, conversions) runs through this container.</FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="gtm_server_url"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>GTM server container URL</FormLabel>
+                      <FormControl>
+                        <Input {...field} placeholder="https://ss.example.com" className="rounded-xl font-mono text-sm" />
+                      </FormControl>
+                      <FormDescription>
+                        First-party host that serves gtm.js. Leave empty to load from Google.
+                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}

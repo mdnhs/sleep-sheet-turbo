@@ -125,7 +125,6 @@ export const SETTINGS = {
   social_tiktok: plain("store", text, STORE_DEFAULTS.social.tiktok),
 
   // ── seo
-  seo_site_name: plain("seo", text, STORE_DEFAULTS.name), // dead: removed in Task 12
   seo_default_title: plain("seo", text, SEO_DEFAULTS.title),
   seo_default_description: plain("seo", text, SEO_DEFAULTS.description),
   seo_default_image: plain("seo", text, SEO_DEFAULTS.image),
@@ -135,10 +134,7 @@ export const SETTINGS = {
   seo_robots_ai_block: plain("seo", flag, true),
 
   // ── tracking
-  google_analytics_id: plain("tracking", text, ""), // dead: removed in Task 12
-  ga4_property_id: plain("tracking", text, ""), // dead: removed in Task 12
   gtm_web_id: plain("tracking", text, ""),
-  gtm_server_id: plain("tracking", text, ""), // dead: removed in Task 12
   gtm_server_url: plain("tracking", httpUrl, ""),
   // First-party web analytics on/off (features/web-analytics). Missing means on.
   analytics_enabled: plain("tracking", flag, true),

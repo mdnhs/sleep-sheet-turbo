@@ -1,4 +1,4 @@
-// Cloudflare sits in front of sleepsheetbd.com and edge-caches every page the
+// Cloudflare sits in front of the site and edge-caches every page the
 // origin marks cacheable (ISR pages send s-maxage=86400). revalidateTag()
 // only refreshes the origin's copy, so without a purge the Dhaka edge would
 // keep serving the old price, stock or post for up to a day.

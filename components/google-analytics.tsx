@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { useSettings } from "@/features/settings/api/use-settings";
+import { gtmContainer } from "@/lib/gtm/container";
 
 declare global {
   interface Window {
@@ -10,12 +11,6 @@ declare global {
     gtag: (...args: unknown[]) => void;
   }
 }
-
-const DEFAULT_GTM_ID = "GTM-PQ667JWQ";
-// First-party GTM: the server container on the Mumbai VPS serves gtm.js and
-// ns.html from our own subdomain, so blockers that match googletagmanager.com
-// no longer drop the container.
-const GTM_HOST = "https://ss.sleepsheetbd.com";
 
 export default function GoogleAnalytics() {
   const pathname = usePathname();
@@ -29,11 +24,10 @@ export default function GoogleAnalytics() {
   // GA4, Ads or Meta. It has no paint to protect either, so load right away.
   const isOrderSuccess = pathname?.startsWith("/order-success");
 
-  // GTM Web Container ID from DB settings (fallback to env or production default)
-  const gtmWebId =
-    settings?.gtm_web_id?.trim() ||
-    process.env.NEXT_PUBLIC_GTM_ID ||
-    DEFAULT_GTM_ID;
+  // From settings (gtm_web_id / gtm_server_url), else NEXT_PUBLIC_GTM_ID.
+  // A store with neither loads no container at all.
+  const container = gtmContainer(settings, process.env.NEXT_PUBLIC_GTM_ID);
+  const src = container ? `${container.host}/gtm.js?id=${container.id}` : null;
 
   // The single place the container is loaded.
   //
@@ -47,8 +41,8 @@ export default function GoogleAnalytics() {
   // no such protection and counted the page twice.
   //
   // An effect rather than <Script> because the id can arrive late: it comes
-  // from settings (gtm_web_id) and falls back to the constant until that
-  // query resolves. The guard matches on the src, so a re-render, a route
+  // from settings (gtm_web_id, gtm_server_url) and arrives when that query
+  // resolves. The guard matches on the src, so a re-render, a route
   // change, or a late settings value cannot load the same container twice.
   //
   // The container brings GA, Ads and Meta with it. Loading that work while
@@ -57,7 +51,7 @@ export default function GoogleAnalytics() {
   // GTM is fetched, so the network request waits for the visitor's first
   // scroll, tap or keypress.
   useEffect(() => {
-    if (isDashboard || typeof window === "undefined" || !gtmWebId) return;
+    if (isDashboard || typeof window === "undefined" || !src) return;
 
     window.dataLayer = window.dataLayer || [];
     window.gtag =
@@ -69,8 +63,6 @@ export default function GoogleAnalytics() {
         // eslint-disable-next-line prefer-rest-params
         (window.dataLayer as unknown as unknown[]).push(arguments);
       };
-
-    const src = `${GTM_HOST}/gtm.js?id=${gtmWebId}`;
 
     const loadContainer = () => {
       if (document.querySelector(`script[src="${src}"]`)) return;
@@ -118,9 +110,9 @@ export default function GoogleAnalytics() {
     return () => {
       removeInteractionListeners();
     };
-  }, [isDashboard, isOrderSuccess, gtmWebId]);
+  }, [isDashboard, isOrderSuccess, src]);
 
-  if (isDashboard) return null;
+  if (isDashboard || !container) return null;
 
   return (
     <>
@@ -128,7 +120,7 @@ export default function GoogleAnalytics() {
           browsers running without JavaScript. */}
       <noscript>
         <iframe
-          src={`${GTM_HOST}/ns.html?id=${gtmWebId}`}
+          src={`${container.host}/ns.html?id=${container.id}`}
           height="0"
           width="0"
           style={{ display: "none", visibility: "hidden" }}

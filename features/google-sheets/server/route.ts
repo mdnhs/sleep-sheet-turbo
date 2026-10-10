@@ -9,6 +9,7 @@ import { orders, products, categories } from "@/db/schema";
 import { eq, inArray } from "drizzle-orm";
 import { getSetting } from "@/lib/settings/read";
 import { isAllowed } from "@/lib/permissions";
+import { productCacheWebhookUrl } from "@/features/google-sheets/product-cache-webhook";
 import { setActivityMeta, summarizeNames } from "@/features/activity/server/log-activity";
 
 function formatOrderChannel(saleType: string | null | undefined, reference: string | null | undefined, storeName: string): string {
@@ -201,9 +202,10 @@ const app = new Hono()
         }
 
         // Send directly to n8n Product Cache Sync Webhook
-        const webhookUrl =
-          process.env.N8N_PRODUCT_CACHE_WEBHOOK_URL ||
-          "https://n8n.sleepsheetbd.com/webhook/product-cache-sync";
+        const webhookUrl = productCacheWebhookUrl();
+        if (!webhookUrl) {
+          return c.json({ error: "Product cache sync is not configured (N8N_PRODUCT_CACHE_WEBHOOK_URL)" }, 503);
+        }
 
         const n8nRes = await fetch(webhookUrl, {
           method: "POST",

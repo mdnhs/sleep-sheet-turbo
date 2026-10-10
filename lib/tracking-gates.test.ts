@@ -5,7 +5,7 @@ import { join, relative } from "node:path";
 /**
  * Every Meta Pixel event on this site is fired by the GTM web container —
  * base code and PageView, ViewContent, AddToCart, InitiateCheckout, Purchase
- * and Search all live in GTM-PQ667JWQ. The app's own Pixel and Conversions
+ * and Search all live in the GTM container. The app's own Pixel and Conversions
  * API code was deleted when that moved (lib/meta-pixel/*, lib/meta-capi/*),
  * leaving only the click-id capture in lib/meta-fbc.ts.
  *

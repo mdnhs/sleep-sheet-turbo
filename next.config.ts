@@ -117,10 +117,6 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: "https",
-        hostname: "luxstore.lenishmagar.me",
-      },
-      {
-        protocol: "https",
         hostname: "res.cloudinary.com",
       },
     ],

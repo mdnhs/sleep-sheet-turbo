@@ -12,7 +12,7 @@ type PrintReceiptOptions = {
     subtotal: number;
     shippingCost: number;
     totalAmount: number;
-    siteName?: string;
+    siteName: string;
     logoUrl?: string;
     siteDescription?: string;
   };
@@ -27,9 +27,9 @@ export function printReceipt({
     subtotal,
     shippingCost,
     totalAmount,
-    siteName = "LUXSTORE",
+    siteName,
     logoUrl,
-    siteDescription = "Premium Fashion & Accessories",
+    siteDescription = "",
   }: PrintReceiptOptions) {
     let iframe = document.getElementById("receipt-print-iframe") as HTMLIFrameElement;
     if (!iframe) {

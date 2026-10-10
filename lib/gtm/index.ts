@@ -60,7 +60,7 @@ export function splitFullName(name?: string | null): { first_name?: string; last
  * Meta treats a browser Pixel event and a Conversions API event as the same
  * event only when both carry the same `event_id`. This store sends both: the
  * web container fires the Meta Pixel in the browser, and the same dataLayer
- * push travels on to the server container (ss.sleepsheetbd.com), whose Stape
+ * push travels on to the server container (the gtm_server_url host), whose Stape
  * CAPI tag fires on every GA4 event. Without a shared id, Meta counts each
  * one twice — every AddToCart, ViewContent, InitiateCheckout and Search was
  * being double counted, and Purchase too, because the browser tag prefixed

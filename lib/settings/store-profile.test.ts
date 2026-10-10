@@ -55,4 +55,9 @@ describe("fillStore", () => {
   it("fills the Bangla name in Bangla copy", () => {
     expect(fillStore("{store} সম্পর্কে", store, "bn")).toBe("নিম্বাস লিনেন সম্পর্কে");
   });
+
+  it("keeps $ patterns in an admin-entered name literal", () => {
+    expect(fillStore("About {store}", { name: "Cash$&Carry", nameBn: "x" })).toBe("About Cash$&Carry");
+    expect(fillStore("{store} / {store}", { name: "A$'B$`C$1", nameBn: "x" })).toBe("A$'B$`C$1 / A$'B$`C$1");
+  });
 });

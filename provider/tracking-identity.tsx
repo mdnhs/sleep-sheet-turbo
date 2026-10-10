@@ -9,7 +9,7 @@ import { useCurrent } from "@/features/auth/api/use-current";
 /**
  * Everything the app itself contributes to Meta tracking, which is two
  * things — it fires no events of its own; the GTM web container owns all six
- * (see the Meta Pixel tags in GTM-PQ667JWQ).
+ * (see the Meta Pixel tags in the GTM container).
  *
  * The click id, because GTM cannot recover `fbclid` from the landing URL
  * when the Pixel's `_fbc` cookie has not been set yet, which is what left it

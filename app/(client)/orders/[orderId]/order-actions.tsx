@@ -29,7 +29,7 @@ interface OrderActionButtonsProps {
 
 export function OrderActionButtons({ order }: OrderActionButtonsProps) {
   const { symbol: currencySymbol } = useCurrency();
-  const { footerPhone, siteName } = useWebsiteSettings();
+  const { footerPhone, siteName, logoUrl } = useWebsiteSettings();
 
   const handlePrintReceipt = () => {
     printReceipt({
@@ -46,6 +46,8 @@ export function OrderActionButtons({ order }: OrderActionButtonsProps) {
       subtotal: order.subtotal,
       shippingCost: order.shippingCost,
       totalAmount: order.totalAmount,
+      siteName,
+      logoUrl,
     });
 
     toast("Receipt sent to printer", {

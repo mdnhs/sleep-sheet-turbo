@@ -15,9 +15,9 @@ const LEGACY_KEYS = [
   "shipping_inside_dhaka", "shipping_outside_dhaka", "currency", "payment_method_card", "payment_method_cod",
   "payment_method_due", "payment_method_bkash", "social_manager_url", "bkash_mode", "bkash_app_key",
   "bkash_app_secret", "bkash_username", "bkash_password", "pos_payment_methods", "pos_facebook_pages",
-  "pos_default_facebook_page", "seo_site_name", "seo_default_title", "seo_default_description",
-  "seo_default_image", "seo_google_verification", "seo_bing_verification", "google_analytics_id",
-  "ga4_property_id", "gtm_web_id", "gtm_server_id", "gtm_server_url", "analytics_enabled", "seo_twitter_handle",
+  "pos_default_facebook_page", "seo_default_title", "seo_default_description",
+  "seo_default_image", "seo_google_verification", "seo_bing_verification",
+  "gtm_web_id", "gtm_server_url", "analytics_enabled", "seo_twitter_handle",
   "seo_robots_ai_block", "cloudinary_cloud_name", "cloudinary_api_key", "cloudinary_api_secret",
   "steadfast_api_key", "steadfast_secret_key", "bdcourier_api_key", "google_sheets_client_email",
   "google_sheets_private_key", "google_sheets_spreadsheet_id", "site_name", "logo_url", "hero_title",
@@ -41,6 +41,12 @@ const CREDENTIALS: string[] = [
 describe("settings registry", () => {
   it("accepts every key the settings forms sent before SP-1", () => {
     expect(LEGACY_KEYS.filter((key) => !isSettingKey(key))).toEqual([]);
+  });
+
+  it("no longer accepts the four dead keys", () => {
+    for (const key of ["seo_site_name", "gtm_server_id", "google_analytics_id", "ga4_property_id"]) {
+      expect(isSettingKey(key), key).toBe(false);
+    }
   });
 
   it("rejects keys it does not declare", () => {

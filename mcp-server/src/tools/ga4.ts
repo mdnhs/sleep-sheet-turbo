@@ -2,8 +2,7 @@ import { z } from "zod";
 import { BetaAnalyticsDataClient } from "@google-analytics/data";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { text } from "../util.js";
-
-const DEFAULT_PROPERTY_ID = process.env.GA4_PROPERTY_ID || "546802046";
+import { resolveGa4PropertyId } from "./ga4-property.js";
 
 let analyticsClient: BetaAnalyticsDataClient | null = null;
 
@@ -20,15 +19,15 @@ export function registerGa4Tools(server: McpServer) {
     {
       title: "Get GA4 Realtime Active Users Metrics",
       description:
-        "Fetch Google Analytics 4 (GA4) realtime metrics for active users, active page views, countries, and device categories in the last 30 minutes for Property ID 546802046.",
+        "Fetch Google Analytics 4 (GA4) realtime metrics for active users, active page views, countries, and device categories in the last 30 minutes for the configured property.",
       inputSchema: {
-        propertyId: z.string().optional().describe("GA4 Property ID (default: 546802046)"),
+        propertyId: z.string().optional().describe("GA4 Property ID (default: GA4_PROPERTY_ID)"),
       },
     },
     async ({ propertyId }) => {
       try {
         const client = getGa4Client();
-        const propId = propertyId || DEFAULT_PROPERTY_ID;
+        const propId = resolveGa4PropertyId(propertyId);
 
         const [response] = await client.runRealtimeReport({
           property: `properties/${propId}`,
@@ -58,8 +57,8 @@ export function registerGa4Tools(server: McpServer) {
         return text({
           error: "Failed to query GA4 Realtime API",
           details: err instanceof Error ? err.message : String(err),
-          propertyId: propertyId || DEFAULT_PROPERTY_ID,
-          note: "Ensure Google Cloud Service Account credentials (GOOGLE_APPLICATION_CREDENTIALS) are configured and granted Read Access on GA4 Property 546802046.",
+          propertyId: propertyId ?? process.env.GA4_PROPERTY_ID ?? null,
+          note: "Ensure Google Cloud Service Account credentials (GOOGLE_APPLICATION_CREDENTIALS) are configured and granted Read Access on the GA4 property.",
         });
       }
     }
@@ -70,17 +69,17 @@ export function registerGa4Tools(server: McpServer) {
     {
       title: "Get GA4 Analytics Report",
       description:
-        "Run custom GA4 analytics metrics query (activeUsers, sessions, screenPageViews, totalRevenue, conversions) for property 546802046 over custom date ranges.",
+        "Run custom GA4 analytics metrics query (activeUsers, sessions, screenPageViews, totalRevenue, conversions) for the configured property over custom date ranges.",
       inputSchema: {
         startDate: z.string().default("7daysAgo").describe("e.g. 7daysAgo, 30daysAgo, 2026-07-01"),
         endDate: z.string().default("today").describe("e.g. today, 2026-07-24"),
-        propertyId: z.string().optional().describe("GA4 Property ID (default: 546802046)"),
+        propertyId: z.string().optional().describe("GA4 Property ID (default: GA4_PROPERTY_ID)"),
       },
     },
     async ({ startDate, endDate, propertyId }) => {
       try {
         const client = getGa4Client();
-        const propId = propertyId || DEFAULT_PROPERTY_ID;
+        const propId = resolveGa4PropertyId(propertyId);
 
         const [response] = await client.runReport({
           property: `properties/${propId}`,
@@ -113,7 +112,7 @@ export function registerGa4Tools(server: McpServer) {
         return text({
           error: "Failed to query GA4 Report API",
           details: err instanceof Error ? err.message : String(err),
-          propertyId: propertyId || DEFAULT_PROPERTY_ID,
+          propertyId: propertyId ?? process.env.GA4_PROPERTY_ID ?? null,
         });
       }
     }
@@ -124,7 +123,7 @@ export function registerGa4Tools(server: McpServer) {
     {
       title: "Get GA4 Traffic Acquisition Sources",
       description:
-        "Fetch GA4 traffic acquisition breakdown by channel, source, and campaign for property 546802046.",
+        "Fetch GA4 traffic acquisition breakdown by channel, source, and campaign for the configured property.",
       inputSchema: {
         startDate: z.string().default("30daysAgo"),
         endDate: z.string().default("today"),
@@ -134,7 +133,7 @@ export function registerGa4Tools(server: McpServer) {
     async ({ startDate, endDate, propertyId }) => {
       try {
         const client = getGa4Client();
-        const propId = propertyId || DEFAULT_PROPERTY_ID;
+        const propId = resolveGa4PropertyId(propertyId);
 
         const [response] = await client.runReport({
           property: `properties/${propId}`,
@@ -158,7 +157,7 @@ export function registerGa4Tools(server: McpServer) {
         return text({
           error: "Failed to query GA4 Traffic Sources",
           details: err instanceof Error ? err.message : String(err),
-          propertyId: propertyId || DEFAULT_PROPERTY_ID,
+          propertyId: propertyId ?? process.env.GA4_PROPERTY_ID ?? null,
         });
       }
     }
