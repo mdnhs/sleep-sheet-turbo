@@ -22,7 +22,7 @@ ENV DATABASE_URL=$DATABASE_URL
 # Type checking happens in CI (see .github/workflows/deploy.yml); skipping it
 # here keeps the build within a 4 GB VPS. The heap cap leaves room for
 # Postgres and n8n running alongside.
-ENV SKIP_BUILD_TYPECHECK=1 NODE_OPTIONS=--max-old-space-size=2560
+ENV SKIP_BUILD_TYPECHECK=1 NEXT_CPU_COUNT=1 NODE_OPTIONS=--max-old-space-size=1200
 # The production .env is mounted only for this step (NEXT_PUBLIC_* values are
 # inlined into the client bundle at build time). Standalone output copies
 # .env files next to server.js, so they are deleted again right after the
