@@ -277,18 +277,3 @@
   100% { transform: translate(-50%, -160%) scale(1.1) rotate(-12deg); opacity: 0; }
 }
 .animate-reels-heart-burst { animation: reels-heart-burst 0.9s ease-out forwards; }
-
-/* Lenis smooth scroll (desktop only — see components/motion-provider.tsx). */
-html.lenis,
-html.lenis body {
-  height: auto;
-}
-.lenis:not(.lenis-autoToggle).lenis-stopped {
-  overflow: clip;
-}
-.lenis [data-lenis-prevent] {
-  overscroll-behavior: contain;
-}
-.lenis.lenis-smooth iframe {
-  pointer-events: none;
-}
