@@ -502,7 +502,7 @@ const ProductCard = ({ product, priority = false }: ProductCardProps) => {
             {dialogAction === "buy" && (
               <button
                 onClick={handleBuyNowVariant}
-                className="animate-cta-wiggle flex-1 flex items-center justify-center gap-1 sm:gap-2 bg-primary text-primary-foreground hover:bg-primary/90 py-3 sm:py-3.5 px-2 sm:px-3 rounded-[14px] font-bold text-xs sm:text-sm transition-all shadow-md active:scale-[0.98]"
+                className="animate-cta-wiggle flex-1 flex items-center justify-center gap-1 sm:gap-2 bg-[linear-gradient(135deg,#FF6FA5,#B8245A)] text-white hover:brightness-110 py-3 sm:py-3.5 px-2 sm:px-3 rounded-[14px] font-bold text-xs sm:text-sm transition-all shadow-md shadow-[#B8245A]/25 active:scale-[0.98]"
               >
                 <Zap className="h-3.5 w-3.5 sm:h-4 sm:w-4" fill="currentColor" />
                 {t("buyNow")}
@@ -517,7 +517,7 @@ const ProductCard = ({ product, priority = false }: ProductCardProps) => {
       <div className="relative z-40 px-1 shrink-0 bg-white dark:bg-slate-900">
         <button
           onClick={handleActionClick}
-          className="animate-cta-wiggle w-full flex items-center justify-between bg-[linear-gradient(135deg,#FF6FA5,#B8245A)] sm:bg-none sm:bg-primary text-white sm:text-primary-foreground hover:brightness-110 sm:hover:bg-primary/90 py-3 sm:py-3.5 px-4 sm:px-5 rounded-[14px] font-medium text-xs sm:text-[14px] transition-all active:scale-[0.98]"
+          className="animate-cta-wiggle w-full flex items-center justify-between bg-[linear-gradient(135deg,#FF6FA5,#B8245A)] text-white hover:brightness-110 py-3 sm:py-3.5 px-4 sm:px-5 rounded-[14px] font-medium text-xs sm:text-[14px] transition-all active:scale-[0.98]"
         >
           <span className="flex items-center gap-1.5"><Zap className="h-3.5 w-3.5 sm:h-4 sm:w-4" fill="currentColor" /> {t("buyNow")}</span>
           <ArrowUpCircle className="h-4 w-4 sm:h-5 sm:w-5 opacity-80 rotate-90" />
