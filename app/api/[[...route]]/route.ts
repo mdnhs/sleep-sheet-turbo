@@ -33,6 +33,8 @@ import webAnalyticsCollect from "@/features/web-analytics/server/collect";
 import webAnalytics from "@/features/web-analytics/server/route";
 import { logActivity } from "@/features/activity/server/log-activity";
 import { cors } from "hono/cors";
+import { HTTPException } from "hono/http-exception";
+import { notifyServerError } from "@/lib/error-alert";
 
 // Browser requests here carry the session cookie, so allowing every origin
 // (the previous `cors()` default) let any site read cookie-authenticated
@@ -46,6 +48,17 @@ const trustedOrigins = [
 ].filter((origin): origin is string => Boolean(origin));
 
 const app = new Hono().basePath("/api");
+
+// Anything a handler throws lands here instead of Hono's bare "Internal
+// Server Error" text: log it, alert (throttled) and answer with JSON the
+// client hooks can read. The error message never reaches the caller.
+app.onError((err, c) => {
+  if (err instanceof HTTPException) return err.getResponse();
+  const path = c.req.routePath || new URL(c.req.url).pathname;
+  console.error(`[api] ${c.req.method} ${path}`, err);
+  notifyServerError({ method: c.req.method, path, message: String(err.message ?? err).slice(0, 300) });
+  return c.json({ error: "Internal server error" }, 500);
+});
 app.use(
   "*",
   cors({
