@@ -161,3 +161,16 @@ Applied by hand, in this order (the numbers run opposite to the order):
 2. Deploy `cfcd01e`.
 3. `0032_api_keys_drop_raw_key.sql` — after the deploy has soaked; dropping the column
    earlier would break a rollback to the previous image.
+
+## 9. SP-1 release (2026-10-11)
+
+- Before the push: deleted the unread English `seo_default_title` / `seo_default_description`
+  rows (so the live title stayed unchanged), applied `0035_settings_white_label.sql`
+  (backfilled `gtm_server_url`, removed 4 dead keys), and added
+  `N8N_PRODUCT_CACHE_WEBHOOK_URL` to the Dokploy env (the URL that used to be hardcoded).
+- `seo_robots_ai_block = false` is now honoured: robots.txt no longer blocks AI crawlers.
+  Turn it back on in Settings → SEO if that was not intended.
+- Owner-gated, not done: `SETTINGS_ENCRYPTION_KEY` + `scripts/encrypt-settings.ts`
+  (see the SP-1 plan, Deployment order step 4) and the login-cookie rename (branch `sp1-cookie`).
+- The local `mcp-server` GA4 tool now needs `GA4_PROPERTY_ID` in its environment (no
+  hardcoded fallback anymore).

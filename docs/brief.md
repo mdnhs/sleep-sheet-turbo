@@ -176,6 +176,8 @@ bKash, Nagad, COD, Steadfast/Pathao/RedX, districts/thanas and Bangla are core f
 - The restore drill's date and result are recorded in `deploy/README.md`.
 
 ### SP-1: Settings engine and store profile, 1–2 weeks
+**Status: Tasks 1–13 done 2026-10-11** (deployed `63d9d64`). Still open, owner-gated: encryption at rest (`SETTINGS_ENCRYPTION_KEY` + `scripts/encrypt-settings.ts`, plan Deployment order step 4) and the cookie rename (Task 14, branch `sp1-cookie`). See `docs/plans/sp-1-settings-engine.md`.
+
 **Goal:** every store-specific value comes from typed settings editable in the admin, and secrets are encrypted at rest.
 
 **Design decisions**
