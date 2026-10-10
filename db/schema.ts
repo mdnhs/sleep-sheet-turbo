@@ -4,6 +4,7 @@ import {
   timestamp,
   boolean,
   integer,
+  bigint,
   doublePrecision,
   numeric,
   json,
@@ -893,6 +894,41 @@ export const activityLogs = pgTable("activity_logs", {
 }, (table) => [
   index("activity_logs_createdAt_idx").on(table.createdAt),
   index("activity_logs_userId_idx").on(table.userId),
+]);
+// First-party web analytics (features/web-analytics). One row per storefront
+// page view or shopping event, plus a server-written row per website order.
+// The session's landing attributes (referrer, UTM, ad click) are repeated on
+// every row so dashboard filters never need a join. Kept 12 months
+// (lib/data-retention.ts). No IP address is stored.
+export const analyticsEvents = pgTable("analytics_events", {
+  id: bigint("id", { mode: "number" }).primaryKey().generatedAlwaysAsIdentity(),
+  ts: timestamp("ts", { withTimezone: true, precision: 3 }).defaultNow().notNull(),
+  type: text("type").notNull(),
+  visitorId: text("visitor_id").notNull(),
+  sessionId: text("session_id").notNull(),
+  path: text("path").notNull(),
+  route: text("route").notNull(),
+  hostname: text("hostname"),
+  referrerHost: text("referrer_host"),
+  utmSource: text("utm_source"),
+  utmMedium: text("utm_medium"),
+  utmCampaign: text("utm_campaign"),
+  utmTerm: text("utm_term"),
+  utmContent: text("utm_content"),
+  adClick: text("ad_click"),
+  country: text("country"),
+  device: text("device"),
+  browser: text("browser"),
+  os: text("os"),
+  label: text("label"),
+  productId: text("product_id"),
+  value: money("value"),
+  orderId: text("order_id"),
+}, (table) => [
+  index("analytics_events_ts_idx").on(table.ts),
+  index("analytics_events_type_ts_idx").on(table.type, table.ts),
+  index("analytics_events_session_id_idx").on(table.sessionId),
+  index("analytics_events_order_id_idx").on(table.orderId).where(sql`${table.orderId} IS NOT NULL`),
 ]);
 
 // Fraud control: IPs barred from placing orders. Populated from the order
