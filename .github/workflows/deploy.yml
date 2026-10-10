@@ -43,9 +43,15 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+      # Dokploy's per-application deploy webhook: it can only redeploy this one
+      # app (pulling :latest), unlike an API key which controls the whole server.
       - name: Trigger Dokploy Deployment
+        env:
+          DOKPLOY_DEPLOY_WEBHOOK: ${{ secrets.DOKPLOY_DEPLOY_WEBHOOK }}
         run: |
-          curl -s -X POST "http://93.127.195.230:3000/api/trpc/application.deploy" \
-            -H "x-api-key: pQlZMtoRVWIBkFxuOrWzdSHKKnVseSNRtGgZtZgaGGGjVJtTlhjNqPuKHphILssI" \
-            -H "Content-Type: application/json" \
-            -d '{"applicationId":"E--R-XrrF6qGTcqF_QStn"}' || echo "Dokploy deploy webhook sent"
+          if [ -z "$DOKPLOY_DEPLOY_WEBHOOK" ]; then
+            echo "::error::DOKPLOY_DEPLOY_WEBHOOK secret is not set"
+            exit 1
+          fi
+          curl -fsS --max-time 60 -X POST "$DOKPLOY_DEPLOY_WEBHOOK" \
+            -H "Content-Type: application/json" -d '{}'
