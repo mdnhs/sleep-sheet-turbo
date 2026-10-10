@@ -17,6 +17,8 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 ARG DEPLOYMENT_VERSION
 ENV DEPLOYMENT_VERSION=$DEPLOYMENT_VERSION
+ARG DATABASE_URL
+ENV DATABASE_URL=$DATABASE_URL
 # Type checking happens in CI (see .github/workflows/deploy.yml); skipping it
 # here keeps the build within a 4 GB VPS. The heap cap leaves room for
 # Postgres and n8n running alongside.
@@ -28,9 +30,9 @@ ENV SKIP_BUILD_TYPECHECK=1 NODE_OPTIONS=--max-old-space-size=2560
 # container gets its environment from compose's env_file instead.
 # The build reaches Postgres over the host network, so DATABASE_URL is
 # overridden with the loopback address from a second secret.
-RUN --mount=type=secret,id=dotenv,target=/app/.env \
-    --mount=type=secret,id=build_database_url \
-    DATABASE_URL="$(cat /run/secrets/build_database_url)" pnpm build \
+RUN --mount=type=secret,id=dotenv,target=/app/.env,optional=true \
+    --mount=type=secret,id=build_database_url,optional=true \
+    DATABASE_URL="${DATABASE_URL:-$(test -f /run/secrets/build_database_url && cat /run/secrets/build_database_url || echo "$DATABASE_URL")}" pnpm build \
     && rm -f .next/standalone/.env .next/standalone/.env.*
 
 FROM node:22-bookworm-slim AS runner
