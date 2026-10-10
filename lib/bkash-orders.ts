@@ -9,19 +9,16 @@ import { and, eq, inArray, lt, ne, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { carts, cartItems, orders, orderTimelineEvents, products } from "@/db/schema";
 import { createBkashPayment, getBkashConfig } from "@/lib/bkash";
+import { matchesIssuedPayment, paymentIdRef } from "@/lib/bkash-reference";
 
 export const BKASH_METHOD = "BKASH";
 
 // How long an unpaid bKash order may hold stock before it is released.
 const UNPAID_ORDER_TTL_MS = 45 * 60_000;
 
-const paymentIdRef = (paymentID: string) => `bKash paymentID: ${paymentID}`;
 const trxIdRef = (trxID: string) => `bKash TrxID: ${trxID}`;
 
-/** True when `reference` is the paymentID we issued for this order. */
-export function matchesIssuedPayment(reference: string | null, paymentID: string): boolean {
-  return reference === paymentIdRef(paymentID);
-}
+export { matchesIssuedPayment };
 
 /**
  * Asks bKash for a payment for the order and remembers the paymentID on it,

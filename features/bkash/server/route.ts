@@ -5,6 +5,7 @@ import { orders } from "@/db/schema";
 import { sessionMiddleware } from "@/lib/session-middleware";
 import { rateLimit } from "@/lib/rate-limit";
 import { notifyNewOrder } from "@/lib/n8n-notify";
+import { canSettleCallback } from "@/lib/bkash-reference";
 import {
   BkashError,
   executeBkashPayment,
@@ -46,6 +47,10 @@ const app = new Hono()
   if (order.status === "CANCELLED" || order.paymentStatus === "FAILED") return toCheckout("failed");
 
   if (status !== "success") {
+    // Only the customer coming back from bKash's page for this order carries
+    // the paymentID we issued. Without it, leave the order alone; if it's
+    // never paid, the stale-order sweep releases the stock.
+    if (!canSettleCallback(order.reference, paymentID)) return toCheckout("failed");
     await failBkashOrder(order.id, status === "cancel" ? "customer cancelled" : "payment failed");
     return toCheckout(status === "cancel" ? "cancelled" : "failed");
   }
