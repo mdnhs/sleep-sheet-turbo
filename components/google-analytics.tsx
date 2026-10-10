@@ -54,9 +54,8 @@ export default function GoogleAnalytics() {
   // The container brings GA, Ads and Meta with it. Loading that work while
   // the checkout's form is trying to render cost 341 KiB of unused JS in the
   // mobile Lighthouse run and delayed LCP. A dataLayer accepts events before
-  // GTM is fetched, so defer the network request until the browser is idle,
-  // but start it immediately if the visitor interacts first. This preserves
-  // attribution for a fast checkout while protecting the initial paint.
+  // GTM is fetched, so the network request waits for the visitor's first
+  // scroll, tap or keypress.
   useEffect(() => {
     if (isDashboard || typeof window === "undefined" || !gtmWebId) return;
 
@@ -72,8 +71,6 @@ export default function GoogleAnalytics() {
       };
 
     const src = `${GTM_HOST}/gtm.js?id=${gtmWebId}`;
-    let idleCallbackId: number | undefined;
-    let timeoutId: number | undefined;
 
     const loadContainer = () => {
       if (document.querySelector(`script[src="${src}"]`)) return;
@@ -109,29 +106,17 @@ export default function GoogleAnalytics() {
       );
     };
 
+    // Interaction only — no idle/timer fallback. The ~1 MB of GA/Ads/Meta
+    // script was the largest remaining cost in mobile Lighthouse (TBT and
+    // unused JS), and the business accepted that a visitor who leaves without
+    // ever scrolling, tapping or typing goes untracked. Events pushed to the
+    // dataLayer before then are still delivered once the container loads.
     interactionEvents.forEach((event) =>
       window.addEventListener(event, loadOnInteraction, { once: true, passive: true }),
     );
 
-    const scheduleIdleLoad = () => {
-      if (typeof window.requestIdleCallback === "function") {
-        idleCallbackId = window.requestIdleCallback(loadContainer, { timeout: 4_000 });
-      } else {
-        timeoutId = window.setTimeout(loadContainer, 2_000);
-      }
-    };
-
-    if (document.readyState === "complete") {
-      scheduleIdleLoad();
-    } else {
-      window.addEventListener("load", scheduleIdleLoad, { once: true });
-    }
-
     return () => {
       removeInteractionListeners();
-      window.removeEventListener("load", scheduleIdleLoad);
-      if (idleCallbackId !== undefined) window.cancelIdleCallback(idleCallbackId);
-      if (timeoutId !== undefined) window.clearTimeout(timeoutId);
     };
   }, [isDashboard, isOrderSuccess, gtmWebId]);
 
