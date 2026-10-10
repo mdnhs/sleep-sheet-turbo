@@ -9,7 +9,7 @@ import { getSetting } from "@/lib/settings-cache";
 import { rateLimit } from "@/lib/rate-limit";
 import cuid from "cuid";
 
-import { db } from "@/db";
+import { batch, db } from "@/db";
 import { carts, cartItems, products, orders, orderItems, shippingMethods } from "@/db/schema";
 import { eq, inArray, sql } from "drizzle-orm";
 import { notifyNewOrder } from "@/lib/n8n-notify";
@@ -221,15 +221,14 @@ const app = new Hono()
       // Order + its line items + the stock decrement + clearing the cart must
       // all succeed or all fail together — otherwise a mid-way failure can
       // leave an order with no items, or decremented stock with no order.
-      // db.batch runs every statement as one Postgres transaction in a single
-      // HTTP round trip (the neon-http driver has no interactive
-      // db.transaction()); stockDecrementQuery raises if any item is short on
-      // stock, which rolls the whole batch back. That is also what makes the
+      // batch() runs every statement in one Postgres transaction;
+      // stockDecrementQuery raises if any item is short on stock, which rolls
+      // the whole batch back. That is also what makes the
       // order-number retry below safe: a collision rolls the whole thing back.
       const { order, orderNumber, stockResult } = await withOrderNumber("ORD", async (orderNumber) => {
         const orderId = cuid();
-        const [[order], , stockResult] = await db.batch([
-          db.insert(orders).values({
+        const [[order], , stockResult] = await batch((tx) => [
+          tx.insert(orders).values({
             id: orderId,
             orderNumber,
             userId: user.id,
@@ -258,7 +257,7 @@ const app = new Hono()
             landingReferrer: landingReferrer || null,
             landingSource,
           }).returning(),
-          db.insert(orderItems).values(
+          tx.insert(orderItems).values(
             cartItemsForOrder.map((item) => ({
               orderId,
               productId: item.productId,
@@ -268,10 +267,10 @@ const app = new Hono()
               color: item.color || null,
             }))
           ),
-          db.execute(stockDecrementQuery(cartItemsForOrder)),
+          tx.execute(stockDecrementQuery(cartItemsForOrder)),
           // A bKash order keeps the cart until the payment is confirmed
           // (completeBkashOrder), so a failed payment can simply be retried.
-          db.delete(cartItems).where(isBkash ? sql`false` : eq(cartItems.cartId, cart.id)),
+          tx.delete(cartItems).where(isBkash ? sql`false` : eq(cartItems.cartId, cart.id)),
         ]);
         return { order, orderNumber, stockResult };
       });
@@ -419,8 +418,8 @@ const app = new Hono()
 
     const { order, orderNumber, stockResult } = await withOrderNumber("ORD", async (orderNumber) => {
       const orderId = cuid();
-      const [[order], , stockResult] = await db.batch([
-        db.insert(orders).values({
+      const [[order], , stockResult] = await batch((tx) => [
+        tx.insert(orders).values({
           id: orderId,
           orderNumber,
           userId: guestUserId,
@@ -449,7 +448,7 @@ const app = new Hono()
           landingReferrer: landingReferrer || null,
           landingSource,
         }).returning(),
-        db.insert(orderItems).values(
+        tx.insert(orderItems).values(
           cartItemsForOrder.map((item) => ({
             orderId,
             productId: item.productId,
@@ -459,7 +458,7 @@ const app = new Hono()
             color: item.color ?? null,
           }))
         ),
-        db.execute(stockDecrementQuery(cartItemsForOrder)),
+        tx.execute(stockDecrementQuery(cartItemsForOrder)),
       ]);
       return { order, orderNumber, stockResult };
     });

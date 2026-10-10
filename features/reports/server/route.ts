@@ -68,9 +68,8 @@ const app = new Hono()
 
       const itemCost = sql<number>`SUM(${orderItems.quantity} * COALESCE(${orderItems.costPrice}, 0))`;
 
-      // One batched round trip for the three aggregates instead of three
-      // separate requests to the database.
-      const [monthlyOrders, monthlyCosts, monthlyExpenses] = await db.batch([
+      // The three aggregates run in parallel instead of one after another.
+      const [monthlyOrders, monthlyCosts, monthlyExpenses] = await Promise.all([
         db.select({
             month: monthOf(orders.createdAt),
             revenue: sum(sql<number>`${orders.totalAmount} - COALESCE(${orders.refundedAmount}, 0)`),
@@ -224,8 +223,8 @@ const app = new Hono()
         pageCosts,
         pageCancelled,
       ] =
-        // Batched: aggregates and breakdowns, one round trip.
-        await db.batch([
+        // Aggregates and breakdowns, run in parallel.
+        await Promise.all([
           db.select({
               revenue: sum(sql<number>`${orders.totalAmount} - COALESCE(${orders.refundedAmount}, 0)`),
               // subtotal, not totalAmount — totalAmount already has

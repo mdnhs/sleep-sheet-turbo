@@ -6,7 +6,6 @@
 // customer is on bKash's page) with paymentMethod "BKASH" and paymentStatus
 // PENDING. It only counts as a real order once completeBkashOrder runs.
 import { and, eq, inArray, lt, ne, sql } from "drizzle-orm";
-import type { BatchItem } from "drizzle-orm/batch";
 import { db } from "@/db";
 import { carts, cartItems, orders, orderTimelineEvents, products } from "@/db/schema";
 import { createBkashPayment, getBkashConfig } from "@/lib/bkash";
@@ -81,23 +80,20 @@ export async function failBkashOrder(orderId: string, reason: string): Promise<b
     .returning({ id: orders.id });
   if (!updated) return false;
 
-  const followUp: BatchItem<"pg">[] = [
-    db.insert(orderTimelineEvents).values({
+  await db.transaction(async (tx) => {
+    await tx.insert(orderTimelineEvents).values({
       orderId,
       status: "CANCELLED",
       message: `bKash payment not completed — ${reason}. Items restocked.`,
-    }),
-  ];
-  for (const item of order.items) {
-    if (!item.productId) continue;
-    followUp.push(
-      db
+    });
+    for (const item of order.items) {
+      if (!item.productId) continue;
+      await tx
         .update(products)
         .set({ stock: sql`${products.stock} + ${item.quantity}` })
-        .where(eq(products.id, item.productId)),
-    );
-  }
-  await db.batch(followUp as [BatchItem<"pg">, ...BatchItem<"pg">[]]);
+        .where(eq(products.id, item.productId));
+    }
+  });
   return true;
 }
 

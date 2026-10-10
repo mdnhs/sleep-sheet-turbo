@@ -2,7 +2,7 @@ import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
 import { sessionMiddleware } from "@/lib/session-middleware";
-import { db } from "@/db";
+import { batch, db } from "@/db";
 import { invalidateSettingsCache } from "@/lib/settings-cache";
 import { resetBkashTokenCache } from "@/lib/bkash";
 import { isValidSocialManagerUrl } from "@/lib/social-manager";
@@ -221,17 +221,18 @@ const app = new Hono()
         : [];
       const beforeByKey = Object.fromEntries(before.map((r) => [r.key, r.value]));
 
-      // All upserts in one batched round trip.
-      const upserts = updates.map(([key, value]) =>
-        db.insert(siteSettings)
-          .values({ key, value: String(value) })
-          .onConflictDoUpdate({
-            target: siteSettings.key,
-            set: { value: String(value), updatedAt: new Date() },
-          })
-      );
-      if (upserts.length > 0) {
-        await db.batch(upserts as [(typeof upserts)[number], ...typeof upserts]);
+      // All upserts in one transaction, so a failure saves none of them.
+      if (updates.length > 0) {
+        await batch((tx) =>
+          updates.map(([key, value]) =>
+            tx.insert(siteSettings)
+              .values({ key, value: String(value) })
+              .onConflictDoUpdate({
+                target: siteSettings.key,
+                set: { value: String(value), updatedAt: new Date() },
+              })
+          )
+        );
       }
 
       // The in-process settings cache now holds stale values.

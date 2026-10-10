@@ -1,9 +1,8 @@
 import { Hono } from "hono";
-import { db } from "@/db";
+import { batch, db } from "@/db";
 import { orders, orderItems, payments, orderTimelineEvents, users, products, blockedIps } from "@/db/schema";
 import { eq, ne, and, or, not, ilike, inArray, desc, gte, lte, sql, count } from "drizzle-orm";
 import { awaitingBkashPayment } from "@/lib/bkash-orders";
-import type { BatchItem } from "drizzle-orm/batch";
 import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
 import { sessionMiddleware } from "@/lib/session-middleware";
@@ -323,41 +322,56 @@ const app = new Hono()
     // leave stock decremented with no matching item change, or an order
     // total that no longer matches its line items, because each statement
     // was awaited individually with nothing to roll the others back. Every
-    // write is now collected here and sent as one db.batch (one Postgres
-    // transaction in a single HTTP round trip — the neon-http driver has no
-    // interactive db.transaction()), the same pattern checkout/POS already
-    // use for order creation.
-    const statements: BatchItem<"pg">[] = [];
+    // write is now collected here and run inside one Postgres transaction,
+    // the same pattern checkout/POS use for order creation.
+    await db.transaction(async (tx) => {
+      const statements: PromiseLike<unknown>[] = [];
 
-    // Inventory & item adjustments
-    if (items !== undefined) {
-      const existingItemsMap = new Map(currentOrder.items.map((it) => [it.id, it]));
-      const stockDeltas = new Map<string, number>();
+      // Inventory & item adjustments
+      if (items !== undefined) {
+        const existingItemsMap = new Map(currentOrder.items.map((it) => [it.id, it]));
+        const stockDeltas = new Map<string, number>();
 
-      const addDelta = (productId: string | null | undefined, delta: number) => {
-        if (!productId || delta === 0) return;
-        stockDeltas.set(productId, (stockDeltas.get(productId) ?? 0) + delta);
-      };
+        const addDelta = (productId: string | null | undefined, delta: number) => {
+          if (!productId || delta === 0) return;
+          stockDeltas.set(productId, (stockDeltas.get(productId) ?? 0) + delta);
+        };
 
-      const keptItemIds = new Set<string>();
+        const keptItemIds = new Set<string>();
 
-      for (const item of items) {
-        if (item.id && existingItemsMap.has(item.id)) {
-          keptItemIds.add(item.id);
-          const existing = existingItemsMap.get(item.id)!;
+        for (const item of items) {
+          if (item.id && existingItemsMap.has(item.id)) {
+            keptItemIds.add(item.id);
+            const existing = existingItemsMap.get(item.id)!;
 
-          if (existing.productId === item.productId) {
-            // Same product: delta = oldQty - newQty (positive restores stock, negative deducts)
-            addDelta(item.productId, existing.quantity - item.quantity);
+            if (existing.productId === item.productId) {
+              // Same product: delta = oldQty - newQty (positive restores stock, negative deducts)
+              addDelta(item.productId, existing.quantity - item.quantity);
+            } else {
+              // Product switched: restore old product stock, deduct new product stock
+              addDelta(existing.productId, existing.quantity);
+              addDelta(item.productId, -item.quantity);
+            }
+
+            statements.push(
+              tx.update(orderItems)
+                .set({
+                  productId: item.productId,
+                  quantity: item.quantity,
+                  price: item.price,
+                  costPrice: item.costPrice !== undefined ? item.costPrice : null,
+                  size: item.size ?? null,
+                  color: item.color ?? null,
+                })
+                .where(eq(orderItems.id, item.id))
+            );
           } else {
-            // Product switched: restore old product stock, deduct new product stock
-            addDelta(existing.productId, existing.quantity);
+            // Brand new item in this order
             addDelta(item.productId, -item.quantity);
-          }
 
-          statements.push(
-            db.update(orderItems)
-              .set({
+            statements.push(
+              tx.insert(orderItems).values({
+                orderId: id,
                 productId: item.productId,
                 quantity: item.quantity,
                 price: item.price,
@@ -365,96 +379,79 @@ const app = new Hono()
                 size: item.size ?? null,
                 color: item.color ?? null,
               })
-              .where(eq(orderItems.id, item.id))
-          );
-        } else {
-          // Brand new item in this order
-          addDelta(item.productId, -item.quantity);
-
-          statements.push(
-            db.insert(orderItems).values({
-              orderId: id,
-              productId: item.productId,
-              quantity: item.quantity,
-              price: item.price,
-              costPrice: item.costPrice !== undefined ? item.costPrice : null,
-              size: item.size ?? null,
-              color: item.color ?? null,
-            })
-          );
+            );
+          }
         }
+
+        // Check for removed items
+        for (const existing of currentOrder.items) {
+          if (!keptItemIds.has(existing.id)) {
+            addDelta(existing.productId, existing.quantity);
+            statements.push(tx.delete(orderItems).where(eq(orderItems.id, existing.id)));
+          }
+        }
+
+        // Apply inventory stock adjustments
+        for (const [productId, delta] of stockDeltas.entries()) {
+          if (delta !== 0) {
+            statements.push(
+              tx.update(products)
+                .set({
+                  stock: sql`GREATEST(0, ${products.stock} + ${delta})`,
+                })
+                .where(eq(products.id, productId))
+            );
+          }
+        }
+
+        const newSubtotal = items.reduce((sum, it) => sum + (it.price * it.quantity), 0);
+        updateFields.subtotal = newSubtotal;
+
+        updateFields.totalAmount = totalAmount ?? totalAfterSubtotalChange(currentOrder.totalAmount, currentOrder.subtotal, newSubtotal);
+      } else if (totalAmount !== undefined) {
+        updateFields.totalAmount = totalAmount;
       }
 
-      // Check for removed items
-      for (const existing of currentOrder.items) {
-        if (!keptItemIds.has(existing.id)) {
-          addDelta(existing.productId, existing.quantity);
-          statements.push(db.delete(orderItems).where(eq(orderItems.id, existing.id)));
-        }
+      statements.push(tx.update(orders).set(updateFields).where(eq(orders.id, id)));
+
+      // Keep user record in sync if user exists
+      if (currentOrder.userId && (guestName !== undefined || guestPhone !== undefined)) {
+        const userUpdate: { name?: string; phone?: string } = {};
+        if (guestName !== undefined) userUpdate.name = guestName;
+        if (guestPhone !== undefined) userUpdate.phone = guestPhone;
+        statements.push(tx.update(users).set(userUpdate).where(eq(users.id, currentOrder.userId)));
       }
 
-      // Apply inventory stock adjustments
-      for (const [productId, delta] of stockDeltas.entries()) {
-        if (delta !== 0) {
-          statements.push(
-            db.update(products)
-              .set({
-                stock: sql`GREATEST(0, ${products.stock} + ${delta})`,
-              })
-              .where(eq(products.id, productId))
-          );
-        }
+      if (purchasePriceJustAdded) {
+        statements.push(
+          tx.insert(orderTimelineEvents).values({
+            orderId: id,
+            status: updateFields.status ?? "PROCESSING",
+            message: "Order confirmed with purchase price added by admin.",
+          })
+        );
+      } else if (status !== undefined || paymentStatus !== undefined) {
+        const newStatus = status ?? currentOrder.status;
+        const newPaymentStatus = paymentStatus ?? currentOrder.paymentStatus;
+        statements.push(
+          tx.insert(orderTimelineEvents).values({
+            orderId: id,
+            status: newStatus,
+            message: `${statusMessages[newStatus] || `Status changed to ${newStatus}`}, payment status is now ${newPaymentStatus.toLowerCase()}.`
+          })
+        );
+      } else if (items !== undefined || guestName !== undefined || guestPhone !== undefined || shippingAddress !== undefined) {
+        statements.push(
+          tx.insert(orderTimelineEvents).values({
+            orderId: id,
+            status: currentOrder.status,
+            message: `Order details updated by admin${items ? ` (${items.length} item${items.length > 1 ? "s" : ""})` : ""}.`
+          })
+        );
       }
 
-      const newSubtotal = items.reduce((sum, it) => sum + (it.price * it.quantity), 0);
-      updateFields.subtotal = newSubtotal;
-
-      updateFields.totalAmount = totalAmount ?? totalAfterSubtotalChange(currentOrder.totalAmount, currentOrder.subtotal, newSubtotal);
-    } else if (totalAmount !== undefined) {
-      updateFields.totalAmount = totalAmount;
-    }
-
-    statements.push(db.update(orders).set(updateFields).where(eq(orders.id, id)));
-
-    // Keep user record in sync if user exists
-    if (currentOrder.userId && (guestName !== undefined || guestPhone !== undefined)) {
-      const userUpdate: { name?: string; phone?: string } = {};
-      if (guestName !== undefined) userUpdate.name = guestName;
-      if (guestPhone !== undefined) userUpdate.phone = guestPhone;
-      statements.push(db.update(users).set(userUpdate).where(eq(users.id, currentOrder.userId)));
-    }
-
-    if (purchasePriceJustAdded) {
-      statements.push(
-        db.insert(orderTimelineEvents).values({
-          orderId: id,
-          status: updateFields.status ?? "PROCESSING",
-          message: "Order confirmed with purchase price added by admin.",
-        })
-      );
-    } else if (status !== undefined || paymentStatus !== undefined) {
-      const newStatus = status ?? currentOrder.status;
-      const newPaymentStatus = paymentStatus ?? currentOrder.paymentStatus;
-      statements.push(
-        db.insert(orderTimelineEvents).values({
-          orderId: id,
-          status: newStatus,
-          message: `${statusMessages[newStatus] || `Status changed to ${newStatus}`}, payment status is now ${newPaymentStatus.toLowerCase()}.`
-        })
-      );
-    } else if (items !== undefined || guestName !== undefined || guestPhone !== undefined || shippingAddress !== undefined) {
-      statements.push(
-        db.insert(orderTimelineEvents).values({
-          orderId: id,
-          status: currentOrder.status,
-          message: `Order details updated by admin${items ? ` (${items.length} item${items.length > 1 ? "s" : ""})` : ""}.`
-        })
-      );
-    }
-
-    // `statements` always has at least the orders update above, so this
-    // cast to the non-empty tuple db.batch requires is always sound.
-    await db.batch(statements as [BatchItem<"pg">, ...BatchItem<"pg">[]]);
+      for (const statement of statements) await statement;
+    });
 
     const updatedOrder = await db.query.orders.findFirst({
       where: eq(orders.id, id),
@@ -556,30 +553,26 @@ const app = new Hono()
 
     // The status flip above is now guaranteed exclusive, so batching the
     // restock + timeline entry together no longer needs its own guard.
-    const followUp: BatchItem<"pg">[] = [
-      db.insert(orderTimelineEvents).values({
+    await db.transaction(async (tx) => {
+      await tx.insert(orderTimelineEvents).values({
         orderId: id,
         status: "CANCELLED",
         message:
           `Order cancelled` +
           (reason ? ` — ${reason}` : "") +
           (restock ? ". Items restocked." : "."),
-      }),
-    ];
+      });
 
-    // Return the reserved goods to inventory.
-    if (restock) {
-      for (const item of order.items) {
-        if (!item.productId) continue;
-        followUp.push(
-          db.update(products)
+      // Return the reserved goods to inventory.
+      if (restock) {
+        for (const item of order.items) {
+          if (!item.productId) continue;
+          await tx.update(products)
             .set({ stock: sql`${products.stock} + ${item.quantity}` })
-            .where(eq(products.id, item.productId))
-        );
+            .where(eq(products.id, item.productId));
+        }
       }
-    }
-
-    await db.batch(followUp as [BatchItem<"pg">, ...BatchItem<"pg">[]]);
+    });
 
     const updatedOrder = await db.query.orders.findFirst({
       where: eq(orders.id, id),
@@ -689,8 +682,8 @@ const app = new Hono()
       return c.json({ error: "Refund amount changed by another request, please retry" }, 409);
     }
 
-    const followUp: BatchItem<"pg">[] = [
-      db.insert(orderTimelineEvents).values({
+    await db.transaction(async (tx) => {
+      await tx.insert(orderTimelineEvents).values({
         orderId: id,
         status: isFull ? "REFUNDED" : order.status,
         message:
@@ -698,23 +691,19 @@ const app = new Hono()
           (reason ? ` — ${reason}` : "") +
           `. Total refunded ${newRefunded} of ${order.totalAmount}` +
           (isFull ? " (fully refunded)." : "."),
-      }),
-    ];
+      });
 
-    // Restock the returned goods only when the order becomes fully refunded —
-    // an amount-based partial refund doesn't identify which items came back.
-    if (restock && becameFull) {
-      for (const item of order.items) {
-        if (!item.productId) continue;
-        followUp.push(
-          db.update(products)
+      // Restock the returned goods only when the order becomes fully refunded —
+      // an amount-based partial refund doesn't identify which items came back.
+      if (restock && becameFull) {
+        for (const item of order.items) {
+          if (!item.productId) continue;
+          await tx.update(products)
             .set({ stock: sql`${products.stock} + ${item.quantity}` })
-            .where(eq(products.id, item.productId))
-        );
+            .where(eq(products.id, item.productId));
+        }
       }
-    }
-
-    await db.batch(followUp as [BatchItem<"pg">, ...BatchItem<"pg">[]]);
+    });
 
     const updatedOrder = await db.query.orders.findFirst({
       where: eq(orders.id, id),
@@ -766,17 +755,17 @@ const app = new Hono()
       // below with a constraint violation. Detach it instead of deleting it —
       // the block itself (and its audit trail) should outlive the order.
       //
-      // All five statements run as one db.batch (one Postgres transaction):
+      // All five statements run in one batch (one Postgres transaction):
       // a failure partway through used to leave orphaned order_items/payments
       // rows pointing at a still-existing order, or — worse — at an order id
       // that no longer exists once a later statement in the same request
       // eventually succeeded on retry.
-      await db.batch([
-        db.update(blockedIps).set({ orderId: null }).where(eq(blockedIps.orderId, id)),
-        db.delete(orderItems).where(eq(orderItems.orderId, id)),
-        db.delete(payments).where(eq(payments.orderId, id)),
-        db.delete(orderTimelineEvents).where(eq(orderTimelineEvents.orderId, id)),
-        db.delete(orders).where(eq(orders.id, id)),
+      await batch((tx) => [
+        tx.update(blockedIps).set({ orderId: null }).where(eq(blockedIps.orderId, id)),
+        tx.delete(orderItems).where(eq(orderItems.orderId, id)),
+        tx.delete(payments).where(eq(payments.orderId, id)),
+        tx.delete(orderTimelineEvents).where(eq(orderTimelineEvents.orderId, id)),
+        tx.delete(orders).where(eq(orders.id, id)),
       ]);
 
       if (order) {
@@ -814,12 +803,12 @@ const app = new Hono()
     });
 
     // See the single-order delete route above for why this batches.
-    await db.batch([
-      db.update(blockedIps).set({ orderId: null }).where(inArray(blockedIps.orderId, ids)),
-      db.delete(orderItems).where(inArray(orderItems.orderId, ids)),
-      db.delete(payments).where(inArray(payments.orderId, ids)),
-      db.delete(orderTimelineEvents).where(inArray(orderTimelineEvents.orderId, ids)),
-      db.delete(orders).where(inArray(orders.id, ids)),
+    await batch((tx) => [
+      tx.update(blockedIps).set({ orderId: null }).where(inArray(blockedIps.orderId, ids)),
+      tx.delete(orderItems).where(inArray(orderItems.orderId, ids)),
+      tx.delete(payments).where(inArray(payments.orderId, ids)),
+      tx.delete(orderTimelineEvents).where(inArray(orderTimelineEvents.orderId, ids)),
+      tx.delete(orders).where(inArray(orders.id, ids)),
     ]);
 
     setActivityMeta(c, {

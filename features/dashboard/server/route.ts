@@ -2,7 +2,7 @@ import { Hono } from 'hono';
 import { after } from 'next/server';
 import { zValidator } from '@hono/zod-validator';
 import { z } from 'zod';
-import { db } from '@/db';
+import { batch, db } from '@/db';
 import { products, categories, specifications, wishlistItems, cartItems, reviews, orderItems, campaigns } from '@/db/schema';
 import { eq, and, inArray } from 'drizzle-orm';
 import { imageStorage } from '@/lib/imageStorage';
@@ -396,18 +396,18 @@ app.post(
     const foundIds = found.map((product) => product.id);
 
     // All seven statements — six dependent-row cleanups plus the products
-    // delete itself — in one db.batch, so a failure partway through can't
+    // delete itself — in one batch, so a failure partway through can't
     // leave dependent rows gone while the product rows survive (or vice
     // versa). Previously the products delete was a separate `await` after
     // this batch, with the same gap DELETE /:id had (fixed above).
-    await db.batch([
-      db.delete(campaigns).where(inArray(campaigns.productId, foundIds)),
-      db.delete(wishlistItems).where(inArray(wishlistItems.productId, foundIds)),
-      db.delete(cartItems).where(inArray(cartItems.productId, foundIds)),
-      db.delete(reviews).where(inArray(reviews.productId, foundIds)),
-      db.delete(specifications).where(inArray(specifications.productId, foundIds)),
-      db.update(orderItems).set({ productId: null }).where(inArray(orderItems.productId, foundIds)),
-      db.delete(products).where(inArray(products.id, foundIds)),
+    await batch((tx) => [
+      tx.delete(campaigns).where(inArray(campaigns.productId, foundIds)),
+      tx.delete(wishlistItems).where(inArray(wishlistItems.productId, foundIds)),
+      tx.delete(cartItems).where(inArray(cartItems.productId, foundIds)),
+      tx.delete(reviews).where(inArray(reviews.productId, foundIds)),
+      tx.delete(specifications).where(inArray(specifications.productId, foundIds)),
+      tx.update(orderItems).set({ productId: null }).where(inArray(orderItems.productId, foundIds)),
+      tx.delete(products).where(inArray(products.id, foundIds)),
     ]);
 
     // Cloudinary images deleted only after the DB batch commits (same
@@ -508,20 +508,20 @@ app.delete('/:id', sessionMiddleware, async (c) => {
     if (!product) return c.json({ error: "Product not found" }, 404);
 
     // All seven statements — the six dependent-row cleanups and the
-    // products delete itself — in one db.batch. These used to be a batch of
+    // products delete itself — in one batch. These used to be a batch of
     // six followed by a SEPARATE `await db.delete(products)`: if that final
     // delete failed after the batch had already committed, every dependent
     // row (specs, reviews, cart/wishlist items) was gone while the product
     // row itself survived, orphaned and referencing rows that no longer
     // existed. One batch means both succeed or both roll back together.
-    await db.batch([
-      db.delete(campaigns).where(eq(campaigns.productId, productId)),
-      db.delete(wishlistItems).where(eq(wishlistItems.productId, productId)),
-      db.delete(cartItems).where(eq(cartItems.productId, productId)),
-      db.delete(reviews).where(eq(reviews.productId, productId)),
-      db.delete(specifications).where(eq(specifications.productId, productId)),
-      db.update(orderItems).set({ productId: null }).where(eq(orderItems.productId, productId)),
-      db.delete(products).where(eq(products.id, productId)),
+    await batch((tx) => [
+      tx.delete(campaigns).where(eq(campaigns.productId, productId)),
+      tx.delete(wishlistItems).where(eq(wishlistItems.productId, productId)),
+      tx.delete(cartItems).where(eq(cartItems.productId, productId)),
+      tx.delete(reviews).where(eq(reviews.productId, productId)),
+      tx.delete(specifications).where(eq(specifications.productId, productId)),
+      tx.update(orderItems).set({ productId: null }).where(eq(orderItems.productId, productId)),
+      tx.delete(products).where(eq(products.id, productId)),
     ]);
 
     // Cloudinary images are only deleted once the DB delete has actually

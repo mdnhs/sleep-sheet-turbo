@@ -3,9 +3,8 @@ import { randomInt } from "crypto";
 /**
  * Order numbers are `<PREFIX>-DDMMYY-<suffix>`: human-quotable on a support
  * call, and sortable-ish by eye. The suffix is random rather than a counter
- * because the neon-http driver has no interactive transaction to hold a
- * sequence in, and a per-day counter would need its own row and its own
- * locking to stay gap-free under concurrency.
+ * because a per-day counter would need its own row and its own locking to
+ * stay gap-free under concurrency.
  *
  * Random means collisions, though, and `orders.orderNumber` is UNIQUE. The
  * suffix used to be 4 base36 characters — 1.68M values per day-prefix, which
@@ -46,7 +45,7 @@ const ORDER_NUMBER_CONSTRAINT = "orders_orderNumber_unique";
  * Deliberately narrower than lib/checkout's `isUniqueViolation`: `orders` also
  * has a unique index on `idempotencyKey`, and that conflict means "this order
  * already exists, return it" — retrying with a fresh order number would create
- * the duplicate the key exists to prevent. The neon driver surfaces the
+ * the duplicate the key exists to prevent. The pg driver surfaces the
  * constraint name, so the two are distinguishable; the message check is a
  * fallback for drivers or wrappers that don't.
  */
@@ -69,7 +68,7 @@ export function isOrderNumberConflict(err: unknown): boolean {
  * collides with an existing row.
  *
  * Safe to retry because every caller writes its order inside a single
- * `db.batch`, which Postgres runs as one transaction: a collision rolls back
+ * Postgres transaction (`batch` / `db.transaction`): a collision rolls back
  * the order, its items, the stock decrement and the payment row together, so
  * the retry starts from a clean slate rather than compounding a partial write.
  *

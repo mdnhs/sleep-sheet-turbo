@@ -1,0 +1,27 @@
+# Local Postgres for development and for rehearsing the Neon → Postgres
+# migration. Runs on host port 5433 so it never collides with other
+# projects' Postgres containers on 5432.
+#
+#   docker compose -f docker-compose.db.yml up -d
+#   DATABASE_URL=postgresql://sleepsheet:sleepsheet@localhost:5433/sleepsheet
+services:
+  postgres:
+    image: postgres:18-alpine
+    container_name: sleepsheet-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: sleepsheet
+      POSTGRES_PASSWORD: sleepsheet
+      POSTGRES_DB: sleepsheet
+    ports:
+      - "5433:5432"
+    volumes:
+      - sleepsheet-pgdata:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sleepsheet -d sleepsheet"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  sleepsheet-pgdata:

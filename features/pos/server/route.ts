@@ -126,75 +126,67 @@ const app = new Hono()
     const parsedUa = parseUserAgent(userAgentHeader);
 
     // Order + its line items + the card payment record + the stock decrement
-    // must all succeed or all fail together. db.batch runs every statement as
-    // one Postgres transaction in a single HTTP round trip (the neon-http
-    // driver has no interactive db.transaction()); stockDecrementQuery raises
-    // if any item is short on stock, which rolls the whole batch back. That is
-    // also what makes the order-number retry safe: a collision rolls the whole
-    // thing back, so the retry starts clean.
+    // must all succeed or all fail together, so they run in one Postgres
+    // transaction; stockDecrementQuery raises if any item is short on stock,
+    // which rolls the whole thing back. That is also what makes the
+    // order-number retry safe: a collision rolls everything back, so the retry
+    // starts clean.
     const { order, stockResult } = await withOrderNumber('POS', async (orderNumber) => {
       const orderId = cuid();
       setActivityMeta(c, { name: `#${orderNumber}` });
 
-      const orderInsert = db.insert(orders).values({
-        id: orderId,
-        orderNumber,
-        userId: finalUserId,
-        guestName: customerName,
-        guestPhone: customerPhone || null,
-        subtotal,
-        totalAmount,
-        tax: 0,
-        shippingCost: shippingCost || 0,
-        deliveryCharge: shippingCost || 0,
-        shippingAddress: customerAddress || (shippingType === 'showroom' ? 'POS - In-store pickup' : 'Online Delivery (POS)'),
-        reference: reference || null,
-        note: note || null,
-        saleType: 'POS',
-        paymentMethod,
-        paymentStatus: paymentMethod === 'CARD' ? 'COMPLETED' : 'PENDING',
-        status: shippingType === 'showroom' ? 'DELIVERED' : 'PENDING',
-        confirmedAt: null,
-        idempotencyKey: idempotencyKey ?? null,
-        ipAddress: clientIp,
-        deviceOs: parsedUa.os,
-        browserName: parsedUa.browser,
-        userAgent: userAgentHeader,
-      }).returning();
+      return db.transaction(async (tx) => {
+        const [order] = await tx.insert(orders).values({
+          id: orderId,
+          orderNumber,
+          userId: finalUserId,
+          guestName: customerName,
+          guestPhone: customerPhone || null,
+          subtotal,
+          totalAmount,
+          tax: 0,
+          shippingCost: shippingCost || 0,
+          deliveryCharge: shippingCost || 0,
+          shippingAddress: customerAddress || (shippingType === 'showroom' ? 'POS - In-store pickup' : 'Online Delivery (POS)'),
+          reference: reference || null,
+          note: note || null,
+          saleType: 'POS',
+          paymentMethod,
+          paymentStatus: paymentMethod === 'CARD' ? 'COMPLETED' : 'PENDING',
+          status: shippingType === 'showroom' ? 'DELIVERED' : 'PENDING',
+          confirmedAt: null,
+          idempotencyKey: idempotencyKey ?? null,
+          ipAddress: clientIp,
+          deviceOs: parsedUa.os,
+          browserName: parsedUa.browser,
+          userAgent: userAgentHeader,
+        }).returning();
 
-      const orderItemsInsert = db.insert(orderItems).values(
-        items.map(item => ({
-          orderId,
-          productId: item.productId,
-          quantity: item.quantity,
-          price: item.price,
-          costPrice: item.costPrice || null,
-          size: item.size || null,
-          color: item.color || null,
-        }))
-      );
+        await tx.insert(orderItems).values(
+          items.map(item => ({
+            orderId,
+            productId: item.productId,
+            quantity: item.quantity,
+            price: item.price,
+            costPrice: item.costPrice || null,
+            size: item.size || null,
+            color: item.color || null,
+          }))
+        );
 
-      const stockDecrement = db.execute(stockDecrementQuery(items));
+        // A card sale is paid at the counter, so it gets its payment row now.
+        if (paymentMethod === 'CARD') {
+          await tx.insert(payments).values({
+            orderId,
+            amount: totalAmount,
+            method: 'CARD',
+            status: 'COMPLETED',
+          });
+        }
 
-      // A card sale inserts a payment row too, so the batch is four statements
-      // instead of three. The stock decrement is last either way, which is
-      // what the sold-out list is read off.
-      const results = paymentMethod === 'CARD'
-        ? await db.batch([
-            orderInsert,
-            orderItemsInsert,
-            db.insert(payments).values({
-              orderId,
-              amount: totalAmount,
-              method: 'CARD',
-              status: 'COMPLETED',
-            }),
-            stockDecrement,
-          ])
-        : await db.batch([orderInsert, orderItemsInsert, stockDecrement]);
-
-      const [[order]] = results;
-      return { order, stockResult: results[results.length - 1] };
+        const stockResult = await tx.execute(stockDecrementQuery(items));
+        return { order, stockResult };
+      });
     });
 
     invalidateStockCache(soldOutProductIds(stockResult));

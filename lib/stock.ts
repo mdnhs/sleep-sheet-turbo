@@ -2,8 +2,8 @@ import { sql } from "drizzle-orm";
 import { invalidateFeed } from "@/lib/meta-catalog/cache";
 
 /**
- * Query for an atomic, oversell-proof stock decrement — call `db.execute()`
- * on the result, or include it as one item in a `db.batch([...])` alongside
+ * Query for an atomic, oversell-proof stock decrement — call `tx.execute()`
+ * on the result inside the same transaction as
  * the order/order_items/payment inserts it must succeed or fail with.
  *
  * Backed by the `decrement_stock_or_fail` DB function (see
@@ -28,11 +28,20 @@ export function stockDecrementQuery(items: { productId: string; quantity: number
   return sql`select decrement_stock_or_fail(${JSON.stringify(payload)}::jsonb)`;
 }
 
-/** The productId that failed stock check, if `error` came from `decrement_stock_or_fail`. */
+/**
+ * The productId that failed stock check, if `error` came from `decrement_stock_or_fail`.
+ *
+ * Drizzle wraps driver errors in a DrizzleQueryError whose own message is
+ * "Failed query: ..."; the RAISE text lives on `error.cause`, so both are checked.
+ */
 export function insufficientStockProductId(error: unknown): string | null {
-  const message = (error as { message?: string })?.message ?? String(error);
-  const match = /INSUFFICIENT_STOCK:(\S+)/.exec(message);
-  return match?.[1] ?? null;
+  const e = error as { message?: string; cause?: { message?: string } } | null | undefined;
+  const messages = [e?.message ?? String(error), e?.cause?.message ?? ""];
+  for (const message of messages) {
+    const match = /INSUFFICIENT_STOCK:(\S+)/.exec(message);
+    if (match) return match[1];
+  }
+  return null;
 }
 
 /**

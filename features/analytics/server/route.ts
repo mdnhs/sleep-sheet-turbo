@@ -669,8 +669,8 @@ const app = new Hono()
 // them are the parameterised sales-overview) and, underneath, twelve queries
 // — each one waking the Neon compute in turn.
 //
-// db.batch sends every statement in one HTTP round trip and runs them as a
-// single transaction, so the whole set now costs one request and one wake.
+// Every query below runs in parallel over the connection pool, so the whole
+// set now costs one request.
 // The individual endpoints above are kept: they are the RPC surface the types
 // are generated from, and nothing forces a caller to use this one.
 .get('/overview', sessionMiddleware, async (c) => {
@@ -695,7 +695,7 @@ const app = new Hono()
       mostWishlistedRows,
       recentOrderRows,
       lowStockRows,
-    ] = await db.batch([
+    ] = await Promise.all([
       db.select({ userId: orders.userId, totalAmount: sum(orders.totalAmount) })
         .from(orders)
         .where(and(isNotNull(orders.userId), ne(orders.status, "CANCELLED")))

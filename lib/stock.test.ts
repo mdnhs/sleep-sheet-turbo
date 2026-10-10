@@ -14,6 +14,14 @@ describe("insufficientStockProductId", () => {
     expect(insufficientStockProductId(err)).toBe("cmabc123");
   });
 
+  it("extracts the productId from the cause of a DrizzleQueryError", () => {
+    // node-postgres via drizzle: the outer message is just "Failed query: ...".
+    const err = new Error("Failed query: select decrement_stock_or_fail($1::jsonb)", {
+      cause: new Error("INSUFFICIENT_STOCK:cmv16iy9i000v06l56y2hheiu"),
+    });
+    expect(insufficientStockProductId(err)).toBe("cmv16iy9i000v06l56y2hheiu");
+  });
+
   it("returns null for unrelated errors", () => {
     expect(insufficientStockProductId(new Error("duplicate key value violates unique constraint"))).toBeNull();
   });
