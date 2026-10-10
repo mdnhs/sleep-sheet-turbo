@@ -23,6 +23,15 @@ export const revalidate = 86400;
 
 type Props = { params: Promise<{ value: string }> };
 
+// Without this the `revalidate` above was ignored: a dynamic segment only
+// becomes ISR once it exports generateStaticParams, so every category visit
+// rendered from scratch and queried Postgres (Cache-Control: no-store). An
+// empty list prerenders nothing at build (there is no database there) — each
+// category renders on its first visit and is cached after that.
+export function generateStaticParams(): Array<{ value: string }> {
+  return [];
+}
+
 // seoTitle is admin-entered and some already end in "| Sleep Sheet" — the
 // metadata helper appends the site name itself, so strip it here to avoid
 // "… | Sleep Sheet | Sleep Sheet" in the <title>.
