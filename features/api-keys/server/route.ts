@@ -28,7 +28,6 @@ const app = new Hono()
         id: apiKeys.id,
         name: apiKeys.name,
         keyPrefix: apiKeys.keyPrefix,
-        rawKey: apiKeys.rawKey,
         createdAt: apiKeys.createdAt,
         lastUsedAt: apiKeys.lastUsedAt,
         revokedAt: apiKeys.revokedAt,
@@ -59,7 +58,6 @@ const app = new Hono()
         .insert(apiKeys)
         .values({
           name,
-          rawKey,
           keyHash: hashApiKey(rawKey),
           keyPrefix: displayPrefix(rawKey),
           userId: user!.id,

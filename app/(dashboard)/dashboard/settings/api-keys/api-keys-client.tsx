@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ConfirmDialog } from "@/components/conform-dialouge";
-import { Plus, Copy, Check, KeyRound, Trash2, Eye, EyeOff } from "lucide-react";
+import { Plus, Copy, Check, KeyRound, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 
@@ -29,7 +29,6 @@ interface ApiKeyRow {
   id: string;
   name: string;
   keyPrefix: string;
-  rawKey?: string | null;
   createdAt: string;
   lastUsedAt: string | null;
   revokedAt: string | null;
@@ -46,8 +45,6 @@ export function ApiKeysClient() {
   const [name, setName] = useState("");
   const [newRawKey, setNewRawKey] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
-  const [copiedRowId, setCopiedRowId] = useState<string | null>(null);
-  const [revealedIds, setRevealedIds] = useState<Set<string>>(new Set());
   const [revokeTarget, setRevokeTarget] = useState<ApiKeyRow | null>(null);
 
   const rows = (keys ?? []) as ApiKeyRow[];
@@ -71,29 +68,6 @@ export function ApiKeysClient() {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const toggleReveal = (id: string) => {
-    setRevealedIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  };
-
-  const handleCopyRowKey = async (row: ApiKeyRow) => {
-    try {
-      const textToCopy = row.rawKey || row.keyPrefix;
-      await navigator.clipboard.writeText(textToCopy);
-      setCopiedRowId(row.id);
-      toast.success(row.rawKey ? "API key copied to clipboard" : "Copied to clipboard");
-      setTimeout(() => {
-        setCopiedRowId((current) => (current === row.id ? null : current));
-      }, 2000);
-    } catch {
-      toast.error("Failed to copy to clipboard");
-    }
-  };
-
   const columns: ColumnDef<ApiKeyRow>[] = [
     {
       accessorKey: "name",
@@ -104,43 +78,9 @@ export function ApiKeysClient() {
             <KeyRound className="h-3.5 w-3.5 text-muted-foreground" />
             {row.original.name}
           </div>
-          <div className="flex items-center gap-1.5 mt-0.5">
-            <code className="text-xs text-muted-foreground font-mono bg-slate-100 dark:bg-muted/50 px-1.5 py-0.5 rounded max-w-[280px] truncate">
-              {row.original.rawKey && revealedIds.has(row.original.id)
-                ? row.original.rawKey
-                : row.original.keyPrefix}
-            </code>
-            {row.original.rawKey && (
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="h-6 w-6 text-muted-foreground hover:text-foreground transition-colors rounded-md"
-                onClick={() => toggleReveal(row.original.id)}
-                title={revealedIds.has(row.original.id) ? "Hide key" : "Show full key"}
-              >
-                {revealedIds.has(row.original.id) ? (
-                  <EyeOff className="h-3.5 w-3.5" />
-                ) : (
-                  <Eye className="h-3.5 w-3.5" />
-                )}
-              </Button>
-            )}
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="h-6 w-6 text-muted-foreground hover:text-foreground transition-colors rounded-md"
-              onClick={() => handleCopyRowKey(row.original)}
-              title="Copy API key"
-            >
-              {copiedRowId === row.original.id ? (
-                <Check className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
-              ) : (
-                <Copy className="h-3.5 w-3.5" />
-              )}
-            </Button>
-          </div>
+          <code className="mt-0.5 inline-block text-xs text-muted-foreground font-mono bg-slate-100 dark:bg-muted/50 px-1.5 py-0.5 rounded max-w-[280px] truncate">
+            {row.original.keyPrefix}…
+          </code>
         </div>
       ),
     },
@@ -188,26 +128,6 @@ export function ApiKeysClient() {
       header: "",
       cell: ({ row }) => (
         <div className="flex items-center justify-end gap-1.5">
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className="gap-1.5 rounded-full text-xs font-semibold h-8 text-slate-700 hover:text-slate-900 border-slate-200 hover:bg-slate-50 dark:border-slate-800 dark:text-slate-300 dark:hover:bg-slate-800"
-            onClick={() => handleCopyRowKey(row.original)}
-            title="Copy API key"
-          >
-            {copiedRowId === row.original.id ? (
-              <>
-                <Check className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
-                <span>Copied</span>
-              </>
-            ) : (
-              <>
-                <Copy className="h-3.5 w-3.5 text-muted-foreground" />
-                <span>Copy</span>
-              </>
-            )}
-          </Button>
           {!row.original.revokedAt && (
             <Button
               type="button"

@@ -161,7 +161,6 @@ export const apiKeys = pgTable("api_keys", {
   // First few characters of the raw key, kept only for display in the UI
   // ("sk_live_a1b2...") so an admin can recognize which key is which.
   keyPrefix: text("keyPrefix").notNull(),
-  rawKey: text("rawKey"),
   userId: text("userId")
     .notNull()
     .references(() => users.id),
