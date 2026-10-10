@@ -1,61 +1,68 @@
-/**
- * One-off backfill: seal credentials already stored as plaintext in
- * site_settings (see lib/settings/crypto.ts).
- *
- *   SETTINGS_ENCRYPTION_KEY must be set (openssl rand -base64 32).
- *   pnpm tsx --env-file=.env scripts/encrypt-settings.ts           # dry run, lists key names
- *   pnpm tsx --env-file=.env scripts/encrypt-settings.ts --apply   # writes
- *
- * Idempotent: already-sealed, empty and unregistered rows are left alone.
- * Prints setting key names only, never values.
- */
-import { eq } from "drizzle-orm";
-import { getSettingsKey } from "../lib/settings/crypto";
+// One-off: encrypt the credential rows stored before SP-1 (brief §4, SP-1).
+// Run only as described in docs/plans/sp-1-settings-engine.md, "Deployment
+// order" step 4 — after the app already runs with the same key.
+//   Dry run:  pnpm exec tsx scripts/encrypt-settings.ts
+//   Apply:    pnpm exec tsx scripts/encrypt-settings.ts --apply
+// Needs DATABASE_URL and SETTINGS_ENCRYPTION_KEY in the environment.
+// Prints key names only, never values.
+import "dotenv/config";
+import { Pool } from "pg";
+import { decryptSecret, getSettingsKey } from "../lib/settings/crypto";
 import { planEncryption } from "../lib/settings/encrypt-rows";
 
-async function main() {
+async function main(): Promise<void> {
   const apply = process.argv.includes("--apply");
   const key = getSettingsKey();
-  if (!key) {
-    console.error("SETTINGS_ENCRYPTION_KEY is not set; nothing to do.");
-    process.exitCode = 1;
-    return;
-  }
+  if (!key) throw new Error("SETTINGS_ENCRYPTION_KEY is not set; there is nothing to encrypt with.");
 
-  // Imported lazily so a missing key exits before any database connection.
-  const { db } = await import("../db/index");
-  const { siteSettings } = await import("../db/schema");
-
-  const rows = await db.select({ key: siteSettings.key, value: siteSettings.value }).from(siteSettings);
-  const plan = planEncryption(rows, key);
-
-  if (plan.length === 0) {
-    console.log("No plaintext credentials found.");
-    return;
-  }
-
-  if (!apply) {
-    console.log(`Dry run: ${plan.length} credential(s) would be encrypted:`);
-    for (const row of plan) console.log(`  - ${row.key}`);
-    console.log("Re-run with --apply to write.");
-    return;
-  }
-
-  await db.transaction(async (tx) => {
-    for (const row of plan) {
-      await tx
-        .update(siteSettings)
-        .set({ value: row.value, updatedAt: new Date() })
-        .where(eq(siteSettings.key, row.key));
+  const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+  try {
+    if (!apply) {
+      const { rows } = await pool.query<{ key: string; value: string }>("select key, value from site_settings");
+      const updates = planEncryption(rows, key);
+      console.log(`${updates.length} plaintext credential row(s): ${updates.map((u) => u.key).join(", ") || "none"}`);
+      console.log("Dry run. Re-run with --apply to write.");
+      return;
     }
-  });
-  console.log(`Encrypted ${plan.length} credential(s):`);
-  for (const row of plan) console.log(`  - ${row.key}`);
+
+    // Read inside the transaction with row locks, so a concurrent admin save
+    // can't be overwritten by a stale plaintext value.
+    const client = await pool.connect();
+    let updates: { key: string; value: string }[];
+    try {
+      await client.query("begin");
+      const { rows } = await client.query<{ key: string; value: string }>(
+        "select key, value from site_settings for update",
+      );
+      updates = planEncryption(rows, key);
+      console.log(`${updates.length} plaintext credential row(s): ${updates.map((u) => u.key).join(", ") || "none"}`);
+      for (const update of updates) {
+        await client.query(`update site_settings set value = $1, "updatedAt" = now() where key = $2`, [
+          update.value,
+          update.key,
+        ]);
+      }
+      await client.query("commit");
+    } catch (error) {
+      await client.query("rollback");
+      throw error;
+    } finally {
+      client.release();
+    }
+    if (updates.length === 0) return;
+
+    const check = await pool.query<{ key: string; value: string }>(
+      "select key, value from site_settings where key = any($1)",
+      [updates.map((u) => u.key)],
+    );
+    for (const row of check.rows) decryptSecret(row.value, key, row.key); // throws if a row can't be read back
+    console.log(`Encrypted and verified ${check.rows.length} row(s).`);
+  } finally {
+    await pool.end();
+  }
 }
 
-main()
-  .catch((error) => {
-    console.error(error instanceof Error ? error.message : error);
-    process.exitCode = 1;
-  })
-  .finally(() => process.exit());
+main().catch((error) => {
+  console.error(error instanceof Error ? error.message : error);
+  process.exit(1);
+});

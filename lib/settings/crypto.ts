@@ -14,6 +14,7 @@ import { createCipheriv, createDecipheriv, randomBytes } from "node:crypto";
 export const SECRET_PREFIX = "enc:v1:";
 const KEY_BYTES = 32;
 const IV_BYTES = 12;
+const TAG_BYTES = 16;
 
 export class SecretDecryptError extends Error {
   constructor(message: string) {
@@ -69,8 +70,11 @@ export function decryptSecret(stored: string, key: Buffer | null, aad: string): 
   const parts = stored.slice(SECRET_PREFIX.length).split(".");
   if (parts.length !== 3) throw new SecretDecryptError("malformed encrypted value");
   const [iv, tag, body] = parts.map((part) => Buffer.from(part, "base64url"));
+  // Pin both lengths: GCM accepts shortened tags and other IV sizes, which weakens the check.
+  if (iv.length !== IV_BYTES) throw new SecretDecryptError("malformed encrypted value");
+  if (tag.length !== TAG_BYTES) throw new SecretDecryptError("malformed encrypted value");
   try {
-    const decipher = createDecipheriv("aes-256-gcm", key, iv);
+    const decipher = createDecipheriv("aes-256-gcm", key, iv, { authTagLength: TAG_BYTES });
     decipher.setAAD(Buffer.from(aad, "utf8"));
     decipher.setAuthTag(tag);
     return Buffer.concat([decipher.update(body), decipher.final()]).toString("utf8");

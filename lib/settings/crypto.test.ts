@@ -62,6 +62,14 @@ describe("settings crypto", () => {
     expect(() => decryptSecret(tampered, KEY, "k")).toThrow(SecretDecryptError);
   });
 
+  it("refuses a truncated tag or a wrong-size IV", () => {
+    const [iv, tag, body] = encryptSecret("hunter2", KEY, "k").slice("enc:v1:".length).split(".");
+    const shortTag = `enc:v1:${iv}.${tag.slice(0, 8)}.${body}`;
+    const shortIv = `enc:v1:${iv.slice(0, 8)}.${tag}.${body}`;
+    expect(() => decryptSecret(shortTag, KEY, "k")).toThrow(SecretDecryptError);
+    expect(() => decryptSecret(shortIv, KEY, "k")).toThrow(SecretDecryptError);
+  });
+
   it("recognises the stored prefix", () => {
     expect(isEncrypted("enc:v1:abc")).toBe(true);
     expect(isEncrypted("abc")).toBe(false);
