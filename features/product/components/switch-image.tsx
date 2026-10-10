@@ -94,7 +94,11 @@ function SwitchImage({ product }: SwitchImageProps) {
             key={`${video}-${videoSound}`}
             label={`${product.name} – video`}
             loop={!videoSound}
-            poster={productVideoPoster(video)}
+            // The portrait video only fills a slice of this landscape frame
+            // (~100px wide on a phone, ~310px at the lg:h-137.5 desktop
+            // height), so 640w covers desktop at 2x; the default 960w sent a
+            // 120KB still to a 99x176 box.
+            poster={productVideoPoster(video, 640)}
             // The thumbnails sit over the left of the frame; keep the bar clear of them.
             barClassName="pl-20 sm:pl-28 md:pl-32"
             sources={[
@@ -154,7 +158,8 @@ function SwitchImage({ product }: SwitchImageProps) {
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={productVideoPoster(video)}
+                // Thumbnail is at most 96px wide (md:w-24): 320w covers 3x DPR.
+                src={productVideoPoster(video, 320)}
                 alt=""
                 loading="lazy"
                 className="absolute inset-0 h-full w-full object-cover"

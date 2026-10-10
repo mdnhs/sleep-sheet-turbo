@@ -2,13 +2,16 @@
 
 import React, { useEffect, useRef, useState, memo } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { Play, Volume2, VolumeX, Zap } from "lucide-react";
 import { useCurrency } from "@/hooks/use-currency";
 import { useLanguage } from "@/hooks/use-language";
 import { floorToNearest50 } from "@/lib/utils";
 import { autoplayAllowed, productVideoPoster, productVideoUrl } from "@/lib/product-video";
 import type { ProductVideoItem } from "@/lib/types";
+
+// Poster widths for the srcset: half-width phone cards (~160px at 2–3x DPR)
+// up to the 20vw desktop column.
+const POSTER_WIDTHS = [270, 400, 540];
 
 export interface ProductVideoCardProps {
   item: ProductVideoItem;
@@ -96,28 +99,30 @@ const ProductVideoCard = memo(function ProductVideoCard({
       className="group relative aspect-[9/16] w-full overflow-hidden rounded-2xl bg-black"
     >
       {!playing && (
-        // unoptimized: the poster URL is already a sized Cloudinary transform,
-        // and the custom loader only resizes /image/upload/ URLs — so the
-        // srcset it generated here was the same URL repeated at 11 widths,
-        // dead weight in the HTML of every page showing these cards.
+        // A plain <img> with a hand-built srcset: the poster is a Cloudinary
+        // video-frame transform, which the custom next/image loader can't
+        // resize (it only handles /image/upload/ URLs), so next/image either
+        // repeated one URL at 11 widths or, unoptimized, sent the 540w still
+        // to a 157px-wide phone card (~70KB each, ~45KB wasted per card).
         // `priority` is deprecated in Next 16 and set no fetchpriority; the
         // above-the-fold cards ask for it directly.
-        <Image
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
           src={productVideoPoster(item.video, 540)}
+          srcSet={POSTER_WIDTHS.map((w) => `${productVideoPoster(item.video, w)} ${w}w`).join(", ")}
+          sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
           alt={item.name}
-          fill
-          unoptimized
           loading={priority ? "eager" : "lazy"}
           fetchPriority={priority ? "high" : "auto"}
-          sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
-          className="absolute inset-0 object-cover pointer-events-none"
+          decoding="async"
+          className="absolute inset-0 h-full w-full object-cover pointer-events-none"
         />
       )}
       {/* No `poster` attribute: a poster is fetched as soon as the element is
           parsed — lazy loading doesn't apply to it — so every card on the
           page downloaded its still up front (~60KB each, 11 of them on a
           product page, 36 on /videos), competing with the LCP image on a
-          phone's connection. The lazy <Image> above already shows that same
+          phone's connection. The lazy <img> above already shows that same
           still, and it stays up until `playing` (not `play`) fires, i.e. until
           a real frame is on screen, so nothing flashes black meanwhile. */}
       <video

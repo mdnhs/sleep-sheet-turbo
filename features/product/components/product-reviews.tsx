@@ -12,7 +12,13 @@ import { useGetReviews } from "@/features/review/api/use-get-reviews";
 // The form (react-hook-form + zod) only renders inside the "Write a Review"
 // dialog, yet a static import shipped it — zod's ~290KB included — in the
 // JS every product page hydrates with. Now it loads when the dialog opens.
-const ReviewForm = dynamic(() => import("./review-form"));
+//
+// It is also only rendered while the dialog is open: the dialog keeps its
+// content in the tree when closed, so the lazy form still loaded — and zod
+// with it (~44KB compressed) — on every product page view. Hovering or
+// touching the button starts the download so opening stays instant.
+const loadReviewForm = () => import("./review-form");
+const ReviewForm = dynamic(loadReviewForm);
 
 interface ProductReviewsProps {
   product: Product;
@@ -52,6 +58,8 @@ export function ProductReviews({ product }: ProductReviewsProps) {
         <Button
           variant="outline"
           onClick={() => setIsReviewOpen(true)}
+          onPointerEnter={() => void loadReviewForm()}
+          onFocus={() => void loadReviewForm()}
           className="rounded-full px-5 font-semibold text-sm border-border hover:bg-secondary/50"
         >
           <Star className="h-4 w-4 mr-1.5 text-yellow-500 fill-yellow-500" />
@@ -65,7 +73,7 @@ export function ProductReviews({ product }: ProductReviewsProps) {
             <DialogTitle>Write a Review</DialogTitle>
           </DialogHeader>
           <div className="pt-2">
-            <ReviewForm productId={product.id} />
+            {isReviewOpen && <ReviewForm productId={product.id} />}
           </div>
         </DialogContent>
       </Dialog>
