@@ -19,7 +19,7 @@ export function TrendChart({ q, metric }: { q: WaQuery; metric: Metric }) {
   });
 
   return (
-    <Card>
+    <Card className="ring-0">
       <CardHeader>
         <CardTitle className="text-base">
           {METRIC_LABELS[metric]}

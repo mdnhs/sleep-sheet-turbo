@@ -33,7 +33,7 @@ export function BreakdownPanel({
   const activeLabel = tabs.find((tab) => tab.dim === active)?.label ?? "";
 
   return (
-    <Card>
+    <Card className="ring-0">
       <CardHeader className="pb-2">
         {tabs.length > 1 ? (
           <Tabs value={active} onValueChange={(value) => setActive(value as Dimension)}>

@@ -11,7 +11,7 @@ export function ProductsTable({ q }: { q: WaQuery }) {
   const rows = data?.rows ?? [];
 
   return (
-    <Card>
+    <Card className="ring-0">
       <CardHeader>
         <CardTitle className="text-base">Products</CardTitle>
       </CardHeader>

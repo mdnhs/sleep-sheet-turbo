@@ -24,7 +24,7 @@ export function KpiCards({ q, metric, onSelect }: { q: WaQuery; metric: Metric; 
         const good = trend !== null && (LOWER_IS_BETTER.has(m) ? trend < 0 : trend > 0);
         return (
           <button key={m} type="button" onClick={() => onSelect(m)} className="text-left">
-            <Card className={cn("gap-1 p-4 transition-colors", metric === m ? "ring-2 ring-primary" : "hover:bg-muted/50")}>
+            <Card className={cn("gap-1 p-4 ring-0 transition-colors", metric === m ? "bg-primary/10" : "hover:bg-muted/50")}>
               <span className="text-xs text-muted-foreground">{METRIC_LABELS[m]}</span>
               {isLoading && !data ? (
                 <Skeleton className="h-8 w-20" />

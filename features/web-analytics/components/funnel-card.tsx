@@ -19,7 +19,7 @@ export function FunnelCard({ q }: { q: WaQuery }) {
   const top = data?.visited ?? 0;
 
   return (
-    <Card>
+    <Card className="ring-0">
       <CardHeader>
         <CardTitle className="text-base">Conversion funnel</CardTitle>
       </CardHeader>
