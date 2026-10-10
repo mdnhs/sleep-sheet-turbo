@@ -72,7 +72,11 @@ async function run(origin: string, token: string): Promise<void> {
       console.warn(`[startup-revalidate] warming ${path} failed:`, err);
     }
   }
-  console.log(`[startup-revalidate] revalidated build-time cache, warmed ${WARM_PATHS.length} paths`);
+  // The edge still holds the previous deploy's pages; drop them now that the
+  // origin has fresh renders to refill from.
+  const { purgeCdnNow } = await import("@/lib/cdn-purge");
+  await purgeCdnNow();
+  console.log(`[startup-revalidate] revalidated build-time cache, warmed ${WARM_PATHS.length} paths, purged CDN`);
 }
 
 export function scheduleStartupRevalidation(): void {

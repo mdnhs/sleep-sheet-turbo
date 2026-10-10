@@ -1,4 +1,5 @@
 import { revalidatePath, revalidateTag } from "next/cache";
+import { purgeCdn } from "@/lib/cdn-purge";
 
 /**
  * Cache invalidation for the two editorial content types.
@@ -26,6 +27,7 @@ function invalidate(tag: string): void {
   } catch {
     /* Ignore if invoked outside the Next.js request lifecycle */
   }
+  purgeCdn();
 }
 
 /** Call after any write to `posts`. */

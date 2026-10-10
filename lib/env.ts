@@ -34,6 +34,10 @@ const envSchema = z.object({
   NEXT_PUBLIC_YANDEX_VERIFICATION: z.string().optional(),
   GA4_PROPERTY_ID: z.string().optional(),
 
+  // Cloudflare edge cache purge on content writes and after deploys — optional,
+  // no-op when unset. See lib/cdn-purge.ts.
+  CLOUDFLARE_ZONE_ID: z.string().optional(),
+  CLOUDFLARE_PURGE_TOKEN: z.string().optional(),
   // n8n webhook for realtime order alerts (e.g. to Telegram) — optional,
   // feature no-ops when unset. See lib/n8n-notify.
   N8N_ORDER_WEBHOOK_URL: z.string().url().optional(),

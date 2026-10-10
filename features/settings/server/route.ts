@@ -12,6 +12,7 @@ import { can } from "@/lib/permissions";
 import { setActivityMeta, type ActivityChange } from "@/features/activity/server/log-activity";
 import { revalidateTag, unstable_cache } from "next/cache";
 import { buildFallback } from "@/lib/build-phase";
+import { purgeCdn } from "@/lib/cdn-purge";
 
 // Credentials that must never leave the server through the public GET.
 // The public endpoint exposes only a "<key>_set" flag for each so the admin
@@ -270,6 +271,8 @@ const app = new Hono()
       } catch {
         /* Ignore if called outside Next request context */
       }
+      // Hero, logo and banners are baked into edge-cached HTML.
+      purgeCdn();
 
       return c.json({ success: true });
     }

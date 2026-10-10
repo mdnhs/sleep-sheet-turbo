@@ -31,6 +31,7 @@ export function setCachedFeed(format: FeedFormat, data: string): CacheEntry {
 }
 
 import { revalidateTag } from "next/cache";
+import { purgeCdn } from "@/lib/cdn-purge";
 
 // Called from product/category writes and from every stock decrement, so it
 // runs on each sale. It used to also call revalidatePath("/", "layout"), which
@@ -52,6 +53,9 @@ export function invalidateFeed(): void {
   } catch {
     /* Ignore if invoked outside Next.js request lifecycle */
   }
+  // Stock and price changes have to reach the Cloudflare edge too; purges
+  // are coalesced, so a run of orders costs one purge.
+  purgeCdn();
 }
 
 export function getCacheAge(format: FeedFormat): number | null {
