@@ -6,13 +6,8 @@ import NarrowBanner from "@/components/home/narrow-banner";
 import ProductVideos from "@/components/home/product-videos";
 import SeoContent from "@/components/home/seo-content";
 import SubcategoryProducts from "@/components/home/subcategory-products";
-import {
-  localBusinessSchema,
-  sameAsFromSettings,
-  seoConfig,
-  structuredDataScript,
-  webpageSchema,
-} from "@/lib/seo";
+import { localBusinessSchema, seoConfig, structuredDataScript, webpageSchema } from "@/lib/seo";
+import { siteSeoFromSettings, storeProfileFromSettings } from "@/lib/settings/store-profile";
 
 // The hero (the LCP element) server-renders from the settings seeded in the
 // (client) layout, so it appears in the initial HTML without a page-level
@@ -35,22 +30,24 @@ async function Page() {
   const categories = categoriesRes?.categories || [];
   const products = productsRes?.data || [];
   const productVideos = videosRes?.data || [];
+  const store = storeProfileFromSettings(settings);
+  const seo = siteSeoFromSettings(settings);
 
   return (
     <>
       {structuredDataScript(
         "webpage",
         webpageSchema(
-          seoConfig.defaultTitle,
-          seoConfig.defaultDescription,
+          seo.title,
+          seo.description,
           seoConfig.siteUrl,
         ),
       )}
-      {structuredDataScript("local-business", localBusinessSchema(sameAsFromSettings(settings)))}
+      {structuredDataScript("local-business", localBusinessSchema(store))}
 
       {/* Page-level H1. The hero is an image slider with no heading, so this
           gives crawlers a single descriptive H1 in the server HTML. */}
-      <h1 className="sr-only">{seoConfig.defaultTitle}</h1>
+      <h1 className="sr-only">{seo.title}</h1>
 
       <Hero />
 

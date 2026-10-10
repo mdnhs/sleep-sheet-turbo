@@ -1,5 +1,6 @@
 import Script from "next/script"
-import { seoConfig } from "./config"
+import { seoConfig, siteUrl } from "./config"
+import type { SiteSeo, StoreProfile } from "@/lib/settings/store-profile"
 import type { BreadcrumbItem, ProductSeoData, CategorySeoData, BlogSeoData } from "./types"
 
 export function jsonLd<T>(schema: T): string {
@@ -9,48 +10,56 @@ export function jsonLd<T>(schema: T): string {
   })
 }
 
-// Emitted once, from the root layout. `sameAs` should be the social
-// profiles that actually exist (from the social_* site settings).
-export function organizationSchema(sameAs: string[] = seoConfig.organization.sameAs) {
+/** A site-relative path ("/logo.webp") made absolute; absolute URLs pass through. */
+export function absoluteUrl(pathOrUrl: string): string {
+  if (/^https?:\/\//.test(pathOrUrl)) return pathOrUrl
+  return `${siteUrl}${pathOrUrl.startsWith("/") ? "" : "/"}${pathOrUrl}`
+}
+
+function postalAddress(store: StoreProfile) {
+  return {
+    "@type": "PostalAddress",
+    streetAddress: store.address,
+    addressLocality: store.city,
+    addressRegion: store.city,
+    ...(store.postalCode ? { postalCode: store.postalCode } : {}),
+    addressCountry: store.country,
+  }
+}
+
+function contactPoint(store: StoreProfile) {
+  return { "@type": "ContactPoint", telephone: store.phone, email: store.email, contactType: "customer service" }
+}
+
+// Emitted once, from the root layout.
+export function organizationSchema(store: StoreProfile) {
   return jsonLd({
     "@type": "Organization",
-    "@id": `${seoConfig.siteUrl}/#organization`,
-    name: seoConfig.organization.name,
-    url: seoConfig.organization.url,
-    logo: seoConfig.organization.logo,
-    description: seoConfig.organization.description,
-    foundingDate: seoConfig.organization.foundingDate,
-    sameAs,
-    address: {
-      "@type": "PostalAddress",
-      streetAddress: seoConfig.address.streetAddress,
-      addressLocality: seoConfig.address.addressLocality,
-      addressRegion: seoConfig.address.addressRegion,
-      postalCode: seoConfig.address.postalCode,
-      addressCountry: seoConfig.address.addressCountry,
-    },
-    contactPoint: {
-      "@type": "ContactPoint",
-      telephone: seoConfig.contact.telephone,
-      email: seoConfig.contact.email,
-      contactType: seoConfig.contact.contactType,
-    },
+    "@id": `${siteUrl}/#organization`,
+    name: store.name,
+    legalName: store.legalName,
+    url: siteUrl,
+    // Absolute: Google's logo guidelines for Organization require a full URL.
+    logo: absoluteUrl(store.logoUrl),
+    description: store.description,
+    ...(store.foundingYear ? { foundingDate: store.foundingYear } : {}),
+    ...(store.bin ? { vatID: store.bin } : {}),
+    sameAs: store.sameAs,
+    address: postalAddress(store),
+    contactPoint: contactPoint(store),
     // No SearchAction here — it belongs on WebSite (below), not Organization.
   })
 }
 
-export function websiteSchema() {
+export function websiteSchema(store: StoreProfile, seo: SiteSeo) {
   return jsonLd({
     "@type": "WebSite",
-    name: seoConfig.siteName,
-    url: seoConfig.siteUrl,
-    description: seoConfig.defaultDescription,
+    name: store.name,
+    url: siteUrl,
+    description: seo.description,
     potentialAction: {
       "@type": "SearchAction",
-      target: {
-        "@type": "EntryPoint",
-        urlTemplate: `${seoConfig.siteUrl}/shop?search={search_term_string}`,
-      },
+      target: { "@type": "EntryPoint", urlTemplate: `${siteUrl}/shop?search={search_term_string}` },
       "query-input": "required name=search_term_string",
     },
   })
@@ -257,31 +266,19 @@ export function faqSchema(questions: Array<{ question: string; answer: string }>
   })
 }
 
-export function localBusinessSchema(sameAs: string[] = seoConfig.organization.sameAs) {
+export function localBusinessSchema(store: StoreProfile) {
   return jsonLd({
     "@type": "Store",
-    "@id": `${seoConfig.siteUrl}/#store`,
-    name: seoConfig.organization.name,
-    url: seoConfig.organization.url,
-    logo: seoConfig.organization.logo,
-    image: `${seoConfig.siteUrl}${seoConfig.defaultImage}`,
-    telephone: seoConfig.contact.telephone,
-    description: seoConfig.organization.description,
-    address: {
-      "@type": "PostalAddress",
-      streetAddress: seoConfig.address.streetAddress,
-      addressLocality: seoConfig.address.addressLocality,
-      addressRegion: seoConfig.address.addressRegion,
-      postalCode: seoConfig.address.postalCode,
-      addressCountry: seoConfig.address.addressCountry,
-    },
-    contactPoint: {
-      "@type": "ContactPoint",
-      telephone: seoConfig.contact.telephone,
-      email: seoConfig.contact.email,
-      contactType: seoConfig.contact.contactType,
-    },
-    sameAs,
+    "@id": `${siteUrl}/#store`,
+    name: store.name,
+    url: siteUrl,
+    logo: absoluteUrl(store.logoUrl),
+    image: absoluteUrl(seoConfig.defaultImage),
+    telephone: store.phone,
+    description: store.description,
+    address: postalAddress(store),
+    contactPoint: contactPoint(store),
+    sameAs: store.sameAs,
     // Same hours the contact page publishes (contactHours in
     // hooks/use-language.ts): Saturday–Thursday 9am–9pm, closed Friday. The
     // old list had Monday–Friday open and Sunday missing. Keep this, the
@@ -295,18 +292,6 @@ export function localBusinessSchema(sameAs: string[] = seoConfig.organization.sa
       },
     ],
   })
-}
-
-/**
- * Social profiles for `sameAs`, from the social_* site settings — only the
- * accounts that exist. Falls back to the config list if settings are
- * unavailable.
- */
-export function sameAsFromSettings(settings: Record<string, string> | null | undefined): string[] {
-  if (!settings) return seoConfig.organization.sameAs
-  return ["social_facebook", "social_instagram", "social_twitter", "social_youtube", "social_tiktok"]
-    .map((key) => settings[key]?.trim())
-    .filter((url): url is string => Boolean(url))
 }
 
 export function imageObjectSchema(url: string, caption: string, width?: number, height?: number) {

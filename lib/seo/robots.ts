@@ -44,31 +44,24 @@ export function generateRobotsTxt(config: RobotsConfig = {}): string {
   return lines.join("\n")
 }
 
-export function defaultRobotsTxt(): string {
+// AI *training* crawlers only, switched by the seo_robots_ai_block setting
+// (default on). ChatGPT-User (fetches a page when a ChatGPT user asks about
+// it) stays allowed; Google-Extended only governs Gemini training.
+const AI_TRAINING_RULES = [
+  "User-agent: GPTBot",
+  "Disallow: /",
+  "",
+  "User-agent: Google-Extended",
+  "Disallow: /",
+  "",
+  "User-agent: CCBot",
+  "Disallow: /",
+]
+
+export function defaultRobotsTxt(blockAiTraining = true): string {
   return generateRobotsTxt({
     allowAll: true,
-    disallowPaths: [
-      "/api/",
-      "/dashboard/",
-      "/account/",
-      "/checkout/",
-      "/orders/",
-      "/order-success/",
-      "/track-order/",
-    ],
-    // Only AI *training* crawlers are blocked. ChatGPT-User (fetches a page
-    // when a ChatGPT user asks about it) is allowed, so ChatGPT can read and
-    // link product pages in answers. Google-Extended only governs Gemini
-    // training — it has no effect on Google Search or AI Overviews.
-    additionalRules: [
-      "User-agent: GPTBot",
-      "Disallow: /",
-      "",
-      "User-agent: Google-Extended",
-      "Disallow: /",
-      "",
-      "User-agent: CCBot",
-      "Disallow: /",
-    ],
+    disallowPaths: ["/api/", "/dashboard/", "/account/", "/checkout/", "/orders/", "/order-success/", "/track-order/"],
+    additionalRules: blockAiTraining ? AI_TRAINING_RULES : [],
   })
 }

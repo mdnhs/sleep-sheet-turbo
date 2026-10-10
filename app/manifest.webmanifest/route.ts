@@ -1,10 +1,12 @@
 import { seoConfig } from "@/lib/seo"
+import { getSiteSeo, getStoreProfile } from "@/lib/settings/store"
 
 export async function GET() {
+  const [store, seo] = await Promise.all([getStoreProfile(), getSiteSeo()])
   const manifest = {
-    name: seoConfig.siteName,
-    short_name: seoConfig.siteName,
-    description: seoConfig.defaultDescription,
+    name: store.name,
+    short_name: store.name,
+    description: seo.description,
     start_url: "/",
     display: "standalone",
     background_color: "#ffffff",

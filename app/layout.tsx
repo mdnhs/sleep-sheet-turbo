@@ -7,11 +7,13 @@ import { Toaster } from "@/components/ui/sonner";
 import QueryProvider from "@/provider/query-provider";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
 import { TrackingIdentity } from "@/provider/tracking-identity";
-import { seoConfig, websiteSchema, organizationSchema, sameAsFromSettings, structuredDataScript } from "@/lib/seo";
+import { seoConfig, websiteSchema, organizationSchema, structuredDataScript } from "@/lib/seo";
+import { buildRootMetadata } from "@/lib/seo/root-metadata";
 import { getPublicSettings } from "@/lib/prefetch-home";
+import { getSiteSeo, getStoreProfile } from "@/lib/settings/store";
+import { siteSeoFromSettings, storeProfileFromSettings } from "@/lib/settings/store-profile";
 import GoogleAnalytics from "@/components/google-analytics";
 import ConsentDefaultScript from "@/components/consent-default-script";
-import SeoVerification from "@/components/seo-verification";
 import PreconnectLinks from "@/components/preconnect";
 
 // Only two fonts are on the storefront critical path: Figtree (body) and
@@ -50,96 +52,16 @@ const hindSiliguri = Hind_Siliguri({
   preload: false,
 });
 
-export const metadata: Metadata = {
-  metadataBase: new URL(seoConfig.siteUrl),
-  title: {
-    default: seoConfig.defaultTitle,
-    template: `%s | ${seoConfig.siteName}`,
-  },
-  description: seoConfig.defaultDescription,
-  keywords: [
-    "কম্ফোর্টার সেট প্রাইজ ইন বাংলাদেশ",
-    "বিছানার চাদর অনলাইন শপ",
-    "কিং সাইজ বেডশিট দাম",
-    "ওয়াটারপ্রুফ স্লিপ শিট",
-    "কটন বেডশীট কালেকশন",
-    "টুইল কটন বিছানার চাদর",
-    "শীতের কম্ফোর্টার দাম",
-    "বেবি স্লিপ শিট",
-    "ম্যাট্রেস প্রোটেক্টর বাংলাদেশ",
-    "হোটেল কোয়ালিটি বেডশীট",
-    "বালিশের কভার ও কোলবালিশ কভার",
-    "হোম ডেলিভারি ক্যাশ অন ডেলিভারি",
-    "স্লিপ শিট বাংলাদেশ",
-    "comforter price in Bangladesh",
-    "bed sheet price in Bangladesh",
-    "comforter set price in Bangladesh",
-    "king size bed sheet price in Bangladesh",
-    "waterproof sleep sheet Bangladesh",
-    "bed sheet online shop Bangladesh",
-    "twill cotton comforter 5 pcs set",
-    "mattress protector price in Bangladesh",
-    "pillow cover",
-    "cash on delivery bedding",
-    "online shopping Bangladesh",
-    "bedding",
-    "sleep accessories",
-  ],
-  robots: {
-    index: true,
-    follow: true,
-    googleBot: {
-      index: true,
-      follow: true,
-      "max-video-preview": -1,
-      "max-image-preview": "large",
-      "max-snippet": -1,
-    },
-  },
-  openGraph: {
-    type: "website",
-    locale: seoConfig.defaultLocale,
-    url: seoConfig.siteUrl,
-    siteName: seoConfig.siteName,
-    title: seoConfig.defaultTitle,
-    description: seoConfig.defaultDescription,
-    images: [
-      {
-        url: seoConfig.defaultImage,
-        width: 1200,
-        height: 630,
-        alt: seoConfig.siteName,
-      },
-    ],
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: seoConfig.defaultTitle,
-    description: seoConfig.defaultDescription,
-    images: [seoConfig.defaultImage],
-  },
-  alternates: {
-    canonical: seoConfig.siteUrl,
-  },
-  icons: {
-    icon: "/favicon.ico",
-    shortcut: "/favicon.ico",
-    apple: "/apple-touch-icon.png",
-  },
-  manifest: "/manifest.webmanifest",
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: "default",
-    title: seoConfig.siteName,
-  },
-  applicationName: seoConfig.siteName,
-  referrer: "origin-when-cross-origin",
-  category: "ecommerce",
-  other: {
-    "msapplication-TileColor": seoConfig.themeColor,
-    "msapplication-config": "/browserconfig.xml",
-  },
-};
+// Store name, title, description, share image and verification come from
+// settings. Same cached, "settings"-tagged read as the body below, so the
+// root stays prerendered and a settings save refreshes it.
+export async function generateMetadata(): Promise<Metadata> {
+  const [store, seo] = await Promise.all([getStoreProfile(), getSiteSeo()]);
+  return buildRootMetadata(store, seo, seoConfig.siteUrl, {
+    googleVerification: process.env.NEXT_PUBLIC_GOOGLE_VERIFICATION,
+    bingVerification: process.env.NEXT_PUBLIC_BING_VERIFICATION,
+  });
+}
 
 export const viewport = {
   themeColor: seoConfig.themeColor,
@@ -153,9 +75,10 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  // Only for the Organization schema's sameAs (the social profiles that
-  // actually exist). Cached and tag-invalidated, so no per-request DB hit.
+  // Cached and tag-invalidated, so no per-request DB hit.
   const settings = await getPublicSettings().catch(() => null);
+  const store = storeProfileFromSettings(settings);
+  const seo = siteSeoFromSettings(settings);
 
   return (
     <html
@@ -174,8 +97,8 @@ export default async function RootLayout({
       <body className="min-h-full flex flex-col">
         <ConsentDefaultScript />
         <PreconnectLinks />
-        {structuredDataScript("organization", organizationSchema(sameAsFromSettings(settings)))}
-        {structuredDataScript("website", websiteSchema())}
+        {structuredDataScript("organization", organizationSchema(store))}
+        {structuredDataScript("website", websiteSchema(store, seo))}
         <ThemeProvider
           attribute="class"
           defaultTheme="light"
@@ -188,7 +111,6 @@ export default async function RootLayout({
               tooltips load theirs on demand (components/lazy-tooltip.tsx). */}
           <Toaster />
           <QueryProvider>
-            <SeoVerification />
             <GoogleAnalytics />
             <TrackingIdentity />
             <NuqsAdapter>

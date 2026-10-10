@@ -12,7 +12,7 @@ export {
   articleSchema,
   faqSchema,
   localBusinessSchema,
-  sameAsFromSettings,
+  absoluteUrl,
   imageObjectSchema,
   personSchema,
   aggregateOfferSchema,

@@ -25,6 +25,9 @@ export const DATA_ROUTE_HANDLERS = [
   "/sitemap-videos.xml",
   "/google-feed",
   "/facebook-feed",
+  "/robots.txt",
+  "/manifest.webmanifest",
+  "/og-image.png",
 ];
 
 // Every tag the storefront's unstable_cache reads use.
