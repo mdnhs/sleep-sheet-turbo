@@ -39,3 +39,14 @@ describe("store JSON-LD", () => {
     expect(JSON.parse(localBusinessSchema(store)).sameAs).toEqual(store.sameAs);
   });
 });
+
+describe("jsonLd script-safety", () => {
+  it("escapes '<' so a </script> in a value cannot break out, and round-trips", async () => {
+    const { jsonLd } = await import("@/lib/seo/json-ld");
+    const evil = { name: "</script><script>alert(1)</script>", nested: { a: ["<!--", "x"] } };
+    const out = jsonLd(evil);
+    expect(out).not.toMatch(/<\/script/i);
+    expect(out).not.toContain("<");
+    expect(JSON.parse(out)).toEqual({ "@context": "https://schema.org", ...evil });
+  });
+});

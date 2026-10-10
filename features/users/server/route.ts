@@ -234,17 +234,21 @@ const app = new Hono()
       // A fresh password is also a legitimate reason to lift any lockout —
       // otherwise a locked-out user with a brand new password would still
       // have to wait out the timer.
-      await db.update(users)
-        .set({
-          password: hashedPassword,
-          failedLoginAttempts: 0,
-          lockedUntil: null,
-          // Every session the old password opened stops working.
-          tokenVersion: sql`${users.tokenVersion} + 1`,
-        })
-        .where(eq(users.id, id));
+      // Same transaction as the revoke: if revoking the API keys / OAuth
+      // tokens fails, the password must not have changed (fail closed).
+      const revoked = await db.transaction(async (tx) => {
+        await tx.update(users)
+          .set({
+            password: hashedPassword,
+            failedLoginAttempts: 0,
+            lockedUntil: null,
+            // Every session the old password opened stops working.
+            tokenVersion: sql`${users.tokenVersion} + 1`,
+          })
+          .where(eq(users.id, id));
+        return revokeUserCredentials(tx, id);
+      });
       invalidateSessionUser(id);
-      const revoked = await revokeUserCredentials(db, id);
 
       setActivityMeta(c, {
         name: targetUser.name || targetUser.email,

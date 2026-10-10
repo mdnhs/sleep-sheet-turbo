@@ -5,11 +5,16 @@ import type { BreadcrumbItem, ProductSeoData, CategorySeoData, BlogSeoData } fro
 
 export type Publisher = Pick<StoreProfile, "name" | "logoUrl">
 
+/**
+ * Serialized for `<script type="application/ld+json">` via dangerouslySetInnerHTML,
+ * so "<" is escaped (valid JSON, same value) to stop a "</script>" inside an
+ * admin-editable string from closing the tag.
+ */
 export function jsonLd<T>(schema: T): string {
   return JSON.stringify({
     "@context": "https://schema.org",
     ...schema,
-  })
+  }).replace(/</g, "\\u003c")
 }
 
 /** A site-relative path ("/logo.webp") made absolute; absolute URLs pass through. */

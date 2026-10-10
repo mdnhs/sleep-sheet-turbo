@@ -223,31 +223,34 @@ const app = new Hono()
       updateData.password = await bcrypt.hash(body.newPassword, 10);
     }
 
-    const [updated] = await db.update(users)
-      .set({
-        ...updateData,
-        // A new password signs every other session out (lib/session-token.ts).
-        ...(body.newPassword ? { tokenVersion: sql`${users.tokenVersion} + 1` } : {}),
-      })
-      .where(eq(users.id, user.id))
-      .returning({
-        id: users.id,
-        name: users.name,
-        email: users.email,
-        phone: users.phone,
-        address: users.address,
-        role: users.role,
-      });
+    // A new password also ends the API keys and MCP tokens the old one stood
+    // behind. Same transaction as the password write: if the revoke fails the
+    // password must not have changed either (fail closed).
+    const { updated, revoked } = await db.transaction(async (tx) => {
+      const [row] = await tx.update(users)
+        .set({
+          ...updateData,
+          // A new password signs every other session out (lib/session-token.ts).
+          ...(body.newPassword ? { tokenVersion: sql`${users.tokenVersion} + 1` } : {}),
+        })
+        .where(eq(users.id, user.id))
+        .returning({
+          id: users.id,
+          name: users.name,
+          email: users.email,
+          phone: users.phone,
+          address: users.address,
+          role: users.role,
+        });
+      const counts: RevokedCounts | undefined = body.newPassword ? await revokeUserCredentials(tx, user.id) : undefined;
+      return { updated: row, revoked: counts };
+    });
 
     // Cached session copies name/phone/address, so drop it after an edit —
     // after the write, not before. Dropping it first left a window in which a
     // concurrent request could miss the cache, re-read the not-yet-updated
     // row, and re-cache the stale copy for another full TTL.
     invalidateSessionUser(user.id);
-
-    // A new password also ends the API keys and MCP tokens the old one stood behind.
-    let revoked: RevokedCounts | undefined;
-    if (body.newPassword) revoked = await revokeUserCredentials(db, user.id);
 
     if (body.newPassword) {
       // The version bump above signed this browser out too; give it a fresh cookie.
