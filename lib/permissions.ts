@@ -291,8 +291,10 @@ export function holdsAll(actor: AuthUser, wanted: readonly string[] | null | und
 
 /**
  * May `actor` change `target`'s role or password? Only an ADMIN may touch an
- * ADMIN, and anyone else only users whose permissions they fully hold.
- * Otherwise users:write is a path to every other permission: reset a
+ * ADMIN, and anyone else only plain USER accounts whose permissions they
+ * fully hold. A MODERATOR is refused outright: with no assigned role its
+ * permissions are null, which reads as "holds nothing" here but means broad
+ * access everywhere isAllowed(..., ["MODERATOR"]) is used. Otherwise users:write is a path to every other permission: reset a
  * stronger account's password, then sign in as it.
  */
 export function canManageUser(
@@ -301,6 +303,6 @@ export function canManageUser(
 ): boolean {
   if (!actor) return false;
   if (actor.role === "ADMIN") return true;
-  if (target.role === "ADMIN") return false;
+  if (target.role !== "USER") return false;
   return holdsAll(actor, target.permissions);
 }

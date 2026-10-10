@@ -165,5 +165,11 @@ describe("canManageUser", () => {
 
   it("lets ADMIN manage anyone", () => {
     expect(canManageUser({ role: "ADMIN" }, { role: "ADMIN", permissions: [] })).toBe(true);
+    expect(canManageUser({ role: "ADMIN" }, { role: "MODERATOR", permissions: null })).toBe(true);
+  });
+
+  it("never lets a non-admin manage a MODERATOR (no assigned role means broad access, not none)", () => {
+    expect(canManageUser(manager, { role: "MODERATOR", permissions: null })).toBe(false);
+    expect(canManageUser(manager, { role: "MODERATOR", permissions: [] })).toBe(false);
   });
 });
