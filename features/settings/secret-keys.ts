@@ -1,22 +1,11 @@
-// Credentials that must never leave the server through the public settings
-// GET, and that only an ADMIN may change. The public endpoint exposes only a
-// "<key>_set" flag for each so the admin UI can show configured state; raw
-// values are served by the ADMIN-only /secrets endpoint.
-// (cloudinary_cloud_name stays public — it is visible in every image URL.)
-export const SECRET_SETTING_KEYS = [
-  "steadfast_api_key",
-  "steadfast_secret_key",
-  "bdcourier_api_key",
-  "cloudinary_api_key",
-  "cloudinary_api_secret",
-  "google_sheets_client_email",
-  "google_sheets_private_key",
-  "google_sheets_spreadsheet_id",
-  "bkash_app_key",
-  "bkash_app_secret",
-  "bkash_username",
-  "bkash_password",
-] as const;
+import { SETTINGS, SETTING_KEYS, type SecretSettingKey } from "@/lib/settings/registry";
+
+// Credentials, from the registry: never served by the public GET (only a
+// "<key>_set" flag), readable through the ADMIN-only /secrets endpoint,
+// writable by ADMIN only.
+export const SECRET_SETTING_KEYS: readonly SecretSettingKey[] = SETTING_KEYS.filter(
+  (key): key is SecretSettingKey => SETTINGS[key].secret,
+);
 
 // Safety net for credential-shaped rows that aren't in the list above (the
 // DB contains orphaned logins like fraud_steadfast_* / fraud_pathao_* from

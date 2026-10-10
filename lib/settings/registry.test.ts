@@ -29,7 +29,14 @@ const LEGACY_KEYS = [
 ];
 
 // The credentials the app already treated as secret, plus the new AI key.
-const CREDENTIALS: string[] = [...SECRET_SETTING_KEYS, "ai_api_key"];
+// Listed by hand: SECRET_SETTING_KEYS is now derived from the registry, so
+// comparing against it would be circular.
+const CREDENTIALS: string[] = [
+  "steadfast_api_key", "steadfast_secret_key", "bdcourier_api_key", "cloudinary_api_key",
+  "cloudinary_api_secret", "google_sheets_client_email", "google_sheets_private_key",
+  "google_sheets_spreadsheet_id", "bkash_app_key", "bkash_app_secret", "bkash_username",
+  "bkash_password", "ai_api_key",
+];
 
 describe("settings registry", () => {
   it("accepts every key the settings forms sent before SP-1", () => {
@@ -52,6 +59,10 @@ describe("settings registry", () => {
 
   it("marks exactly the credentials as secret", () => {
     expect(SETTING_KEYS.filter((key) => SETTINGS[key].secret).sort()).toEqual([...CREDENTIALS].sort());
+  });
+
+  it("derives SECRET_SETTING_KEYS from the registry", () => {
+    expect([...SECRET_SETTING_KEYS].sort()).toEqual([...CREDENTIALS].sort());
   });
 
   it("keeps secrets admin-only and out of the public map", () => {

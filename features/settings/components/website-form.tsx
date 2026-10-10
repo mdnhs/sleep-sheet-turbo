@@ -13,6 +13,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader2 } from "lucide-react";
+import type { SettingsPatch } from "@/lib/settings/registry";
 import { HeroSlidesManager } from "./hero-slides-manager";
 import { PromoBannersManager } from "./promo-banners-manager";
 
@@ -119,7 +120,7 @@ function SaveSectionButton({
     if (!valid) return;
     const values = form.getValues();
     const payload = Object.fromEntries(fields.map((f) => [f, values[f]]));
-    mutate(payload);
+    mutate(payload as SettingsPatch);
   };
 
   return (
