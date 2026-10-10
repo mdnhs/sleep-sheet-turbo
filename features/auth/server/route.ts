@@ -11,6 +11,7 @@ import { AUTH_COOKIE } from "../constants";
 import { sessionMiddleware, invalidateSessionUser } from "@/lib/session-middleware";
 import { rateLimit } from "@/lib/rate-limit";
 import { signSessionToken } from "@/lib/session-token";
+import { revokeUserCredentials, type RevokedCounts } from "@/lib/revoke-credentials";
 import { z } from "zod";
 import { getWishlistData } from "@/features/wishlist/server/get-wishlist-data";
 
@@ -244,6 +245,10 @@ const app = new Hono()
     // row, and re-cache the stale copy for another full TTL.
     invalidateSessionUser(user.id);
 
+    // A new password also ends the API keys and MCP tokens the old one stood behind.
+    let revoked: RevokedCounts | undefined;
+    if (body.newPassword) revoked = await revokeUserCredentials(db, user.id);
+
     if (body.newPassword) {
       // The version bump above signed this browser out too; give it a fresh cookie.
       const fresh = await db.query.users.findFirst({
@@ -253,7 +258,7 @@ const app = new Hono()
       if (fresh) setCookie(c, AUTH_COOKIE, signSessionToken(fresh), SESSION_COOKIE_OPTIONS);
     }
 
-    return c.json({ data: updated });
+    return c.json({ data: updated, ...(revoked ? { revoked } : {}) });
   }
 )
 

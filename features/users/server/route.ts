@@ -7,6 +7,7 @@ import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
 import { can, canManageUser, holdsAll } from "@/lib/permissions";
 import bcrypt from "bcryptjs";
+import { revokeUserCredentials } from "@/lib/revoke-credentials";
 import { setActivityMeta } from "@/features/activity/server/log-activity";
 
 const app = new Hono()
@@ -243,10 +244,16 @@ const app = new Hono()
         })
         .where(eq(users.id, id));
       invalidateSessionUser(id);
+      const revoked = await revokeUserCredentials(db, id);
 
       setActivityMeta(c, {
         name: targetUser.name || targetUser.email,
-        changes: [{ label: "Password", to: "Reset by admin" }],
+        changes: [
+          { label: "Password", to: "Reset by admin" },
+          ...(revoked.apiKeys + revoked.oauthAccessTokens + revoked.oauthRefreshTokens > 0
+            ? [{ label: "Credentials", to: `Revoked ${revoked.apiKeys} API key(s), ${revoked.oauthAccessTokens + revoked.oauthRefreshTokens} OAuth token(s)` }]
+            : []),
+        ],
       });
 
       return c.json({ success: true });
