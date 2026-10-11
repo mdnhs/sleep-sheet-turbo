@@ -75,7 +75,13 @@ async function bkashFetch<T>(
   try {
     res = await fetch(`${BASE_URLS[config.mode]}${path}`, {
       method: "POST",
-      headers: { "Content-Type": "application/json", Accept: "application/json", ...headers },
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+        ...headers,
+      },
       body: JSON.stringify(body),
       signal: AbortSignal.timeout(20_000),
     });
@@ -87,7 +93,19 @@ async function bkashFetch<T>(
     );
   }
 
-  const data = (await res.json().catch(() => null)) as T | null;
+  const text = await res.text();
+  let data: T | null = null;
+  try {
+    data = JSON.parse(text) as T;
+  } catch {
+    console.error(`[bKash] Non-JSON response (HTTP ${res.status}) from ${path}:`, text.slice(0, 500));
+    const snippet = text.trim().slice(0, 100);
+    throw new BkashError(
+      snippet
+        ? `bKash returned an unreadable response (HTTP ${res.status}): ${snippet}`
+        : `bKash returned an unreadable response (HTTP ${res.status})`,
+    );
+  }
   if (!data) throw new BkashError(`bKash returned an unreadable response (HTTP ${res.status})`);
   return data;
 }
