@@ -8,9 +8,16 @@
 import { getSettingsMap } from "@/lib/settings-cache";
 
 const API_VERSION = "v1.2.0-beta";
+const SANDBOX_BASE =
+  process.env.BKASH_SANDBOX_URL?.trim().replace(/\/+$/, "") ||
+  "https://bkash-proxy.mdnhs-cse.workers.dev";
+const LIVE_BASE =
+  process.env.BKASH_LIVE_URL?.trim().replace(/\/+$/, "") ||
+  "https://tokenized.pay.bka.sh";
+
 const BASE_URLS = {
-  sandbox: `https://tokenized.sandbox.bka.sh/${API_VERSION}/tokenized/checkout`,
-  live: `https://tokenized.pay.bka.sh/${API_VERSION}/tokenized/checkout`,
+  sandbox: `${SANDBOX_BASE}/${API_VERSION}/tokenized/checkout`,
+  live: `${LIVE_BASE}/${API_VERSION}/tokenized/checkout`,
 } as const;
 
 export type BkashMode = keyof typeof BASE_URLS;
