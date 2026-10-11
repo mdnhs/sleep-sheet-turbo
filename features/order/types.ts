@@ -103,11 +103,31 @@ export interface OrderItem {
       transactionId?: string | null;
       last4Digits?: string | null;
     } | null;
+    paymentLogs?: PaymentLog[];
     ipAddress?: string | null;
     deviceOs?: string | null;
     browserName?: string | null;
     userAgent?: string | null;
   }
+
+export interface PaymentLog {
+  id: string;
+  orderId?: string | null;
+  orderNumber?: string | null;
+  provider: string;
+  endpoint: string;
+  paymentId?: string | null;
+  trxId?: string | null;
+  amount?: string | number | null;
+  request?: unknown;
+  response?: unknown;
+  statusCode?: string | null;
+  statusMessage?: string | null;
+  isSuccess: boolean;
+  clientIp?: string | null;
+  userAgent?: string | null;
+  createdAt: string | Date;
+}
 export interface PaginatedOrders {
   data: Order[];
   pagination: {

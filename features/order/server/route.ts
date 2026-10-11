@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { batch, db } from "@/db";
-import { orders, orderItems, payments, orderTimelineEvents, users, products, blockedIps } from "@/db/schema";
+import { orders, orderItems, payments, paymentLogs, orderTimelineEvents, users, products, blockedIps } from "@/db/schema";
 import { eq, ne, and, or, not, ilike, inArray, desc, gte, lte, sql, count } from "drizzle-orm";
 import { awaitingBkashPayment } from "@/lib/bkash-orders";
 import { zValidator } from "@hono/zod-validator";
@@ -198,7 +198,10 @@ const app = new Hono()
           }
         },
         shippingMethod: true,
-        payment: true
+        payment: true,
+        paymentLogs: {
+          orderBy: (logs, { desc }) => [desc(logs.createdAt)]
+        }
       },
       // Same key as the id pass above, id included: createdAt alone is not
       // unique, and two rows sharing a millisecond could otherwise land on two
@@ -971,6 +974,9 @@ const app = new Hono()
         },
         shippingMethod: true,
         payment: true,
+        paymentLogs: {
+          orderBy: (fields, { desc }) => [desc(fields.createdAt)]
+        },
         OrderTimelineEvent: {
           orderBy: (fields, { asc }) => [asc(fields.createdAt)]
         },
@@ -989,6 +995,25 @@ const app = new Hono()
   } catch (error) {
     console.error("Failed to fetch order:", error);
     return c.json({ error: "Failed to fetch order" }, 500);
+  }
+})
+
+.get("/:id/payment-logs", sessionMiddleware, async (c) => {
+  const user = c.get("user");
+  if (!isAllowed(user, "orders", "read", ["MODERATOR"])) {
+    return c.json({ error: "Unauthorized" }, 401);
+  }
+  const id = c.req.param("id");
+
+  try {
+    const logs = await db.query.paymentLogs.findMany({
+      where: or(eq(paymentLogs.orderId, id), eq(paymentLogs.orderNumber, id)),
+      orderBy: (fields, { desc }) => [desc(fields.createdAt)],
+    });
+    return c.json({ logs });
+  } catch (error) {
+    console.error("Failed to fetch payment logs:", error);
+    return c.json({ error: "Failed to fetch payment logs" }, 500);
   }
 });
 

@@ -69,6 +69,7 @@ import { useOrderMutations } from "@/features/order/api/use-mutation";
 import { useOrders } from "@/features/order/api/use-order";
 import { useGetProducts } from "@/features/product/api/use-get-products";
 import { OrderActivityDialog } from "@/components/order/order-activity-dialog";
+import { OrderBkashLogs } from "@/components/order/order-bkash-logs";
 import {
   useBlockedIps,
   useBlockIpMutations,
@@ -107,6 +108,7 @@ import {
   ChevronUp,
   ChevronsUpDown,
   Copy,
+  CreditCard,
   FileText,
   FilterX,
   History,
@@ -597,6 +599,7 @@ function OrdersPageContent() {
     setToStr(range?.to ? format(range.to, "yyyy-MM-dd") : null);
   };
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [orderModalTab, setOrderModalTab] = useState<"details" | "bkash">("details");
   // Raw UTM/click-id/referrer details stay hidden until the admin clicks the
   // source badge — most orders' badge alone (e.g. "YouTube Ad") is all
   // anyone needs, and the raw values are long enough to dominate the panel.
@@ -1467,6 +1470,7 @@ function OrdersPageContent() {
 
   const openOrderDetails = (order: ShippingOrder) => {
     setShowSourceDetails(false);
+    setOrderModalTab("details");
     setSelectedOrder({
       ...order,
       items: order.items.map((item) => ({
@@ -1480,6 +1484,7 @@ function OrdersPageContent() {
             transactionId: order.payment?.transactionId ?? undefined,
             last4Digits: order.payment?.last4Digits ?? undefined,
           },
+      paymentLogs: order.paymentLogs ?? [],
     });
   };
 
@@ -2651,6 +2656,7 @@ function OrdersPageContent() {
             setSelectedOrder(null);
             setShowAllOrderItems(false);
             setActivityOpen(false);
+            setOrderModalTab("details");
           }
         }}
       >
@@ -2673,39 +2679,56 @@ function OrdersPageContent() {
                 </Button>
               </DialogHeader>
 
-              <div className="space-y-6 shrink-0">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="space-y-2">
-                    <h3 className="font-semibold">Shipping Information</h3>
-                    <div className="text-sm space-y-0.5">
-                      <p className="font-medium">
-                        {selectedOrder.user?.name ??
-                          selectedOrder.guestName ??
-                          "Guest"}
-                      </p>
-                      {(selectedOrder.user?.phone ??
-                        selectedOrder.guestPhone) && (
-                          <p className="text-muted-foreground">
-                            {selectedOrder.user?.phone ??
-                              selectedOrder.guestPhone}
-                          </p>
-                        )}
-                      <p className="text-slate-600 dark:text-slate-400">{selectedOrder.shippingAddress}</p>
-                    </div>
-                  </div>
+              {(() => {
+                const isBkashOrder =
+                  selectedOrder.paymentMethod?.toUpperCase() === "BKASH" ||
+                  (Array.isArray(selectedOrder.paymentLogs) && selectedOrder.paymentLogs.length > 0);
 
-                  <div className="space-y-2">
-                    <h3 className="font-semibold">Payment Information</h3>
-                    <div className="text-sm space-y-0.5">
-                      <p><span className="text-muted-foreground">Method:</span> <span className="font-medium">{selectedOrder.paymentMethod}</span></p>
-                      <p><span className="text-muted-foreground">Status:</span> <span className="font-medium">{selectedOrder.paymentStatus}</span></p>
-                      {selectedOrder.payment?.transactionId && (
-                        <p className="text-muted-foreground truncate" title={selectedOrder.payment.transactionId}>
-                          TxID: {selectedOrder.payment.transactionId}
-                        </p>
-                      )}
-                    </div>
-                  </div>
+                const detailsBody = (
+                  <>
+                    <div className="space-y-6 shrink-0">
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="space-y-2">
+                          <h3 className="font-semibold">Shipping Information</h3>
+                          <div className="text-sm space-y-0.5">
+                            <p className="font-medium">
+                              {selectedOrder.user?.name ??
+                                selectedOrder.guestName ??
+                                "Guest"}
+                            </p>
+                            {(selectedOrder.user?.phone ??
+                              selectedOrder.guestPhone) && (
+                                <p className="text-muted-foreground">
+                                  {selectedOrder.user?.phone ??
+                                    selectedOrder.guestPhone}
+                                </p>
+                              )}
+                            <p className="text-slate-600 dark:text-slate-400">{selectedOrder.shippingAddress}</p>
+                          </div>
+                        </div>
+
+                        <div className="space-y-2">
+                          <h3 className="font-semibold">Payment Information</h3>
+                          <div className="text-sm space-y-0.5">
+                            <p><span className="text-muted-foreground">Method:</span> <span className="font-medium">{selectedOrder.paymentMethod}</span></p>
+                            <p><span className="text-muted-foreground">Status:</span> <span className="font-medium">{selectedOrder.paymentStatus}</span></p>
+                            {selectedOrder.payment?.transactionId && (
+                              <p className="text-muted-foreground truncate" title={selectedOrder.payment.transactionId}>
+                                TxID: {selectedOrder.payment.transactionId}
+                              </p>
+                            )}
+                            {isBkashOrder && (
+                              <button
+                                type="button"
+                                onClick={() => setOrderModalTab("bkash")}
+                                className="inline-flex items-center gap-1 text-xs text-pink-600 dark:text-pink-400 hover:underline font-medium pt-1 cursor-pointer"
+                              >
+                                <CreditCard className="w-3 h-3" />
+                                View bKash Logs ({(selectedOrder.paymentLogs?.length ?? 0)})
+                              </button>
+                            )}
+                          </div>
+                        </div>
 
                   <div className="space-y-2">
                     <h3 className="font-semibold flex items-center gap-2">
@@ -3059,8 +3082,50 @@ function OrdersPageContent() {
                 );
               })()}
             </>
-          )}
-        </DialogContent>
+          );
+
+          if (!isBkashOrder) {
+            return <div className="space-y-6 pt-1">{detailsBody}</div>;
+          }
+
+          return (
+            <Tabs
+              value={orderModalTab}
+              onValueChange={(val) => setOrderModalTab(val as "details" | "bkash")}
+              className="w-full pt-1"
+            >
+              <TabsList className="grid grid-cols-2 w-full max-w-xs mb-4">
+                <TabsTrigger value="details">Order Details</TabsTrigger>
+                <TabsTrigger
+                  value="bkash"
+                  className="flex items-center gap-1.5 data-[state=active]:text-pink-600 dark:data-[state=active]:text-pink-400"
+                >
+                  <CreditCard className="w-3.5 h-3.5" />
+                  <span>bKash Logs</span>
+                  {(selectedOrder.paymentLogs?.length ?? 0) > 0 && (
+                    <Badge
+                      variant="secondary"
+                      className="ml-1 text-[10px] px-1.5 py-0 h-4 bg-pink-100 text-pink-700 dark:bg-pink-950 dark:text-pink-300 border border-pink-200 dark:border-pink-800"
+                    >
+                      {selectedOrder.paymentLogs?.length}
+                    </Badge>
+                  )}
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="details" className="m-0 space-y-6 focus-visible:outline-none">
+                {detailsBody}
+              </TabsContent>
+
+              <TabsContent value="bkash" className="m-0 focus-visible:outline-none">
+                <OrderBkashLogs order={selectedOrder} initialLogs={selectedOrder.paymentLogs} />
+              </TabsContent>
+            </Tabs>
+          );
+        })()}
+      </>
+    )}
+  </DialogContent>
       </Dialog>
 
       <OrderActivityDialog

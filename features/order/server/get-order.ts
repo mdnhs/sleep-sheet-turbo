@@ -9,6 +9,7 @@ export async function getOrderById(orderId: string) {
       with: {
         user: { columns: { id: true, name: true, email: true, phone: true } },
         items: { with: { product: true } },
+        paymentLogs: { orderBy: (logs, { desc }) => [desc(logs.createdAt)] },
         OrderTimelineEvent: { orderBy: (events, { asc }) => [asc(events.createdAt)] },
       },
     });

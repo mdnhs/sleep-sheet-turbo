@@ -52,6 +52,7 @@ const BLANKED = {
   idempotencyKey: null,
   user: null,
   OrderTimelineEvent: [] as never[],
+  paymentLogs: [] as never[],
 };
 
 export function toCustomerOrder<T extends { items: ItemLike[]; deliveryCharge: number }>(

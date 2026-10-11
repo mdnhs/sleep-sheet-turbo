@@ -66,6 +66,7 @@ describe("toCustomerOrder", () => {
     expect(out.idempotencyKey).toBeNull();
     expect(out.user).toBeNull();
     expect(out.OrderTimelineEvent).toEqual([]);
+    expect(out.paymentLogs).toEqual([]);
     expect(out.shippingCost).toBe(80);
     expect(out.orderNumber).toBe("ORD-1");
   });
