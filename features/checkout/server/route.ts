@@ -140,6 +140,7 @@ const app = new Hono()
   const selectedMethod: CheckoutPaymentMethod =
     paymentInfo?.paymentMethod === "card" ? "card" : paymentInfo?.paymentMethod === "bkash" ? "bkash" : "cod";
   const isBkash = selectedMethod === "bkash";
+  const orderPaymentMethod = ORDER_PAYMENT_LABEL[selectedMethod];
   const proto = c.req.header("x-forwarded-proto") ?? "https";
   const host = c.req.header("x-forwarded-host") ?? c.req.header("host");
   const origin = process.env.NEXT_PUBLIC_APP_URL || (host ? `${proto}://${host}` : new URL(c.req.url).origin);
