@@ -10,6 +10,7 @@ import { db } from "@/db";
 import { carts, cartItems, orders, orderTimelineEvents, products } from "@/db/schema";
 import { createBkashPayment, getBkashConfig } from "@/lib/bkash";
 import { matchesIssuedPayment, paymentIdRef } from "@/lib/bkash-reference";
+import { recordPaymentLog } from "@/lib/payment-logger";
 
 export const BKASH_METHOD = "BKASH";
 
@@ -30,11 +31,24 @@ export async function startBkashPayment(
   origin: string,
 ): Promise<string> {
   const config = await getBkashConfig();
-  const payment = await createBkashPayment(config, {
+  const input = {
     amount: order.totalAmount,
     invoiceNumber: order.orderNumber,
     callbackURL: `${origin}/api/bkash/callback/${order.id}`,
     payerReference: order.guestPhone || order.orderNumber,
+  };
+  const payment = await createBkashPayment(config, input);
+
+  await recordPaymentLog({
+    orderId: order.id,
+    orderNumber: order.orderNumber,
+    endpoint: "/create",
+    paymentId: payment.paymentID,
+    amount: order.totalAmount,
+    request: input,
+    response: payment,
+    statusCode: "0000",
+    isSuccess: true,
   });
 
   await db

@@ -253,6 +253,13 @@
       "when": 1791666918388,
       "tag": "0035_settings_white_label",
       "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1791711103572,
+      "tag": "0036_warm_mole_man",
+      "breakpoints": true
     }
   ]
 }

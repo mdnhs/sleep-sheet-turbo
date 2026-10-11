@@ -577,6 +577,34 @@ export const payments = pgTable("payments", {
   index("payments_orderId_idx").on(table.orderId),
 ]);
 
+export const paymentLogs = pgTable("payment_logs", {
+  id: text("id")
+    .primaryKey()
+    .$defaultFn(() => cuid()),
+  orderId: text("orderId")
+    .references(() => orders.id, { onDelete: "set null" }),
+  orderNumber: text("orderNumber"),
+  provider: text("provider").default("BKASH").notNull(),
+  endpoint: text("endpoint").notNull(),
+  paymentId: text("paymentId"),
+  trxId: text("trxId"),
+  amount: numeric("amount", { precision: 12, scale: 2 }),
+  request: jsonb("request"),
+  response: jsonb("response"),
+  statusCode: text("statusCode"),
+  statusMessage: text("statusMessage"),
+  isSuccess: boolean("isSuccess").default(false).notNull(),
+  clientIp: text("clientIp"),
+  userAgent: text("userAgent"),
+  createdAt: timestamp("createdAt", { precision: 3 }).defaultNow().notNull(),
+}, (table) => [
+  index("payment_logs_orderId_idx").on(table.orderId),
+  index("payment_logs_orderNumber_idx").on(table.orderNumber),
+  index("payment_logs_paymentId_idx").on(table.paymentId),
+  index("payment_logs_trxId_idx").on(table.trxId),
+  index("payment_logs_createdAt_idx").on(table.createdAt),
+]);
+
 export const shippingMethods = pgTable("shipping_methods", {
   id: text("id")
     .primaryKey()
@@ -763,6 +791,7 @@ export const ordersRelations = relations(orders, ({ one, many }) => ({
     fields: [orders.id],
     references: [payments.orderId],
   }),
+  paymentLogs: many(paymentLogs),
   OrderTimelineEvent: many(orderTimelineEvents),
   shippingMethod: one(shippingMethods, {
     fields: [orders.shippingMethodId],
@@ -784,6 +813,13 @@ export const orderItemsRelations = relations(orderItems, ({ one }) => ({
 export const paymentsRelations = relations(payments, ({ one }) => ({
   order: one(orders, {
     fields: [payments.orderId],
+    references: [orders.id],
+  }),
+}));
+
+export const paymentLogsRelations = relations(paymentLogs, ({ one }) => ({
+  order: one(orders, {
+    fields: [paymentLogs.orderId],
     references: [orders.id],
   }),
 }));

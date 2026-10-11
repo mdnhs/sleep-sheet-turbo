@@ -20,6 +20,7 @@ import {
   matchesIssuedPayment,
 } from "@/lib/bkash-orders";
 import { getRequestOrigin } from "@/lib/request-origin";
+import { recordPaymentLog } from "@/lib/payment-logger";
 
 const app = new Hono()
 
@@ -56,6 +57,16 @@ const app = new Hono()
     rawQuery: c.req.query(),
   });
 
+  await recordPaymentLog({
+    orderId: order.id,
+    orderNumber: order.orderNumber,
+    endpoint: "/callback",
+    paymentId: paymentID,
+    request: c.req.query(),
+    statusMessage: status,
+    isSuccess: status === "success",
+  });
+
   // Callback fired twice (refresh, back button): already settled.
   if (order.paymentStatus === "COMPLETED") return toSuccess();
   if (order.status === "CANCELLED" || order.paymentStatus === "FAILED") return toCheckout("failed");
@@ -87,6 +98,14 @@ const app = new Hono()
 
     if (!result) {
       console.error(`[bKash Execute] bKash did not confirm payment for order ${order.orderNumber}`);
+      await recordPaymentLog({
+        orderId: order.id,
+        orderNumber: order.orderNumber,
+        endpoint: "/execute",
+        paymentId: paymentID,
+        isSuccess: false,
+        statusMessage: "bKash did not confirm the payment",
+      });
       await failBkashOrder(order.id, "bKash did not confirm the payment");
       return toCheckout("failed");
     }
@@ -102,6 +121,18 @@ const app = new Hono()
       await failBkashOrder(order.id, "bKash payment did not match the order");
       return toCheckout("failed");
     }
+
+    await recordPaymentLog({
+      orderId: order.id,
+      orderNumber: order.orderNumber,
+      endpoint: "/execute",
+      paymentId: paymentID,
+      trxId: result.trxID,
+      amount: result.amount,
+      response: result,
+      statusCode: "0000",
+      isSuccess: true,
+    });
 
     const paid = await completeBkashOrder(order.id, result.trxID);
     if (paid) {
@@ -128,6 +159,14 @@ const app = new Hono()
     // cancelling a payment that may have gone through. The customer can
     // retry, and the stale-order sweep releases the stock if they never do.
     console.error(`[bKash Callback] Error executing payment for order ${order.orderNumber}:`, error);
+    await recordPaymentLog({
+      orderId: order.id,
+      orderNumber: order.orderNumber,
+      endpoint: "/execute",
+      paymentId: paymentID,
+      isSuccess: false,
+      statusMessage: error instanceof Error ? error.message : "Execution failed",
+    });
     return toCheckout("failed");
   }
 })
