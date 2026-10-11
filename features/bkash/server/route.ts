@@ -50,7 +50,11 @@ const app = new Hono()
         : `/order-success?orderId=${order.id}&phone=${encodeURIComponent(order.guestPhone ?? "")}`,
     );
 
-  console.log(`[bKash Callback] order: ${order.orderNumber}, paymentID: ${paymentID}, status: ${status}`);
+  console.log(`[bKash Callback Received] Order: ${order.orderNumber} (ID: ${orderId}), Params:`, {
+    paymentID,
+    status,
+    rawQuery: c.req.query(),
+  });
 
   // Callback fired twice (refresh, back button): already settled.
   if (order.paymentStatus === "COMPLETED") return toSuccess();
@@ -101,6 +105,7 @@ const app = new Hono()
 
     const paid = await completeBkashOrder(order.id, result.trxID);
     if (paid) {
+      console.log(`[bKash Callback Settled] Order ${order.orderNumber} successfully marked COMPLETED with TrxID: ${result.trxID}`);
       notifyNewOrder({
         orderId: paid.id,
         orderNumber: paid.orderNumber,

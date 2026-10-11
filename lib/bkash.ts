@@ -72,12 +72,29 @@ export function resetBkashTokenCache(): void {
   tokenCache = null;
 }
 
+function sanitizeBkashLog(path: string, data: unknown): unknown {
+  if (path === "/token/grant" && data && typeof data === "object") {
+    const copy = { ...(data as Record<string, unknown>) };
+    if (typeof copy.id_token === "string") {
+      copy.id_token = `${copy.id_token.slice(0, 16)}...[REDACTED]`;
+    }
+    return copy;
+  }
+  return data;
+}
+
 async function bkashFetch<T>(
   config: BkashConfig,
   path: string,
   body: Record<string, unknown>,
   headers: Record<string, string>,
 ): Promise<T> {
+  const safeBody =
+    path === "/token/grant"
+      ? { app_key: (body as Record<string, unknown>).app_key, app_secret: "[REDACTED]" }
+      : body;
+  console.log(`[bKash API Request] ${config.mode.toUpperCase()} POST ${path}:`, JSON.stringify(safeBody));
+
   let res: Response;
   try {
     res = await fetch(`${BASE_URLS[config.mode]}${path}`, {
@@ -93,6 +110,7 @@ async function bkashFetch<T>(
       signal: AbortSignal.timeout(20_000),
     });
   } catch (error) {
+    console.error(`[bKash API Network Error] ${config.mode.toUpperCase()} POST ${path}:`, error);
     throw new BkashError(
       error instanceof Error && error.name === "TimeoutError"
         ? "bKash did not respond in time"
@@ -105,7 +123,7 @@ async function bkashFetch<T>(
   try {
     data = JSON.parse(text) as T;
   } catch {
-    console.error(`[bKash] Non-JSON response (HTTP ${res.status}) from ${path}:`, text.slice(0, 500));
+    console.error(`[bKash API Error] Non-JSON response (HTTP ${res.status}) from ${path}:`, text.slice(0, 500));
     const snippet = text.trim().slice(0, 100);
     throw new BkashError(
       snippet
@@ -114,6 +132,12 @@ async function bkashFetch<T>(
     );
   }
   if (!data) throw new BkashError(`bKash returned an unreadable response (HTTP ${res.status})`);
+
+  console.log(
+    `[bKash API Response] ${config.mode.toUpperCase()} POST ${path} (HTTP ${res.status}):`,
+    JSON.stringify(sanitizeBkashLog(path, data), null, 2),
+  );
+
   return data;
 }
 
