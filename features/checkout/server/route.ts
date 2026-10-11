@@ -22,6 +22,7 @@ import { clientIpFromHeaders, isIpBlocked } from "@/lib/blocked-ip";
 import { isUniqueViolation } from "@/lib/db-errors";
 import { isBkashAvailable } from "@/lib/bkash";
 import { expireStaleBkashOrders, failBkashOrder, startBkashPayment } from "@/lib/bkash-orders";
+import { getRequestOrigin } from "@/lib/request-origin";
 import { after } from "next/server";
 import { analyticsIdSchema, recordOrderEvent } from "@/features/web-analytics/server/record-order-event";
 import { markDraftConverted } from "@/features/web-analytics/server/drafts";
@@ -141,9 +142,7 @@ const app = new Hono()
     paymentInfo?.paymentMethod === "card" ? "card" : paymentInfo?.paymentMethod === "bkash" ? "bkash" : "cod";
   const isBkash = selectedMethod === "bkash";
   const orderPaymentMethod = ORDER_PAYMENT_LABEL[selectedMethod];
-  const proto = c.req.header("x-forwarded-proto") ?? "https";
-  const host = c.req.header("x-forwarded-host") ?? c.req.header("host");
-  const origin = process.env.NEXT_PUBLIC_APP_URL || (host ? `${proto}://${host}` : new URL(c.req.url).origin);
+  const origin = getRequestOrigin(c);
 
   if (idempotencyKey) {
     const existing = await db.query.orders.findFirst({
