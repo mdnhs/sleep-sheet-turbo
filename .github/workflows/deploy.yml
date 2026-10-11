@@ -2,7 +2,7 @@ name: Build and Deploy to Dokploy
 
 on:
   push:
-    branches: [main]
+    branches: [main, preview]
   workflow_dispatch:
 
 permissions:
@@ -10,7 +10,7 @@ permissions:
   packages: write
 
 concurrency:
-  group: deploy-production
+  group: deploy-${{ github.ref_name }}
   cancel-in-progress: false
 
 jobs:
@@ -70,6 +70,26 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Set Docker tags and deployment target
+        id: config
+        run: |
+          if [ "${{ github.ref_name }}" = "preview" ]; then
+            echo "target=preview" >> "$GITHUB_OUTPUT"
+            echo "webhook=${{ secrets.DOKPLOY_PREVIEW_DEPLOY_WEBHOOK }}" >> "$GITHUB_OUTPUT"
+            echo "tags<<EOF" >> "$GITHUB_OUTPUT"
+            echo "ghcr.io/mdnhs/sleep-sheet-turbo:preview" >> "$GITHUB_OUTPUT"
+            echo "ghcr.io/mdnhs/sleep-sheet-turbo:preview-${{ github.sha }}" >> "$GITHUB_OUTPUT"
+            echo "EOF" >> "$GITHUB_OUTPUT"
+          else
+            echo "target=production" >> "$GITHUB_OUTPUT"
+            echo "webhook=${{ secrets.DOKPLOY_DEPLOY_WEBHOOK }}" >> "$GITHUB_OUTPUT"
+            echo "tags<<EOF" >> "$GITHUB_OUTPUT"
+            echo "ghcr.io/mdnhs/sleep-sheet-turbo:latest" >> "$GITHUB_OUTPUT"
+            echo "ghcr.io/mdnhs/sleep-sheet-turbo:stage" >> "$GITHUB_OUTPUT"
+            echo "ghcr.io/mdnhs/sleep-sheet-turbo:${{ github.sha }}" >> "$GITHUB_OUTPUT"
+            echo "EOF" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
@@ -81,22 +101,20 @@ jobs:
           # and the browser downloaded every chunk twice.
           build-args: |
             DEPLOYMENT_VERSION=${{ github.sha }}
-          tags: |
-            ghcr.io/mdnhs/sleep-sheet-turbo:latest
-            ghcr.io/mdnhs/sleep-sheet-turbo:stage
-            ghcr.io/mdnhs/sleep-sheet-turbo:${{ github.sha }}
+          tags: ${{ steps.config.outputs.tags }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      # Dokploy's per-application deploy webhook: it can only redeploy this one
-      # app (pulling :latest), unlike an API key which controls the whole server.
+      # Dokploy's per-application deploy webhook:
+      # For preview branch: triggers DOKPLOY_PREVIEW_DEPLOY_WEBHOOK
+      # For main branch: triggers DOKPLOY_DEPLOY_WEBHOOK
       - name: Trigger Dokploy Deployment
         env:
-          DOKPLOY_DEPLOY_WEBHOOK: ${{ secrets.DOKPLOY_DEPLOY_WEBHOOK }}
+          DOKPLOY_WEBHOOK: ${{ steps.config.outputs.webhook }}
         run: |
-          if [ -z "$DOKPLOY_DEPLOY_WEBHOOK" ]; then
-            echo "::error::DOKPLOY_DEPLOY_WEBHOOK secret is not set"
+          if [ -z "$DOKPLOY_WEBHOOK" ]; then
+            echo "::error::Deploy webhook secret is not set for target: ${{ steps.config.outputs.target }}"
             exit 1
           fi
-          curl -fsS --max-time 60 -X POST "$DOKPLOY_DEPLOY_WEBHOOK" \
+          curl -fsS --max-time 60 -X POST "$DOKPLOY_WEBHOOK" \
             -H "Content-Type: application/json" -d '{}'
