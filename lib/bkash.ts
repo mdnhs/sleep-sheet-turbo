@@ -264,8 +264,8 @@ export async function executeBkashPayment(
     );
     const result = toResult(data);
     if (result) return result;
-    // Already captured (e.g. the callback fired twice) — ask for the real state.
-    if (data.statusCode === "2062") return queryBkashPayment(config, paymentID);
+    // Already captured or duplicate callback (e.g. 2062 or 2029) — ask for the real state.
+    if (data.statusCode === "2062" || data.statusCode === "2029") return queryBkashPayment(config, paymentID);
     return null;
   } catch (error) {
     if (!(error instanceof BkashError)) throw error;
