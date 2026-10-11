@@ -5,7 +5,7 @@ import { checkoutDrafts } from "@/db/schema";
 import { normalizeBdPhone } from "@/features/fraud-checker/phone";
 import type { CheckoutDraftRow, DraftSummary } from "../lib/types";
 
-export const DRAFT_RETENTION_DAYS = 30;
+export const DRAFT_RETENTION_DAYS = 60;
 export const MAX_DRAFT_BODY_BYTES = 16_384;
 
 const text = (max: number) =>
