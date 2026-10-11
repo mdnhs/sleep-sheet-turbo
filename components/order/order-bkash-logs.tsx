@@ -50,20 +50,18 @@ function formatLogTimestamp(dateInput: string | Date | undefined): string {
 }
 
 export function OrderBkashLogs({ order, initialLogs }: OrderBkashLogsProps) {
-  const [logs, setLogs] = useState<PaymentLog[]>(initialLogs ?? order.paymentLogs ?? []);
+  const [refetchedLogs, setRefetchedLogs] = useState<PaymentLog[] | null>(null);
+  const [prevOrderId, setPrevOrderId] = useState(order.id);
+  if (prevOrderId !== order.id) {
+    setPrevOrderId(order.id);
+    setRefetchedLogs(null);
+  }
+
+  const logs = refetchedLogs ?? initialLogs ?? order.paymentLogs ?? [];
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [expandedLogIds, setExpandedLogIds] = useState<Record<string, boolean>>({});
   const [activeJsonTab, setActiveJsonTab] = useState<Record<string, "response" | "request">>({});
-
-  // Sync state if props change
-  React.useEffect(() => {
-    if (initialLogs) {
-      setLogs(initialLogs);
-    } else if (order.paymentLogs) {
-      setLogs(order.paymentLogs);
-    }
-  }, [initialLogs, order.paymentLogs]);
 
   const handleCopy = (text: string, key: string, label: string) => {
     if (!text) return;
@@ -98,7 +96,7 @@ export function OrderBkashLogs({ order, initialLogs }: OrderBkashLogsProps) {
       }
       const data = await res.json();
       if (Array.isArray(data.logs)) {
-        setLogs(data.logs);
+        setRefetchedLogs(data.logs);
         toast.success(`bKash logs updated (${data.logs.length} events)`);
       }
     } catch (err) {
