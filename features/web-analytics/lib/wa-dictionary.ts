@@ -59,8 +59,9 @@ export const waEn = {
   stepEnteredPhone: "Entered phone",
   stepEnteredAddress: "Entered address",
   stepOrdered: "Placed an order",
-  ofPrevious: "of previous",
-  dropped: "dropped",
+  ofPrevious: "continued from the previous step",
+  dropped: "dropped off",
+  people: "people",
 
   productsTitle: "Products",
   noProductViews: "No product views in this range.",
@@ -158,8 +159,9 @@ export const waBn: Record<WaKey, string> = {
   stepEnteredPhone: "ফোন নম্বর দিয়েছে",
   stepEnteredAddress: "ঠিকানা দিয়েছে",
   stepOrdered: "অর্ডার করেছে",
-  ofPrevious: "আগের ধাপের",
+  ofPrevious: "আগের ধাপ থেকে এগিয়েছে",
   dropped: "ঝরে পড়েছে",
+  people: "জন",
 
   productsTitle: "প্রোডাক্ট",
   noProductViews: "এই সময়ে কোনো প্রোডাক্ট ভিউ নেই।",

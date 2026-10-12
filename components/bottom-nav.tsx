@@ -4,45 +4,56 @@ import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { useCurrent } from "@/features/auth/api/use-current";
+import { can, type ModuleKey } from "@/lib/permissions";
 import {
   IconChartBar,
   IconShoppingCart,
   IconCashRegister,
   IconPackage,
-  IconReceipt2,
+  IconBrandGoogleAnalytics,
 } from "@tabler/icons-react";
 
 export function BottomNav() {
   const pathname = usePathname();
+  const { data: user, isLoading } = useCurrent();
 
-  const navItems = [
+  const allItems: { title: string; url: string; icon: React.ReactNode; module: ModuleKey; isFloating?: boolean }[] = [
     {
       title: "Reports",
       url: "/dashboard/reports",
+      module: "reports",
       icon: <IconChartBar className="size-5" />,
     },
     {
       title: "Orders",
       url: "/dashboard/orders",
+      module: "orders",
       icon: <IconShoppingCart className="size-5" />,
     },
     {
       title: "POS",
       url: "/dashboard/pos",
+      module: "pos",
       icon: <IconCashRegister className="size-6 text-white" />,
       isFloating: true,
     },
     {
       title: "Products",
       url: "/dashboard/products",
+      module: "products",
       icon: <IconPackage className="size-5" />,
     },
     {
-      title: "Expenses",
-      url: "/dashboard/expenses",
-      icon: <IconReceipt2 className="size-5" />,
+      title: "Analytics",
+      url: "/dashboard/analytics",
+      module: "reports",
+      icon: <IconBrandGoogleAnalytics className="size-5" />,
     },
   ];
+  const navItems = allItems.filter((item) => can(user ?? null, item.module, "read"));
+
+  if (isLoading || navItems.length === 0) return null;
 
   return (
     <div className="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-background/90 backdrop-blur-lg border-t border-border/80 shadow-[0_-8px_30px_rgb(0,0,0,0.08)] px-4 h-16 flex items-center justify-between pb-safe">

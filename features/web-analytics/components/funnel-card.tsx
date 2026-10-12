@@ -33,29 +33,34 @@ export function FunnelCard({ q }: { q: WaQuery }) {
         {isLoading && !data ? (
           <Skeleton className="h-56 w-full" />
         ) : (
-          <ol className="space-y-3">
+          <ol className="space-y-5">
             {STEPS.map((step, i) => {
               const value = data?.[step.key] ?? 0;
               const prev = i === 0 ? value : (data?.[STEPS[i - 1].key] ?? 0);
               return (
                 <li key={step.key}>
-                  <div className="mb-1 flex flex-wrap justify-between gap-x-2 text-sm">
-                    <span className="flex items-center gap-2">
-                      <step.icon className="size-4 text-muted-foreground" aria-hidden="true" />
-                      {t(step.labelKey)}
+                  <div className="flex items-center justify-between gap-3 text-sm">
+                    <span className="flex min-w-0 items-center gap-2">
+                      <step.icon className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+                      <span className="truncate">{t(step.labelKey)}</span>
                     </span>
-                    <span className="tabular-nums">
-                      <span className="font-medium">{formatCount(value)}</span>
-                      {i > 0 && (
-                        <span className="ml-2 text-muted-foreground">
-                          {formatPercent(prev ? Math.min(1, value / prev) : 0)} {t("ofPrevious")} · {formatCount(Math.max(0, prev - value))} {t("dropped")}
-                        </span>
-                      )}
+                    <span className="shrink-0 tabular-nums">
+                      <span className="font-semibold">{formatCount(value)}</span> <span className="text-muted-foreground">{t("people")}</span>
                     </span>
                   </div>
-                  <div className="h-2 rounded-full bg-muted">
+                  <div className="mt-1.5 h-2 rounded-full bg-muted">
                     <div className="h-2 rounded-full bg-primary" style={{ width: `${top ? Math.min(100, (value / top) * 100) : 0}%` }} />
                   </div>
+                  {i > 0 && (
+                    <div className="mt-1.5 flex flex-wrap justify-between gap-x-3 text-xs tabular-nums">
+                      <span className="text-muted-foreground">
+                        {formatPercent(prev ? Math.min(1, value / prev) : 0)} {t("ofPrevious")}
+                      </span>
+                      <span className="text-destructive">
+                        {formatCount(Math.max(0, prev - value))} {t("people")} {t("dropped")}
+                      </span>
+                    </div>
+                  )}
                 </li>
               );
             })}

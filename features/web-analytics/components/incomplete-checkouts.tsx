@@ -73,7 +73,6 @@ export function IncompleteCheckouts() {
                 <TableHead>{t("colCart")}</TableHead>
                 <TableHead className="text-right">{t("colValue")}</TableHead>
                 <TableHead className="text-right">{t("colLastActive")}</TableHead>
-                <TableHead className="w-24" />
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -84,6 +83,32 @@ export function IncompleteCheckouts() {
                     <a href={`tel:${row.phone}`} className="text-xs text-muted-foreground tabular-nums hover:underline">
                       {row.phone}
                     </a>
+                    <div className="-ml-1.5 mt-1 flex gap-1">
+                      <a href={`tel:${row.phone}`} aria-label={`${t("call")} ${row.phone}`} className={iconLink}>
+                        <Phone className="size-4" />
+                      </a>
+                      <a
+                        href={whatsappLink(row.phone)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label={t("whatsapp")}
+                        className={iconLink}
+                      >
+                        <MessageCircle className="size-4" />
+                      </a>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="size-7"
+                        aria-label={t("dismiss")}
+                        disabled={dismiss.isPending}
+                        onClick={() =>
+                          dismiss.mutate(row.id, { onError: () => toast.error(t("dismissFailed")) })
+                        }
+                      >
+                        <X className="size-4" />
+                      </Button>
+                    </div>
                   </TableCell>
                   <TableCell className="max-w-48 truncate text-xs text-muted-foreground" title={row.address ?? undefined}>
                     {row.address || "—"}
@@ -113,34 +138,6 @@ export function IncompleteCheckouts() {
                   <TableCell className="text-right tabular-nums">{formatAmount(row.value)}</TableCell>
                   <TableCell className="text-right text-xs text-muted-foreground whitespace-nowrap">
                     {formatDistanceToNow(new Date(row.updatedAt), { addSuffix: true, locale: language === "bn" ? bn : undefined })}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex justify-end gap-1">
-                      <a href={`tel:${row.phone}`} aria-label={`${t("call")} ${row.phone}`} className={iconLink}>
-                        <Phone className="size-4" />
-                      </a>
-                      <a
-                        href={whatsappLink(row.phone)}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        aria-label={t("whatsapp")}
-                        className={iconLink}
-                      >
-                        <MessageCircle className="size-4" />
-                      </a>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="size-7"
-                        aria-label={t("dismiss")}
-                        disabled={dismiss.isPending}
-                        onClick={() =>
-                          dismiss.mutate(row.id, { onError: () => toast.error(t("dismissFailed")) })
-                        }
-                      >
-                        <X className="size-4" />
-                      </Button>
-                    </div>
                   </TableCell>
                 </TableRow>
               ))}
