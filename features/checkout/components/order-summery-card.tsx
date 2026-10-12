@@ -9,6 +9,7 @@ import { useCartStore } from "@/features/cart/state/use-cart-store";
 import { enrichColorWithAddOnPrices } from "@/lib/utils";
 import FallbackImage from "@/components/ui/fallback-image";
 import { OrderSummarySkeleton } from "./checkout-skeleton";
+import { ORDER_SUMMARY_ID } from "./total-bill-chip";
 
 function OrderSummeryCard() {
   const mounted = useHasMounted();
@@ -31,7 +32,7 @@ function OrderSummeryCard() {
   const total = subtotal + shipping;
 
   return (
-    <Card className="w-full bg-card rounded-xl lg:rounded-2xl overflow-hidden gap-3 py-3 ring-0">
+    <Card id={ORDER_SUMMARY_ID} className="w-full scroll-mt-20 bg-card rounded-xl lg:rounded-2xl overflow-hidden gap-0 py-0 ring-0">
       <CardHeader className="py-2.5 px-3 lg:pt-4 lg:pb-3 lg:px-4 border-b border-border/40 !pb-2.5 lg:!pb-3">
         <CardTitle className="flex items-center gap-2">
           <p className="text-sm lg:text-base font-bold">{t("orderSummary")}</p>
@@ -77,7 +78,11 @@ function OrderSummeryCard() {
           </div>
           <div className="flex justify-between text-[11px] lg:text-xs">
             <span className="text-muted-foreground/80">{t("shipping")}</span>
-            <span className="font-semibold">{shipping > 0 ? formatAmount(shipping) : "—"}</span>
+            {shipping > 0 ? (
+              <span className="font-semibold">{formatAmount(shipping)}</span>
+            ) : (
+              <span className="font-semibold text-emerald-600 dark:text-emerald-400">{t("freeDelivery")}</span>
+            )}
           </div>
           <div className="flex justify-between items-end pt-1.5 lg:pt-2 border-t border-border/40">
             <span className="text-[10px] lg:text-xs font-bold uppercase tracking-widest text-muted-foreground">{t("total")}</span>

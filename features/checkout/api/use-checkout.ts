@@ -13,6 +13,7 @@ import {
 import { getCapturedFbc } from "@/lib/meta-fbc";
 import { getCapturedLandingSignals } from "@/lib/traffic-source";
 import { getAnalyticsIds } from "@/features/web-analytics/lib/collector";
+import { getVisitorId } from "@/lib/visitor-id";
 import { triggerHaptic } from "@/lib/haptics";
 
 interface useCheckoutProps {
@@ -62,6 +63,8 @@ export const UseCheckout = () => {
         landingReferrer: landing?.referrer,
         analyticsVisitorId: analyticsIds?.visitorId,
         analyticsSessionId: analyticsIds?.sessionId,
+        // Personal promotion time limits are enforced per visitor.
+        promotionVisitorId: getVisitorId(),
       };
 
       const response = await client.api.checkout.$post({ json: payload });

@@ -94,6 +94,7 @@ const RESOURCE_LABELS: Record<string, string> = {
   checkout: "checkout",
   collection: "collection",
   testimonials: "testimonial",
+  promotions: "promotion",
   wishlist: "wishlist",
   cart: "cart",
   steadfast: "courier booking",

@@ -8,6 +8,8 @@ import OptimizedImage from "@/components/ui/optimized-image";
 import { autoplayAllowed, productVideoPoster, productVideoUrl } from "@/lib/product-video";
 import { afterLoadIdle } from "@/lib/after-load-idle";
 import { useWebsiteSettings } from "@/hooks/use-website-settings";
+import { getOptimizedImageUrl } from "@/lib/utils";
+import { ProductAdSlot, useProductAd } from "./product-ad-slot";
 
 // The lightbox library (plus 6 plugins and their CSS) is only needed once the
 // user taps the image, so it is loaded on demand instead of shipping in the
@@ -35,6 +37,7 @@ function SwitchImage({ product }: SwitchImageProps) {
   // thumbnail restarts it from the beginning, with sound.
   const [videoSound, setVideoSound] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const ad = useProductAd();
 
   useEffect(() => {
     const el = videoRef.current;
@@ -110,24 +113,44 @@ function SwitchImage({ product }: SwitchImageProps) {
             // height), so 640w covers desktop at 2x; the default 960w sent a
             // 120KB still to a 99x176 box.
             poster={productVideoPoster(video, 640)}
-            // The thumbnails sit over the left of the frame; keep the bar clear of them.
-            barClassName="pl-20 sm:pl-28 md:pl-32"
+            // The thumbnails sit over the left of the frame; keep the bar clear
+            // of them. On phones the ad fills the right strip top to bottom, so
+            // the bar's buttons move into the video column (strip width: see
+            // product-ad-slot.tsx).
+            barClassName={
+              ad?.slot === "compact" ? "pl-20 pr-[calc(50%-3.09375rem)]" : "pl-20 sm:pl-28 md:pl-32"
+            }
             sources={[
               { src: productVideoUrl(video), type: "video/mp4" },
               { src: video },
             ]}
           />
+          {ad && <ProductAdSlot ad={ad} price={product.price} />}
         </div>
       ) : (
+      <>
       <button
         type="button"
         onClick={() => {
           setLightboxMounted(true);
           setLightboxIndex(selectedImage);
         }}
-        className="absolute inset-0 cursor-zoom-in"
+        className="absolute inset-0 cursor-zoom-in overflow-hidden bg-black"
         aria-label="Open image gallery"
       >
+        {/* Reels-style, like the video: a tiny blurred copy of the photo
+            fills the frame and the photo sits in a 9:16 column in the middle
+            (cropped; the lightbox shows it whole). The side strips hold the
+            thumbnails and the ad. At ~120px wide the glow costs a few KB. */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={getOptimizedImageUrl(product.images[selectedImage], 120)}
+          alt=""
+          aria-hidden="true"
+          fetchPriority="high"
+          className="absolute inset-0 h-full w-full scale-125 object-cover opacity-70 blur-2xl"
+        />
+        <span className="absolute inset-y-0 left-1/2 aspect-[9/16] h-full -translate-x-1/2">
         <OptimizedImage
           src={product.images[selectedImage]}
           width={1200}
@@ -142,15 +165,18 @@ function SwitchImage({ product }: SwitchImageProps) {
           loading="eager"
           fetchPriority="high"
           quality={70}
-          // The frame sits in the page's px-4 container: 100vw made phones at
-          // DPR ~3 pick the 1920w file for a slot that needs 1200w.
-          sizes="(max-width: 1023px) calc(100vw - 32px), 50vw"
+          // The 9:16 column of the h-44 / sm:h-100 / lg:h-137.5 frame.
+          sizes="(max-width: 639px) 100px, (max-width: 1023px) 225px, 310px"
           className="object-cover transition-transform duration-700"
         />
+        </span>
       </button>
+      {ad && <ProductAdSlot ad={ad} price={product.price} />}
+      </>
       )}
 
-      {/* Thumbnails Overlay */}
+      {/* Thumbnails Overlay. Corners concentric with the frame's: 1.75rem - left-4
+          = 0.75rem (rounded-xl) on phones, 2.5rem - left-6 = 1rem from sm. */}
       {product.images.length + (video ? 1 : 0) > 1 && (
         <div className="absolute top-0 bottom-0 left-4 sm:left-6 flex flex-col justify-center gap-2 sm:gap-3 py-4 z-10">
           {video && (
@@ -161,7 +187,7 @@ function SwitchImage({ product }: SwitchImageProps) {
                 setShowVideo(true);
               }}
               aria-label={`Play ${product.name} video`}
-              className={`relative aspect-[4/5] w-14 sm:w-20 md:w-24 rounded-lg sm:rounded-2xl overflow-hidden shadow-sm bg-black transition-all duration-300 ${
+              className={`relative aspect-[4/5] w-14 sm:w-20 md:w-24 rounded-xl sm:rounded-2xl overflow-hidden shadow-sm bg-black transition-all duration-300 ${
                 showVideo
                   ? "ring-2 ring-white scale-100 opacity-100 shadow-md"
                   : "opacity-70 hover:opacity-100 hover:scale-[1.02] border-2 border-transparent"
@@ -189,7 +215,7 @@ function SwitchImage({ product }: SwitchImageProps) {
                 setSelectedImage(index);
                 setShowVideo(false);
               }}
-              className={`relative aspect-[4/5] w-14 sm:w-20 md:w-24 rounded-lg sm:rounded-2xl overflow-hidden shadow-sm transition-all duration-300 ${
+              className={`relative aspect-[4/5] w-14 sm:w-20 md:w-24 rounded-xl sm:rounded-2xl overflow-hidden shadow-sm transition-all duration-300 ${
                 !showVideo && selectedImage === index
                   ? "ring-2 ring-white scale-100 opacity-100 shadow-md"
                   : "opacity-70 hover:opacity-100 hover:scale-[1.02] border-2 border-transparent"

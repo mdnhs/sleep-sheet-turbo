@@ -110,6 +110,17 @@ const Footer = ({
                   </span>
                 </Link>
               </li>
+              <li>
+                <Link
+                  href="/offer"
+                  className="group flex items-center text-sm text-white/85 hover:text-white transition-colors"
+                >
+                  <span className="relative overflow-hidden">
+                    <span className="block transition-transform duration-300 group-hover:-translate-y-full">Offers</span>
+                    <span className="absolute inset-0 block transition-transform duration-300 translate-y-full group-hover:translate-y-0">Offers</span>
+                  </span>
+                </Link>
+              </li>
             </ul>
           </div>
 

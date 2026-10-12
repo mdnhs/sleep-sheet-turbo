@@ -1,6 +1,7 @@
 "use client";
 import OrderSummeryCard from "@/features/checkout/components/order-summery-card";
 import ShippingInformationCard from "@/features/checkout/components/shipping-information-card";
+import { OfferToaster } from "@/features/checkout/components/offer-toaster";
 
 import { useCartStore } from "@/features/cart/state/use-cart-store";
 import React, { useEffect, useRef } from "react";
@@ -62,6 +63,7 @@ function CheckoutClient({ initialSettings }: CheckoutClientProps) {
 
   return (
     <div className="w-full bg-[#F4F4F4] dark:bg-gray-800 min-h-screen">
+      <OfferToaster />
       <div className="container mx-auto px-3 pb-4 pt-1 max-w-5xl">
         <div className="flex flex-col lg:flex-row items-start gap-4 mt-2">
           <div className="w-full lg:w-3/5 order-1">

@@ -27,6 +27,8 @@ import { after } from "next/server";
 import { analyticsIdSchema, recordOrderEvent } from "@/features/web-analytics/server/record-order-event";
 import { markDraftConverted } from "@/features/web-analytics/server/drafts";
 import { isValidBdMobile11 } from "@/features/fraud-checker/phone";
+import { getLivePromotions, personalizePromotions } from "@/features/promotions/server/promotions";
+import { findFreeDelivery } from "@/lib/promotions";
 
 // Mirrors features/checkout/schema.ts (client-side form validation) so the
 // server never trusts shippingInfo/paymentInfo/guestItems shape or content
@@ -70,12 +72,31 @@ const checkoutSchema = z.object({
   // the order can be tied to the visit and campaign that produced it.
   analyticsVisitorId: analyticsIdSchema,
   analyticsSessionId: analyticsIdSchema,
+  // The first-party visitor id (lib/visitor-id.ts), always sent: promotions
+  // with a personal time limit are applied as this visitor was shown them.
+  promotionVisitorId: analyticsIdSchema,
 });
 
 async function getShippingCost(zone: string): Promise<number> {
   const key = zone === "outside_dhaka" ? "shipping_outside_dhaka" : "shipping_inside_dhaka";
   const value = await getSetting(key);
   return value !== undefined ? Number(value) : (zone === "outside_dhaka" ? 120 : 60);
+}
+
+// What the customer pays for delivery: 0 when a live promotion covers this
+// payment method, zone and subtotal (lib/promotions.ts), otherwise the zone's
+// rate. orders.shippingCost keeps the courier cost either way, so profit
+// reports still count it.
+async function getDeliveryCharge(
+  shippingCost: number,
+  paymentMethod: string,
+  zone: string,
+  subtotal: number,
+  visitorId: string | undefined,
+): Promise<number> {
+  const live = await personalizePromotions(await getLivePromotions(), visitorId);
+  const promo = findFreeDelivery(live, { paymentMethod, zone, subtotal });
+  return promo ? 0 : shippingCost;
 }
 
 async function isPaymentMethodEnabled(method: string): Promise<boolean> {
@@ -114,7 +135,7 @@ const app = new Hono()
 .post("/", rateLimit("checkout", 20, 5 * 60_000), sessionMiddleware, zValidator("json", checkoutSchema), async (c) => {
   const user = c.get("user");
 
-  const { shippingInfo, paymentInfo, guestItems, idempotencyKey: rawKey, fbc, gclid, utmSource, utmMedium, utmCampaign, landingReferrer, analyticsVisitorId, analyticsSessionId } = c.req.valid("json");
+  const { shippingInfo, paymentInfo, guestItems, idempotencyKey: rawKey, fbc, gclid, utmSource, utmMedium, utmCampaign, landingReferrer, analyticsVisitorId, analyticsSessionId, promotionVisitorId } = c.req.valid("json");
 
   // Fraud control: an IP blocked from the order menu (features/blocked-ips)
   // is refused here, before any order row is written. This is the actual
@@ -221,7 +242,8 @@ const app = new Hono()
 
     const subtotal = cartItemsForOrder.reduce((acc, i) => acc + i.price * i.quantity, 0);
     const shippingCost = await getShippingCost(shippingInfo.shippingZone);
-    const totalAmount = subtotal + shippingCost;
+    const deliveryCharge = await getDeliveryCharge(shippingCost, selectedMethod, shippingInfo.shippingZone, subtotal, promotionVisitorId);
+    const totalAmount = subtotal + deliveryCharge;
 
     const userAgentHeader = c.req.header("user-agent") || null;
     const clientIp = requestIp;
@@ -250,7 +272,7 @@ const app = new Hono()
             totalAmount,
             tax: 0,
             shippingCost,
-            deliveryCharge: shippingCost,
+            deliveryCharge,
             shippingAddress: shippingInfo.address,
             paymentMethod: orderPaymentMethod,
             saleType: 'WEBSITE',
@@ -427,7 +449,8 @@ const app = new Hono()
 
   const subtotal = cartItemsForOrder.reduce((acc, i) => acc + i.price * i.quantity, 0);
   const shippingCost = await getShippingCost(shippingInfo.shippingZone);
-  const totalAmount = subtotal + shippingCost;
+  const deliveryCharge = await getDeliveryCharge(shippingCost, selectedMethod, shippingInfo.shippingZone, subtotal, promotionVisitorId);
+  const totalAmount = subtotal + deliveryCharge;
 
   const userAgentHeader = c.req.header("user-agent") || null;
   const clientIp = requestIp;
@@ -457,7 +480,7 @@ const app = new Hono()
           totalAmount,
           tax: 0,
           shippingCost,
-          deliveryCharge: shippingCost,
+          deliveryCharge,
           shippingAddress: shippingInfo.address,
           paymentMethod: orderPaymentMethod,
           saleType: 'WEBSITE',

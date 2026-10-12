@@ -1,6 +1,7 @@
 "use client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import React, { useEffect, useMemo } from "react";
+import { capitalizeWords } from "@/lib/capitalize-words";
+import React, { useEffect, useMemo, useRef } from "react";
 import Image from "next/image";
 import { useForm, useWatch } from "react-hook-form";
 import type { DeliveryAndPaymentFormValues } from "../schema";
@@ -15,11 +16,16 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import { CheckCircle2, ChevronRight, CreditCard, Truck, Lock, User, Calendar, Zap, Phone, MapPin, Mail } from "lucide-react";
+import { CreditCard, Truck, Lock, User, Calendar, Zap, Phone, MapPin, Mail } from "lucide-react";
+import { TrustBadges } from "@/components/trust-badges";
+import { TotalBillChip } from "./total-bill-chip";
+import { useLivePromotions } from "@/features/promotions/api/use-live-promotions";
+import { findFreeDelivery } from "@/lib/promotions";
+import { burstConfetti } from "@/lib/confetti-burst";
+import { OFFER_TOASTER_ID } from "./offer-toaster";
 import { useCartStore } from "@/features/cart/state/use-cart-store";
 import { useSettings } from "@/features/settings/api/use-settings";
 import { useCurrency } from "@/hooks/use-currency";
@@ -119,7 +125,13 @@ function ShippingInformationCard({ initialSettings }: ShippingInformationCardPro
   const guestCartItems = useCartStore((state) => state.guestItems);
   const draftItems = useMemo(() => [...cartItems, ...guestCartItems], [cartItems, guestCartItems]);
   const draft = useCheckoutDraft(
-    { fullName: draftName, phone: draftPhone, email: draftEmail, address: draftAddress, shippingZone: draftZone },
+    {
+      fullName: draftName && capitalizeWords(draftName),
+      phone: draftPhone,
+      email: draftEmail,
+      address: draftAddress && capitalizeWords(draftAddress),
+      shippingZone: draftZone,
+    },
     draftItems,
   );
 
@@ -128,6 +140,15 @@ function ShippingInformationCard({ initialSettings }: ShippingInformationCardPro
     name: "paymentMethod",
     defaultValue: defaultMethod,
   });
+
+  // Free delivery from a live promotion, with the same rule the server
+  // applies when the order is placed (lib/promotions.ts).
+  const { data: livePromotions } = useLivePromotions();
+  const subtotal = useMemo(() => draftItems.reduce((acc, item) => acc + item.price * item.quantity, 0), [draftItems]);
+  const zone = draftZone || "inside_dhaka";
+  const freeDeliveryFor = (paymentMethod: string) =>
+    findFreeDelivery(livePromotions ?? [], { paymentMethod, zone, subtotal }) !== null;
+  const deliveryIsFree = freeDeliveryFor(selectedPaymentMethod);
 
   useEffect(() => {
     const errorFields = Object.keys(form.formState.errors);
@@ -146,11 +167,41 @@ function ShippingInformationCard({ initialSettings }: ShippingInformationCardPro
   }, [currentUser, form]);
 
   useEffect(() => {
-    const initialZone = form.getValues("shippingZone") || "inside_dhaka";
-    if (zoneCosts[initialZone] !== undefined) {
-      setShipping(zoneCosts[initialZone]);
-    }
-  }, [zoneCosts, setShipping, form]);
+    if (zoneCosts[zone] !== undefined) setShipping(deliveryIsFree ? 0 : zoneCosts[zone]);
+  }, [zoneCosts, zone, deliveryIsFree, setShipping]);
+
+  // Confetti from behind the delivery card when an offer starts to apply (the
+  // customer picked bKash, changed zone, …). Not while the page is still
+  // settling (cart, settings and promotions loading), so it never fires on load.
+  const deliveryCardRef = useRef<HTMLDivElement>(null);
+  const mountedAt = useRef(0);
+  const wasFree = useRef(deliveryIsFree);
+  useEffect(() => {
+    mountedAt.current = performance.now();
+  }, []);
+  useEffect(() => {
+    const was = wasFree.current;
+    wasFree.current = deliveryIsFree;
+    if (!deliveryIsFree || was || performance.now() - mountedAt.current < 1200) return;
+    const rect = deliveryCardRef.current?.getBoundingClientRect();
+    if (rect) burstConfetti(rect);
+    // Phones and tablets only (below lg), where the order summary is out of
+    // sight; on desktop it sits beside the form and already shows the saving.
+    if (!window.matchMedia("(max-width: 1023px)").matches) return;
+    toast.custom(
+      () => (
+        <div className="flex w-full justify-center">
+          <div className="inline-flex items-center gap-1.5 rounded-full bg-neutral-900 px-3.5 py-1.5 text-xs font-semibold text-white ring-1 ring-white/10 dark:bg-white dark:text-neutral-900">
+            <span aria-hidden>🎉</span>
+            {t("offerClaimed")}
+          </div>
+        </div>
+      ),
+      { id: "offer-claimed", toasterId: OFFER_TOASTER_ID, duration: 2500 },
+    );
+    // t only changes with the language; firing again for that would be wrong.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [deliveryIsFree]);
 
   const onSubmit = (values: DeliveryAndPaymentFormValues) => {
     triggerHaptic("medium");
@@ -164,17 +215,17 @@ function ShippingInformationCard({ initialSettings }: ShippingInformationCardPro
             cardNumber: values.cardNumber,
             expirationDate: values.expirationDate,
             cvv: values.cvv,
-            nameOnCard: values.nameOnCard,
+            nameOnCard: values.nameOnCard && capitalizeWords(values.nameOnCard),
           };
 
     mutate({
       shippingInfo: {
-        fullName: values.fullName,
+        fullName: capitalizeWords(values.fullName),
         // Send the canonical 01XXXXXXXXX form (validation already guaranteed it
         // normalizes) so the courier and fraud checker get ASCII digits.
         phone: values.phone ? (normalizeBdPhone(values.phone) ?? values.phone) : (values.phone ?? ""),
         email: values.email,
-        address: values.address,
+        address: capitalizeWords(values.address),
         shippingZone: values.shippingZone,
         notes: values.notes,
       },
@@ -191,9 +242,10 @@ function ShippingInformationCard({ initialSettings }: ShippingInformationCardPro
     <div className="w-full">
       <Form {...form}>
         <form className="space-y-3" onSubmit={form.handleSubmit(onSubmit, onInvalid)}>
-          <Card className="bg-card rounded-2xl gap-3 p-3.5 sm:p-5 w-full ring-0">
-            <CardHeader className="p-0 sm:mb-2.5">
-              <CardTitle className="text-lg sm:text-xl font-bold text-foreground">{t(bkashEnabled ? "deliveryInfoTitle" : "deliveryTitle")}</CardTitle>
+          <Card ref={deliveryCardRef} className="bg-card rounded-2xl gap-3 p-3.5 sm:p-5 w-full ring-0">
+            <CardHeader className="flex flex-row items-center justify-between gap-2 p-0 sm:mb-2.5">
+              <CardTitle className="min-w-0 truncate text-base sm:text-xl font-bold text-foreground">{t(bkashEnabled ? "deliveryInfoTitle" : "deliveryTitle")}</CardTitle>
+              <TotalBillChip offerApplied={deliveryIsFree} />
             </CardHeader>
             <CardContent className="p-0 w-full space-y-2.5">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -202,7 +254,7 @@ function ShippingInformationCard({ initialSettings }: ShippingInformationCardPro
                     <div className="relative">
                       <User aria-hidden="true" className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/60" />
                       <FormControl>
-                        <Input type="text" placeholder={`${t("fullNameLabel")} *`} className="h-10 rounded-xl border border-border/40 bg-slate-100 dark:border-slate-600 dark:bg-slate-800 dark:shadow-md dark:shadow-black/40 pt-1 pb-0 pr-3 pl-10 text-sm shadow-inner placeholder:text-muted-foreground/50 focus-visible:bg-white dark:focus-visible:bg-slate-700 dark:focus-visible:border-slate-400 focus-visible:ring-2 focus-visible:ring-primary/20" {...field} />
+                        <Input type="text" placeholder={`${t("fullNameLabel")} *`} className="capitalize h-10 rounded-xl border border-border/40 bg-slate-100 dark:border-slate-600 dark:bg-slate-800 dark:shadow-md dark:shadow-black/40 pt-1 pb-0 pr-3 pl-10 text-sm shadow-inner placeholder:text-muted-foreground/50 focus-visible:bg-white dark:focus-visible:bg-slate-700 dark:focus-visible:border-slate-400 focus-visible:ring-2 focus-visible:ring-primary/20" {...field} />
                       </FormControl>
                       <FormLabel className="sr-only">{t("fullNameLabel")} *</FormLabel>
                     </div>
@@ -263,9 +315,9 @@ function ShippingInformationCard({ initialSettings }: ShippingInformationCardPro
               <FormField name="address" control={form.control} render={({ field }) => (
                 <FormItem className="gap-0.5 space-y-0">
                   <div className="relative">
-                    <MapPin aria-hidden="true" className="pointer-events-none absolute top-3 left-3 h-4 w-4 text-muted-foreground/60" />
+                    <MapPin aria-hidden="true" className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/60" />
                     <FormControl>
-                      <Textarea placeholder={`${t("addressLabel")} *`} rows={2} className="min-h-[44px] resize-none rounded-xl border border-border/40 bg-slate-100 dark:border-slate-600 dark:bg-slate-800 dark:shadow-md dark:shadow-black/40 py-2 pr-3 pl-10 text-sm shadow-inner placeholder:text-muted-foreground/50 focus-visible:bg-white dark:focus-visible:bg-slate-700 dark:focus-visible:border-slate-400 focus-visible:ring-2 focus-visible:ring-primary/20" {...field} />
+                      <Input type="text" placeholder={`${t("addressLabel")} *`} className="capitalize h-10 rounded-xl border border-border/40 bg-slate-100 dark:border-slate-600 dark:bg-slate-800 dark:shadow-md dark:shadow-black/40 pt-1 pb-0 pr-3 pl-10 text-sm shadow-inner placeholder:text-muted-foreground/50 focus-visible:bg-white dark:focus-visible:bg-slate-700 dark:focus-visible:border-slate-400 focus-visible:ring-2 focus-visible:ring-primary/20" {...field} />
                     </FormControl>
                     <FormLabel className="sr-only">{t("addressLabel")} *</FormLabel>
                   </div>
@@ -285,10 +337,8 @@ function ShippingInformationCard({ initialSettings }: ShippingInformationCardPro
                         value={field.value}
                         onValueChange={(val) => {
                           triggerHaptic("selection");
+                          // The delivery charge follows from the zone (see the effect above).
                           field.onChange(val);
-                          if (zoneCosts[val] !== undefined) {
-                            setShipping(zoneCosts[val]);
-                          }
                         }}
                         className="grid grid-cols-2 gap-2.5"
                       >
@@ -358,7 +408,7 @@ function ShippingInformationCard({ initialSettings }: ShippingInformationCardPro
                               : "border-border/60 hover:border-border hover:bg-muted/10"
                           }`}
                         >
-                          <Label className="flex items-center justify-between p-2.5 sm:p-3 cursor-pointer w-full m-0 gap-2">
+                          <Label htmlFor="payment-card" className="flex items-center justify-between p-2.5 sm:p-3 cursor-pointer w-full m-0 gap-2">
                             <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
                               <div
                                 className={`h-8 w-8 rounded-lg flex items-center justify-center shrink-0 transition-colors ${
@@ -374,6 +424,7 @@ function ShippingInformationCard({ initialSettings }: ShippingInformationCardPro
                               </span>
                             </div>
                             <RadioGroupItem
+                              id="payment-card"
                               value="card"
                               className={`shrink-0 ${
                                 selectedPaymentMethod === "card"
@@ -401,7 +452,7 @@ function ShippingInformationCard({ initialSettings }: ShippingInformationCardPro
                                   <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">{t("cardholderNameLabel")}</label>
                                   <FormControl>
                                     <div className="relative">
-                                      <Input placeholder=" " className="h-10 bg-background border border-border/40 rounded-xl px-3 pl-9 text-sm" {...field} />
+                                      <Input placeholder=" " className="capitalize h-10 bg-background border border-border/40 rounded-xl px-3 pl-9 text-sm" {...field} />
                                       <User className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground/50" />
                                     </div>
                                   </FormControl>
@@ -446,7 +497,7 @@ function ShippingInformationCard({ initialSettings }: ShippingInformationCardPro
                               : "border-border/60 hover:border-border hover:bg-muted/10"
                           }`}
                         >
-                          <Label className="flex items-center justify-between p-2.5 sm:p-3 cursor-pointer w-full h-full m-0 gap-2">
+                          <Label htmlFor="payment-cod" className="flex items-center justify-between p-2.5 sm:p-3 cursor-pointer w-full h-full m-0 gap-2">
                             <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
                               <div
                                 className={`h-8 w-8 rounded-lg flex items-center justify-center shrink-0 transition-colors ${
@@ -457,11 +508,15 @@ function ShippingInformationCard({ initialSettings }: ShippingInformationCardPro
                               >
                                 <Truck className="h-4 w-4" />
                               </div>
-                              <span className="font-bold text-xs sm:text-sm text-foreground leading-tight">
+                              <span className="flex flex-col font-bold text-xs sm:text-sm text-foreground leading-tight">
                                 {t("cashOnDelivery")}
+                                {freeDeliveryFor("cod") && (
+                                  <span className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">{t("freeDelivery")}</span>
+                                )}
                               </span>
                             </div>
                             <RadioGroupItem
+                              id="payment-cod"
                               value="cod"
                               className={`shrink-0 ${
                                 selectedPaymentMethod === "cod"
@@ -480,22 +535,26 @@ function ShippingInformationCard({ initialSettings }: ShippingInformationCardPro
                               : "border-border/60 hover:border-border hover:bg-muted/10"
                           }`}
                         >
-                          <Label className="flex items-center justify-between p-2.5 sm:p-3 cursor-pointer w-full h-full m-0 gap-2">
+                          <Label htmlFor="payment-bkash" className="flex items-center justify-between p-2.5 sm:p-3 cursor-pointer w-full h-full m-0 gap-2">
                             <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
-                              <div className="h-8 w-8 rounded-lg flex items-center justify-center shrink-0 overflow-hidden bg-white shadow-2xs border border-border/30 p-1">
+                              <div className="h-8 w-8 rounded-lg flex items-center justify-center shrink-0 overflow-hidden shadow-2xs">
                                 <Image
-                                  src="/bkash-logo.png"
+                                  src="/bkash-icon.png"
                                   alt="bKash"
-                                  width={28}
-                                  height={28}
+                                  width={32}
+                                  height={32}
                                   className="h-full w-full object-contain"
                                 />
                               </div>
-                              <span className="font-bold text-xs sm:text-sm text-foreground leading-tight">
+                              <span className="flex flex-col font-bold text-xs sm:text-sm text-foreground leading-tight">
                                 {t("bkashPayment")}
+                                {freeDeliveryFor("bkash") && (
+                                  <span className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">{t("freeDelivery")}</span>
+                                )}
                               </span>
                             </div>
                             <RadioGroupItem
+                              id="payment-bkash"
                               value="bkash"
                               className={`shrink-0 ${
                                 selectedPaymentMethod === "bkash"
@@ -546,24 +605,7 @@ function ShippingInformationCard({ initialSettings }: ShippingInformationCardPro
               )}
             </Button>
 
-            {/* Reassurance Badges */}
-            <div className="p-3 rounded-2xl bg-secondary/30 dark:bg-slate-900/60 border border-border/40 grid grid-cols-3 gap-2 text-center">
-              <div className="flex flex-col items-center">
-                <Truck className="h-4 w-4 text-primary mb-0.5" />
-                <span className="text-[11px] font-bold text-foreground">ক্যাশ অন ডেলিভারি</span>
-                <span className="text-[9px] text-muted-foreground">অগ্রিম পেমেন্ট নেই</span>
-              </div>
-              <div className="flex flex-col items-center border-x border-border/40">
-                <CheckCircle2 className="h-4 w-4 text-primary mb-0.5" />
-                <span className="text-[11px] font-bold text-foreground">দেখে নেওয়ার সুযোগ</span>
-                <span className="text-[9px] text-muted-foreground">খুলে চেক করুন</span>
-              </div>
-              <div className="flex flex-col items-center">
-                <Lock className="h-4 w-4 text-primary mb-0.5" />
-                <span className="text-[11px] font-bold text-foreground">নিরাপদ অর্ডার</span>
-                <span className="text-[9px] text-muted-foreground">৭ দিনের গ্যারান্টি</span>
-              </div>
-            </div>
+            <TrustBadges />
           </div>
         </form>
       </Form>

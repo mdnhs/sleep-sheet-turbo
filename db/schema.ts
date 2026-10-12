@@ -998,6 +998,39 @@ export const checkoutDrafts = pgTable("checkout_drafts", {
   index("checkout_drafts_phone_idx").on(table.phone),
 ]);
 
+// Store promotions shown on /offer and applied at checkout. Today the only
+// kind is free delivery: when the order's payment method and zone are listed,
+// the subtotal reaches minOrderAmount and the date window is open, the
+// customer's deliveryCharge is 0 (lib/promotions.ts; the courier cost in
+// orders.shippingCost is unchanged).
+export const promotions = pgTable("promotions", {
+  id: text("id").primaryKey().$defaultFn(() => cuid()),
+  title: text("title").notNull(),
+  description: text("description"),
+  type: text("type").$type<"free_delivery">().default("free_delivery").notNull(),
+  paymentMethods: text("payment_methods").array().notNull(),
+  zones: text("zones").array().notNull(),
+  minOrderAmount: money("min_order_amount"),
+  // Optional personal time limit: for each visitor the offer runs this many
+  // minutes from the moment they first saw it (promotion_claims).
+  personalWindowMinutes: integer("personal_window_minutes"),
+  startsAt: timestamp("starts_at", { withTimezone: true, precision: 3 }),
+  endsAt: timestamp("ends_at", { withTimezone: true, precision: 3 }),
+  isActive: boolean("is_active").default(true).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true, precision: 3 }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true, precision: 3 }).defaultNow().notNull(),
+}, (table) => [index("promotions_active_idx").on(table.isActive)]);
+
+// When each visitor first saw a promotion that has a personal time limit:
+// their offer runs from here (lib/promotions.ts personalEndsAt). Keyed by the
+// first-party visitor id (lib/visitor-id.ts); written by the live-promotions
+// read and by checkout, so the countdown shown is the one enforced.
+export const promotionClaims = pgTable("promotion_claims", {
+  promotionId: text("promotion_id").notNull().references(() => promotions.id, { onDelete: "cascade" }),
+  visitorId: text("visitor_id").notNull(),
+  firstSeenAt: timestamp("first_seen_at", { withTimezone: true, precision: 3 }).defaultNow().notNull(),
+}, (table) => [primaryKey({ columns: [table.promotionId, table.visitorId] })]);
+
 export interface CheckoutDraftItem {
   productId: string;
   name: string;

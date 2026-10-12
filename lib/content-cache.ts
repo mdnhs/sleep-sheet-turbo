@@ -48,3 +48,13 @@ export function invalidateBlog(): void {
 export function invalidateTestimonials(): void {
   invalidate("testimonials");
 }
+
+/** Call after any write to `promotions`: checkout and /offer read the live list through this tag. */
+export function invalidatePromotions(): void {
+  invalidate("promotions");
+  try {
+    revalidatePath("/offer");
+  } catch {
+    /* Ignore if invoked outside the Next.js request lifecycle */
+  }
+}

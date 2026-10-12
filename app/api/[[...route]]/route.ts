@@ -13,6 +13,7 @@ import cart from "@/features/cart/server/route"
 import orders from "@/features/order/server/route"
 import collection from "@/features/collections/server/route"
 import testimonials from "@/features/testimonials/server/route"
+import promotions from "@/features/promotions/server/route"
 import wishlist from "@/features/wishlist/server/route"
 import analytics from "@/features/analytics/server/route";
 import steadfast from "@/features/steadfast/server/route";
@@ -96,6 +97,7 @@ const routes =app
 .route("/orders",orders)
 .route("/collection",collection)
 .route("/testimonials",testimonials)
+.route("/promotions",promotions)
 .route("/wishlist",wishlist)
 .route("/analytics",analytics)
 .route("/steadfast",steadfast)

@@ -19,6 +19,7 @@ const mainPages = [
   { href: "/shop", label: "Shop all products", note: "Browse the full collection" },
   { href: "/new-arrivals", label: "New arrivals", note: "Freshly added designs" },
   { href: "/bestsellers", label: "Bestsellers", note: "Our most-ordered products" },
+  { href: "/offer", label: "Offers", note: "Free delivery deals running now" },
   { href: "/blog", label: "Blog", note: "Buying guides, care tips and comparisons" },
   { href: "/testimonials", label: "Customer reviews", note: "What our customers say" },
 ];

@@ -182,6 +182,12 @@ export const SETTINGS = {
   hero_bg_image: plain("content", text, ""),
   hero_slides: plain("content", longText, ""),
   promo_banners: plain("content", longText, ""),
+  // Product page ad: admin-written HTML (with <style>/<script>) shown in the
+  // blurred area beside a product video, inside a sandboxed iframe
+  // (features/product/components/product-ad-slot.tsx). Code that runs on the
+  // storefront, so only ADMIN may change it.
+  product_ad_enabled: plain("content", flag, false),
+  product_ad_code: plain("content", longText, "", { write: "admin" }),
   feature_1_title: plain("content", text, ""),
   feature_1_desc: plain("content", text, ""),
   feature_2_title: plain("content", text, ""),

@@ -11,13 +11,10 @@ import {
   ShoppingCart,
   Zap,
   CheckCircle2,
-  Truck,
-  Eye,
-  RotateCcw,
   ShieldCheck,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useCurrency } from "@/hooks/use-currency";
 import { useLanguage } from "@/hooks/use-language";
@@ -32,6 +29,8 @@ import { floorToNearest50 } from "@/lib/utils";
 import FallbackImage from "@/components/ui/fallback-image";
 import { triggerHaptic } from "@/lib/haptics";
 import { afterNextPaint } from "@/lib/after-next-paint";
+import { TrustBadges } from "@/components/trust-badges";
+import { ORDER_NOW_EVENT } from "./product-ad-slot";
 
 interface ProductPickerProps {
   product: Product;
@@ -298,6 +297,18 @@ function ProductPicker({ product }: ProductPickerProps) {
     // they flush, reporting add_to_cart/begin_checkout as /checkout.
     afterNextPaint(() => router.push("/checkout"));
   };
+
+  // The product page ad's "অর্ডার করুন" (product-ad-slot.tsx) is this same
+  // Order Now, with whatever size / colour / quantity is selected here.
+  const buyNowRef = useRef(handleBuyNow);
+  useEffect(() => {
+    buyNowRef.current = handleBuyNow;
+  });
+  useEffect(() => {
+    const onOrderNow = () => buyNowRef.current();
+    window.addEventListener(ORDER_NOW_EVENT, onOrderNow);
+    return () => window.removeEventListener(ORDER_NOW_EVENT, onOrderNow);
+  }, []);
 
   return (
     <>
@@ -752,24 +763,7 @@ function ProductPicker({ product }: ProductPickerProps) {
           </a>
         </div>
 
-        {/* Trust Badges */}
-        <div className="grid grid-cols-3 gap-2 p-3 bg-white dark:bg-slate-900 rounded-2xl text-center mt-1 border-none! shadow-none! ring-0!">
-          <div className="flex flex-col items-center justify-center p-1">
-            <Truck className="h-4 w-4 sm:h-5 sm:w-5 text-primary mb-1" />
-            <span className="text-[11px] sm:text-xs font-bold text-foreground leading-tight">ক্যাশ অন ডেলিভারি</span>
-            <span className="text-[9px] sm:text-[10px] text-muted-foreground mt-0.5">পণ্য পেয়ে টাকা দিন</span>
-          </div>
-          <div className="flex flex-col items-center justify-center border-x border-border/60 p-1">
-            <Eye className="h-4 w-4 sm:h-5 sm:w-5 text-primary mb-1" />
-            <span className="text-[11px] sm:text-xs font-bold text-foreground leading-tight">দেখে নেওয়ার সুযোগ</span>
-            <span className="text-[9px] sm:text-[10px] text-muted-foreground mt-0.5">খুলে চেক করে নিন</span>
-          </div>
-          <div className="flex flex-col items-center justify-center p-1">
-            <RotateCcw className="h-4 w-4 sm:h-5 sm:w-5 text-primary mb-1" />
-            <span className="text-[11px] sm:text-xs font-bold text-foreground leading-tight">সহজ রিপ্লেসমেন্ট</span>
-            <span className="text-[9px] sm:text-[10px] text-muted-foreground mt-0.5">৭ দিনের গ্যারান্টি</span>
-          </div>
-        </div>
+        <TrustBadges className="mt-1" />
       </div>
 
       {/* Smart Sticky Bottom Bar - Only visible on mobile when main in-page button is NOT in view */}
