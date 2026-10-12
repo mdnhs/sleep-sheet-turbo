@@ -7,6 +7,7 @@ import { useSettings, useUpdateSettings } from "@/features/settings/api/use-sett
 import { Plus, Trash2, Pencil, Check, X, Star, CheckCircle2 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { PosFacebookPagesSkeleton } from "./settings-skeletons";
 
 export interface FacebookPageItem {
   id: string;
@@ -14,7 +15,7 @@ export interface FacebookPageItem {
 }
 
 export function PosFacebookPages() {
-  const { data } = useSettings();
+  const { data, isLoading } = useSettings();
   const { mutate, isPending } = useUpdateSettings();
   const [newName, setNewName] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -89,6 +90,10 @@ export function PosFacebookPages() {
       pos_default_facebook_page: pageName,
     });
   };
+
+  if (isLoading) {
+    return <PosFacebookPagesSkeleton />;
+  }
 
   return (
     <div className="space-y-5">

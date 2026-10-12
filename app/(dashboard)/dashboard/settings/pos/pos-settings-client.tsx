@@ -3,16 +3,12 @@
 import { PosFacebookPages } from "@/features/settings/components/pos-facebook-pages";
 import { PosPaymentMethods } from "@/features/settings/components/pos-payment-methods";
 import { Store, Share2 } from "lucide-react";
+import { PageTitle } from "@/components/dashboard-page-title";
 
 export function PosSettingsClient() {
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">POS Settings</h1>
-        <p className="text-muted-foreground text-sm">
-          Configure Facebook page sales channels, default page selection, and POS payment methods
-        </p>
-      </div>
+      <PageTitle title="POS Settings" description="Configure Facebook page sales channels, default page selection, and POS payment methods" />
 
       <div className="space-y-6">
         {/* Facebook Pages (Sales Channels) */}

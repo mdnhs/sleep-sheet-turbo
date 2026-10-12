@@ -2,12 +2,12 @@
 
 import { Banknote, Eye, LogOut, Percent, ShoppingBag, Users, type LucideIcon } from "lucide-react";
 import { Card } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
 import { useCurrency } from "@/hooks/use-currency";
 import { cn } from "@/lib/utils";
 import { useWaT } from "../lib/i18n";
 import { useWaOverview, type WaQuery } from "../api/use-web-analytics";
 import { formatCount, formatPercent, kpiValue, METRICS, trendPercent, type Metric } from "../lib/format";
+import { KpiValueSkeleton } from "./wa-skeletons";
 
 const METRIC_ICONS: Record<Metric, LucideIcon> = {
   visitors: Users,
@@ -43,7 +43,7 @@ export function KpiCards({ q, metric, onSelect }: { q: WaQuery; metric: Metric; 
                 {t(m)}
               </span>
               {isLoading && !data ? (
-                <Skeleton className="h-8 w-20" />
+                <KpiValueSkeleton />
               ) : (
                 <div className="flex flex-wrap items-baseline gap-2">
                   <span className="text-2xl font-semibold tabular-nums">{format(m, value)}</span>

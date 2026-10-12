@@ -7,10 +7,10 @@ import { z } from "zod";
 import { useSettings, useSettingsSecrets, useUpdateSettings } from "@/features/settings/api/use-settings";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2, Eye, EyeOff } from "lucide-react";
+import { CdnFormSkeleton } from "./settings-skeletons";
 
 const cdnSchema = z.object({
   cloudinary_cloud_name: z.string().min(1, "Cloud name is required"),
@@ -42,14 +42,7 @@ export function CdnForm() {
   }
 
   if (isLoading) {
-    return (
-      <div className="rounded-3xl bg-white dark:bg-card p-6 border-none shadow-none space-y-4">
-        <Skeleton className="h-6 w-40 rounded-xl" />
-        <Skeleton className="h-4 w-64 rounded-xl" />
-        <Skeleton className="h-10 w-full rounded-2xl" />
-        <Skeleton className="h-10 w-full rounded-2xl" />
-      </div>
-    );
+    return <CdnFormSkeleton />;
   }
 
   return (

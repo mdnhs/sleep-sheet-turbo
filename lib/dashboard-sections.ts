@@ -6,31 +6,29 @@ import {
   Calculator,
   FileText,
   FolderTree,
-  Image as ImageIcon,
   LineChart,
   MessageSquareQuote,
   Package,
-  Share2,
   ShieldCheck,
   ShoppingCart,
   UserRound,
   Users,
+  Workflow,
 } from "lucide-react";
-import { can, type ModuleKey } from "@/lib/permissions";
+import { canAccessTab } from "@/lib/tab-access";
+import { NAV_MENUS, isTabActive, menuTabs, type NavTab } from "@/lib/dashboard-nav";
+
+export { isTabActive };
 
 // The admin sidebar shows one entry per section; the pages inside a section
 // are vertical tabs on the left of the page (components/section-shell.tsx).
 // URLs are unchanged: each section is a route group under app/(dashboard)/dashboard.
+// The tabs themselves are defined in lib/dashboard-nav.ts.
 
 export type SectionKey = "sales" | "catalog" | "reports" | "people";
 
-export interface SectionTab {
-  title: string;
-  href: string;
+export interface SectionTab extends NavTab {
   icon: LucideIcon;
-  module: ModuleKey;
-  /** Replaced by the saved Postiz address, opened in a new tab (see SectionShell). */
-  socialManager?: true;
 }
 
 export interface Section {
@@ -39,55 +37,51 @@ export interface Section {
   tabs: SectionTab[];
 }
 
-export const dashboardSections: Record<SectionKey, Section> = {
-  sales: {
-    key: "sales",
-    title: "Sales",
-    tabs: [
-      { title: "Orders", href: "/dashboard/orders", icon: ShoppingCart, module: "orders" },
-      { title: "POS", href: "/dashboard/pos", icon: Calculator, module: "pos" },
-      { title: "Fraud Checker", href: "/dashboard/fraud-checker", icon: ShieldCheck, module: "orders" },
-    ],
-  },
-  catalog: {
-    key: "catalog",
-    title: "Catalog",
-    tabs: [
-      { title: "Products", href: "/dashboard/products", icon: Package, module: "products" },
-      { title: "Categories", href: "/dashboard/categories", icon: FolderTree, module: "products" },
-      { title: "Images", href: "/dashboard/images", icon: ImageIcon, module: "products" },
-      { title: "Blog", href: "/dashboard/blog", icon: FileText, module: "blog" },
-      { title: "Testimonials", href: "/dashboard/testimonials", icon: MessageSquareQuote, module: "testimonials" },
-      { title: "Social", href: "/dashboard/settings/social", icon: Share2, module: "blog", socialManager: true },
-    ],
-  },
-  reports: {
-    key: "reports",
-    title: "Reports",
-    tabs: [
-      { title: "Reports", href: "/dashboard/reports", icon: BarChart3, module: "reports" },
-      { title: "Analytics", href: "/dashboard/analytics", icon: LineChart, module: "reports" },
-      { title: "Expenses", href: "/dashboard/expenses", icon: Banknote, module: "expenses" },
-    ],
-  },
-  people: {
-    key: "people",
-    title: "People",
-    tabs: [
-      { title: "Customers", href: "/dashboard/customers", icon: UserRound, module: "users" },
-      { title: "Staff", href: "/dashboard/users", icon: Users, module: "users" },
-      { title: "Activity Log", href: "/dashboard/activity", icon: Activity, module: "activity" },
-    ],
-  },
+const TAB_ICONS: Record<string, LucideIcon> = {
+  "sales.orders": ShoppingCart,
+  "sales.pos": Calculator,
+  "sales.fraud-checker": ShieldCheck,
+  "catalog.products": Package,
+  "catalog.categories": FolderTree,
+  "catalog.automation": Workflow,
+  "catalog.blog": FileText,
+  "catalog.testimonials": MessageSquareQuote,
+  "reports.reports": BarChart3,
+  "reports.analytics": LineChart,
+  "reports.expenses": Banknote,
+  "people.customers": UserRound,
+  "people.staff": Users,
+  "people.activity": Activity,
 };
 
-type User = Parameters<typeof can>[0];
-
-/** The section's tabs this user can open. */
-export function visibleTabs(key: SectionKey, user: User): SectionTab[] {
-  return dashboardSections[key].tabs.filter((tab) => can(user, tab.module, "read"));
+function section(key: SectionKey): Section {
+  const menu = NAV_MENUS.find((m) => m.key === key)!;
+  return {
+    key,
+    title: menu.title,
+    tabs: menuTabs(menu).map((tab) => ({ ...tab, icon: TAB_ICONS[tab.id] ?? Package })),
+  };
 }
 
-export function isTabActive(tab: SectionTab, pathname: string): boolean {
-  return pathname === tab.href || pathname.startsWith(`${tab.href}/`);
+export const dashboardSections: Record<SectionKey, Section> = {
+  sales: section("sales"),
+  catalog: section("catalog"),
+  reports: section("reports"),
+  people: section("people"),
+};
+
+type User = Parameters<typeof canAccessTab>[0];
+
+/** The section's tabs this user can open. */
+export function accessibleTabs(key: SectionKey, user: User): SectionTab[] {
+  return dashboardSections[key].tabs.filter((tab) => canAccessTab(user, tab));
+}
+
+/**
+ * Every tab of the section, flagged with whether this user can open it. The
+ * rail lists the open ones; the flag also tells it when the current page
+ * isn't open.
+ */
+export function sectionTabs(key: SectionKey, user: User): (SectionTab & { allowed: boolean })[] {
+  return dashboardSections[key].tabs.map((tab) => ({ ...tab, allowed: canAccessTab(user, tab) }));
 }

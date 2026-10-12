@@ -1,10 +1,11 @@
 'use client';
 
+import { PageTitle } from "@/components/dashboard-page-title";
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Skeleton } from '@/components/ui/skeleton';
+import { UpdateBlogPageSkeleton } from './update-blog-skeleton';
 import { FileUpload } from '@/features/dashboard/components/file-upload';
 import { useGetPost } from '@/features/blog/api/use-get-post';
 import { useGetPosts } from '@/features/blog/api/use-get-posts';
@@ -85,27 +86,12 @@ export default function UpdateBlogClient({ id }: { id: string }) {
   };
 
   if (isLoading) {
-    return (
-      <div className="flex-1 space-y-6 p-4 md:p-8 pt-4 md:pt-6 max-w-5xl mx-auto">
-        <div>
-          <Skeleton className="h-8 w-48 rounded-xl mb-2" />
-          <Skeleton className="h-4 w-64 rounded-xl" />
-        </div>
-        <div className="rounded-3xl bg-white dark:bg-card p-4 sm:p-6 border-none shadow-none space-y-4">
-          <Skeleton className="h-10 w-full rounded-full" />
-          <Skeleton className="h-10 w-full rounded-full" />
-          <Skeleton className="h-64 w-full rounded-2xl" />
-        </div>
-      </div>
-    );
+    return <UpdateBlogPageSkeleton />;
   }
 
   return (
     <div className="flex-1 space-y-6 p-4 md:p-8 pt-4 md:pt-6 max-w-5xl mx-auto animate-in fade-in duration-300">
-      <div>
-        <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">Update Blog Post</h1>
-        <p className="text-muted-foreground text-xs sm:text-sm">Edit post content and settings</p>
-      </div>
+      <PageTitle title="Update Blog Post" description="Edit post content and settings" />
 
       <div className="rounded-3xl bg-white dark:bg-card p-4 sm:p-6 border-none shadow-none space-y-6">
         <form onSubmit={handleSubmit} className="space-y-4">

@@ -20,10 +20,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Skeleton } from "@/components/ui/skeleton";
 import { useSettings, useUpdateSettings } from "@/features/settings/api/use-settings";
 import { SUPPORTED_CURRENCIES } from "@/hooks/use-currency";
 import { Loader2 } from "lucide-react";
+import { CurrencyFormSkeleton } from "./settings-skeletons";
 
 const currencySchema = z.object({
   currency: z.string().min(1),
@@ -47,7 +47,7 @@ export function CurrencyForm() {
   }, [data, form]);
 
   if (isLoading) {
-    return <Skeleton className="h-10 w-full" />;
+    return <CurrencyFormSkeleton />;
   }
 
   return (

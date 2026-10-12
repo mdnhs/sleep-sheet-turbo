@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -12,12 +12,14 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useSubTabs } from "@/hooks/use-sub-tabs";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import type { SettingsPatch } from "@/lib/settings/registry";
 import { changedSettings } from "@/features/settings/settings-fields";
 import { HeroSlidesManager } from "./hero-slides-manager";
 import { PromoBannersManager } from "./promo-banners-manager";
+import { WebsiteFormSkeleton } from "./settings-skeletons";
 
 const websiteSchema = z.object({
   site_name: z.string().optional(),
@@ -142,6 +144,8 @@ function SaveSectionButton({
 }
 
 export function WebsiteForm() {
+  const websiteTabs = useSubTabs("settings.website");
+  const [websiteTabsValue, setWebsiteTabsValue] = useState("header");
   const { data: settings, isLoading } = useSettings();
 
   const form = useForm<WebsiteFormValues>({
@@ -198,51 +202,47 @@ export function WebsiteForm() {
   }, [settings, form]);
 
   if (isLoading) {
-    return (
-      <div className="rounded-3xl bg-white dark:bg-card p-6 border-none shadow-none flex items-center justify-center py-8">
-        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-      </div>
-    );
+    return <WebsiteFormSkeleton />;
   }
 
   return (
     <Form {...form}>
       <form onSubmit={(e) => e.preventDefault()} className="space-y-6 animate-in fade-in duration-300">
-        <Tabs defaultValue="header" className="w-full">
+        <Tabs value={websiteTabs.pick(websiteTabsValue)} onValueChange={(value) => setWebsiteTabsValue(value as string)} className="w-full">
           <div className="w-full overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden pb-1">
             <TabsList className="inline-flex flex-nowrap items-center h-10 w-max sm:w-fit gap-1 bg-slate-200 dark:bg-card p-1 rounded-full border-none shadow-none">
               <TabsTrigger
-                value="header"
+                value="header" disabled={!websiteTabs.allowed("header")}
                 className="shrink-0 rounded-full px-4 h-8 text-xs font-semibold capitalize cursor-pointer transition-all text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 data-active:!bg-white data-active:!text-slate-900 data-active:shadow-xs data-[state=active]:!bg-white data-[state=active]:!text-slate-900 dark:data-active:!bg-slate-900 dark:data-active:!text-slate-100 border-none"
               >
                 Header
               </TabsTrigger>
               <TabsTrigger
-                value="hero"
+                value="hero" disabled={!websiteTabs.allowed("hero")}
                 className="shrink-0 rounded-full px-4 h-8 text-xs font-semibold capitalize cursor-pointer transition-all text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 data-active:!bg-white data-active:!text-slate-900 data-active:shadow-xs data-[state=active]:!bg-white data-[state=active]:!text-slate-900 dark:data-active:!bg-slate-900 dark:data-active:!text-slate-100 border-none"
               >
                 Hero Slides
               </TabsTrigger>
               <TabsTrigger
-                value="promo"
+                value="promo" disabled={!websiteTabs.allowed("promo")}
                 className="shrink-0 rounded-full px-4 h-8 text-xs font-semibold capitalize cursor-pointer transition-all text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 data-active:!bg-white data-active:!text-slate-900 data-active:shadow-xs data-[state=active]:!bg-white data-[state=active]:!text-slate-900 dark:data-active:!bg-slate-900 dark:data-active:!text-slate-100 border-none"
               >
                 Promo Banners
               </TabsTrigger>
               <TabsTrigger
-                value="features"
+                value="features" disabled={!websiteTabs.allowed("features")}
                 className="shrink-0 rounded-full px-4 h-8 text-xs font-semibold capitalize cursor-pointer transition-all text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 data-active:!bg-white data-active:!text-slate-900 data-active:shadow-xs data-[state=active]:!bg-white data-[state=active]:!text-slate-900 dark:data-active:!bg-slate-900 dark:data-active:!text-slate-100 border-none"
               >
                 Features
               </TabsTrigger>
               <TabsTrigger
-                value="newsletter"
+                value="newsletter" disabled={!websiteTabs.allowed("newsletter")}
                 className="shrink-0 rounded-full px-4 h-8 text-xs font-semibold capitalize cursor-pointer transition-all text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 data-active:!bg-white data-active:!text-slate-900 data-active:shadow-xs data-[state=active]:!bg-white data-[state=active]:!text-slate-900 dark:data-active:!bg-slate-900 dark:data-active:!text-slate-100 border-none"
               >
                 Newsletter
               </TabsTrigger>
               <TabsTrigger
-                value="footer"
+                value="footer" disabled={!websiteTabs.allowed("footer")}
                 className="shrink-0 rounded-full px-4 h-8 text-xs font-semibold capitalize cursor-pointer transition-all text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 data-active:!bg-white data-active:!text-slate-900 data-active:shadow-xs data-[state=active]:!bg-white data-[state=active]:!text-slate-900 dark:data-active:!bg-slate-900 dark:data-active:!text-slate-100 border-none"
               >
                 Footer

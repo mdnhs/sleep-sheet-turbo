@@ -1,6 +1,7 @@
 /* eslint-disable @next/next/no-img-element */
 "use client";
 
+import { PageTitle } from "@/components/dashboard-page-title";
 import { useState } from "react";
 import Link from "next/link";
 import { useCurrency } from "@/hooks/use-currency";
@@ -44,7 +45,15 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TableSkeleton } from "@/components/dashboard/skeletons";
+import {
+  LowStockTableSkeleton,
+  ProductRankTableSkeleton,
+  RecentOrdersTableSkeleton,
+  type ProductRankListKey,
+} from "./home-skeleton";
+import { useRememberRows } from "@/hooks/use-skeleton-rows";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useSubTabs } from "@/hooks/use-sub-tabs";
 import {
   Table,
   TableBody,
@@ -89,6 +98,8 @@ const periodLabels: Record<string, string> = {
 };
 
 export default function DashBoardClientPage() {
+  const overviewTabs = useSubTabs("dashboard");
+  const [overviewTabsValue, setOverviewTabsValue] = useState("sales");
   const { symbol: currencySymbol } = useCurrency();
   const [graphPeriod, setGraphPeriod] = useState<Period>("this-month");
 
@@ -120,6 +131,8 @@ export default function DashBoardClientPage() {
   const { data: recentOrders, isLoading: loadingRecentOrders } =
     useRecentOrders();
   const { data: lowStock, isLoading: loadingLowStock } = useLowStock();
+  useRememberRows("home.recent-orders", loadingRecentOrders ? undefined : (recentOrders?.length ?? 0));
+  useRememberRows("home.low-stock", loadingLowStock ? undefined : (lowStock?.length ?? 0));
 
   const formatGraphBucketDate = (iso: string) => {
     const d = new Date(iso);
@@ -145,18 +158,14 @@ export default function DashBoardClientPage() {
 
   return (
     <div className="p-4 sm:p-6 md:p-8 space-y-6 animate-in fade-in duration-300">
-      <div className="flex items-center justify-between gap-4">
-        <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white">
-          Sales Overview
-        </h1>
-        <div className="hidden sm:flex items-center gap-2">
-          <Link href="/dashboard/pos">
-            <Button className="gap-2 text-white bg-slate-900 hover:bg-slate-800 dark:bg-indigo-600 dark:hover:bg-indigo-700 whitespace-nowrap rounded-full px-5">
-              <IconCashRegister className="h-4 w-4" />
-              POS
-            </Button>
-          </Link>
-        </div>
+      <PageTitle title="Sales Overview" />
+      <div className="hidden sm:flex items-center justify-end gap-2">
+        <Link href="/dashboard/pos">
+          <Button className="gap-2 text-white bg-slate-900 hover:bg-slate-800 dark:bg-indigo-600 dark:hover:bg-indigo-700 whitespace-nowrap rounded-full px-5">
+            <IconCashRegister className="h-4 w-4" />
+            POS
+          </Button>
+        </Link>
       </div>
 
       {/* Key Metrics Grid */}
@@ -273,7 +282,7 @@ export default function DashBoardClientPage() {
           </div>
           <div className="flex-1">
             {loadingRecentOrders ? (
-              <TableSkeleton rows={5} cols={5} />
+              <RecentOrdersTableSkeleton />
             ) : !recentOrders?.length ? (
               <EmptyState message="No recent orders" />
             ) : (
@@ -353,7 +362,7 @@ export default function DashBoardClientPage() {
           </div>
           <div className="flex-1">
             {loadingLowStock ? (
-              <TableSkeleton rows={10} cols={2} />
+              <LowStockTableSkeleton />
             ) : !lowStock?.length ? (
               <div className="h-48 flex items-center justify-center rounded-2xl bg-emerald-50/50 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-400 font-semibold">
                 <p>All products are well stocked!</p>
@@ -397,10 +406,10 @@ export default function DashBoardClientPage() {
         </div>
       </div>
 
-      <Tabs defaultValue="sales">
+      <Tabs value={overviewTabs.pick(overviewTabsValue)} onValueChange={(value) => setOverviewTabsValue(value as string)}>
         <TabsList className="grid grid-cols-2 w-full md:w-[400px] mb-4 bg-white dark:bg-card rounded-full p-1 shadow-none">
-          <TabsTrigger value="sales" className="rounded-full text-xs font-semibold">Sales Overview</TabsTrigger>
-          <TabsTrigger value="customers" className="rounded-full text-xs font-semibold">Customer Insights</TabsTrigger>
+          <TabsTrigger value="sales" disabled={!overviewTabs.allowed("sales")} className="rounded-full text-xs font-semibold">Sales Overview</TabsTrigger>
+          <TabsTrigger value="customers" disabled={!overviewTabs.allowed("customers")} className="rounded-full text-xs font-semibold">Customer Insights</TabsTrigger>
         </TabsList>
 
         <TabsContent value="sales" className="space-y-4">
@@ -594,6 +603,7 @@ export default function DashBoardClientPage() {
 
         <div className="space-y-6">
           <ProductRankCard
+            listKey="home.most-purchased"
             title="Most Purchased Products"
             valueHeader="Units Sold"
             loading={loadingPurchased}
@@ -605,6 +615,7 @@ export default function DashBoardClientPage() {
             }))}
           />
           <ProductRankCard
+            listKey="home.most-wishlisted"
             title="Most Wishlisted Products"
             valueHeader="Wishlists"
             loading={loadingWishlisted}
@@ -664,16 +675,19 @@ interface ProductRankRow {
 }
 
 function ProductRankCard({
+  listKey,
   title,
   valueHeader,
   rows,
   loading,
 }: {
+  listKey: ProductRankListKey;
   title: string;
   valueHeader: string;
   rows?: ProductRankRow[];
   loading?: boolean;
 }) {
+  useRememberRows(listKey, loading ? undefined : (rows?.length ?? 0));
   return (
     <div className="rounded-3xl bg-white dark:bg-card p-6 border-none shadow-none flex flex-col justify-between">
       <div className="flex items-center justify-between mb-4">
@@ -681,7 +695,7 @@ function ProductRankCard({
       </div>
       <div>
         {loading ? (
-          <Skeleton className="h-32 w-full rounded-2xl" />
+          <ProductRankTableSkeleton listKey={listKey} />
         ) : !rows?.length ? (
           <EmptyState message="No product data yet" />
         ) : (

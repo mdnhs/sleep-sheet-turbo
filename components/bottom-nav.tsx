@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { useCurrent } from "@/features/auth/api/use-current";
-import { can, type ModuleKey } from "@/lib/permissions";
+import { canAccessTab } from "@/lib/tab-access";
 import {
   IconChartBar,
   IconShoppingCart,
@@ -18,40 +18,40 @@ export function BottomNav() {
   const pathname = usePathname();
   const { data: user, isLoading } = useCurrent();
 
-  const allItems: { title: string; url: string; icon: React.ReactNode; module: ModuleKey; isFloating?: boolean }[] = [
+  const allItems: { title: string; url: string; icon: React.ReactNode; tab: string; isFloating?: boolean }[] = [
     {
       title: "Reports",
       url: "/dashboard/reports",
-      module: "reports",
+      tab: "reports.reports",
       icon: <IconChartBar className="size-5" />,
     },
     {
       title: "Orders",
       url: "/dashboard/orders",
-      module: "orders",
+      tab: "sales.orders",
       icon: <IconShoppingCart className="size-5" />,
     },
     {
       title: "POS",
       url: "/dashboard/pos",
-      module: "pos",
+      tab: "sales.pos",
       icon: <IconCashRegister className="size-6 text-white" />,
       isFloating: true,
     },
     {
       title: "Products",
       url: "/dashboard/products",
-      module: "products",
+      tab: "catalog.products",
       icon: <IconPackage className="size-5" />,
     },
     {
       title: "Analytics",
       url: "/dashboard/analytics",
-      module: "reports",
+      tab: "reports.analytics",
       icon: <IconBrandGoogleAnalytics className="size-5" />,
     },
   ];
-  const navItems = allItems.filter((item) => can(user ?? null, item.module, "read"));
+  const navItems = allItems.filter((item) => canAccessTab(user ?? null, item.tab));
 
   if (isLoading || navItems.length === 0) return null;
 

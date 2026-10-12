@@ -1,8 +1,9 @@
 "use client"
+import { PageTitle } from "@/components/dashboard-page-title"
 import { useMemo, useRef, useState } from "react"
 import { useQueryState, parseAsString } from "nuqs"
-import { Skeleton } from "@/components/ui/skeleton"
-import { TableSkeleton } from "@/components/dashboard/skeletons"
+import { CategoriesPageSkeleton } from "./categories-skeleton"
+import { useRememberRows } from "@/hooks/use-skeleton-rows"
 import { Button, buttonVariants } from "@/components/ui/button"
 import {
   AlertDialog,
@@ -287,6 +288,7 @@ function CategoriesClientPage() {
       subCount: subCounts.get(c.value) ?? 0,
     }))
   }, [categories, displayCategories, searchQuery, parentMap, subCounts])
+  useRememberRows("categories.list", isLoading ? undefined : rows.length)
 
   const handleImageSelect = (file: File) => {
     setImageFile(file)
@@ -432,30 +434,13 @@ function CategoriesClientPage() {
   }
 
   if (isLoading) {
-    return (
-      <div className="flex-1 space-y-6 p-4 md:p-8 pt-4 md:pt-6">
-        <div className="flex items-center justify-between gap-4">
-          <div>
-            <Skeleton className="h-8 w-40 rounded-xl mb-2" />
-            <Skeleton className="h-4 w-64 rounded-xl" />
-          </div>
-          <Skeleton className="h-9 w-36 rounded-full" />
-        </div>
-        <div className="rounded-3xl bg-white dark:bg-card p-4 sm:p-6 border-none shadow-none space-y-4">
-          <Skeleton className="h-10 w-full sm:max-w-sm rounded-full" />
-          <TableSkeleton rows={8} cols={8} />
-        </div>
-      </div>
-    )
+    return <CategoriesPageSkeleton />
   }
 
   return (
     <div className="flex-1 space-y-6 p-4 md:p-8 pt-4 md:pt-6 animate-in fade-in duration-300">
-      <div className="flex items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Categories</h1>
-          <p className="text-muted-foreground text-sm">Organize products into categories and subcategories</p>
-        </div>
+      <PageTitle title="Categories" description="Organize products into categories and subcategories" />
+      <div className="flex items-center justify-end gap-4">
         <Dialog open={createOpen} onOpenChange={setCreateOpen}>
           <DialogTrigger className={cn(buttonVariants(), "gap-2 text-white bg-slate-900 hover:bg-slate-800 dark:bg-indigo-600 dark:hover:bg-indigo-700 whitespace-nowrap rounded-full px-5 h-9 text-xs font-semibold")}>
             <Plus className="h-4 w-4" />

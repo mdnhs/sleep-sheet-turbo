@@ -1,11 +1,13 @@
 "use client";
 
+import { PageTitle } from "@/components/dashboard-page-title";
 import { useState } from "react";
 import { useQueryState, parseAsString } from "nuqs";
 import { AlertTriangle, CreditCard, Loader2, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useSubTabs } from "@/hooks/use-sub-tabs";
 import { useFraudCheckLookup } from "@/features/fraud-checker/api/use-fraud-check";
 import { FraudResult } from "@/features/fraud-checker/components/fraud-result";
 import { PlanCard } from "@/features/fraud-checker/components/plan-card";
@@ -20,7 +22,9 @@ export function FraudCheckerClient() {
   // that gate: only a click starts a lookup.
   const [urlPhone, setUrlPhone] = useQueryState("phone", parseAsString.withDefault(""));
   const [requested, setRequested] = useState(false);
-  const [tab, setTab] = useState("check");
+  const [rawTab, setTab] = useState("check");
+  const fraudTabs = useSubTabs("sales.fraud-checker");
+  const tab = fraudTabs.pick(rawTab);
   const [input, setInput] = useState(urlPhone);
   const [inputError, setInputError] = useState<string | null>(null);
   const [recent, setRecent] = useState<string[]>([]);
@@ -53,20 +57,15 @@ export function FraudCheckerClient() {
 
   return (
     <div className="font-bengali mx-auto w-full max-w-4xl flex-1 space-y-6 p-4 md:p-8 pt-4 md:pt-6 animate-in fade-in duration-300">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">ফ্রড চেকার</h1>
-        <p className="text-muted-foreground text-sm">
-          পার্সেল পাঠানোর আগে কাস্টমারের কুরিয়ার ডেলিভারি হিস্ট্রি যাচাই করুন।
-        </p>
-      </div>
+      <PageTitle title="ফ্রড চেকার" description="পার্সেল পাঠানোর আগে কাস্টমারের কুরিয়ার ডেলিভারি হিস্ট্রি যাচাই করুন।" />
 
       <Tabs value={tab} onValueChange={(value) => setTab(value as string)}>
         <TabsList className="h-9">
-          <TabsTrigger value="check" className="gap-1.5 px-4 text-xs font-semibold">
+          <TabsTrigger value="check" disabled={!fraudTabs.allowed("check")} className="gap-1.5 px-4 text-xs font-semibold">
             <Search className="h-3.5 w-3.5" />
             নম্বর চেক
           </TabsTrigger>
-          <TabsTrigger value="plan" className="gap-1.5 px-4 text-xs font-semibold">
+          <TabsTrigger value="plan" disabled={!fraudTabs.allowed("plan")} className="gap-1.5 px-4 text-xs font-semibold">
             <CreditCard className="h-3.5 w-3.5" />
             আমার প্ল্যান
           </TabsTrigger>

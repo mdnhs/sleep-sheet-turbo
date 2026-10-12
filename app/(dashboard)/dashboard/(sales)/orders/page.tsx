@@ -1,5 +1,7 @@
 "use client";
 
+import { PageTitle } from "@/components/dashboard-page-title";
+import { capitalizeWords } from "@/lib/capitalize-words";
 import React, { Suspense } from "react";
 import { ConfirmDialog } from "@/components/conform-dialouge";
 import { Badge } from "@/components/ui/badge";
@@ -53,7 +55,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { Skeleton } from "@/components/ui/skeleton";
+import { OrdersPageSkeleton, OrdersTableSkeleton } from "./orders-skeleton";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Table,
@@ -88,6 +90,8 @@ import { BulkBookCourierDialog } from "@/features/steadfast/components/bulk-book
 import { useBookToSheet, useBulkBookToSheet } from "@/features/google-sheets/api/use-google-sheets";
 import { useCurrency } from "@/hooks/use-currency";
 import { useHasMounted } from "@/hooks/use-has-mounted";
+import { useRememberRows } from "@/hooks/use-skeleton-rows";
+import { useSubTabs } from "@/hooks/use-sub-tabs";
 import { useCurrent } from "@/features/auth/api/use-current";
 import { can } from "@/lib/permissions";
 import { LANDING_SOURCE_LABELS, type LandingSource } from "@/lib/traffic-source";
@@ -566,7 +570,7 @@ function OrdersPageContent() {
     "to",
     parseAsString.withDefault("")
   );
-  const [statusFilter, setStatusFilter] = useQueryState(
+  const [rawStatusFilter, setStatusFilter] = useQueryState(
     "status",
     parseAsStringEnum<StatusFilter>([
       "ALL",
@@ -578,6 +582,9 @@ function OrdersPageContent() {
       "RETURNED",
     ]).withDefault("PENDING")
   );
+  // Status tabs the role doesn't open are disabled; never show one of them.
+  const orderTabs = useSubTabs("sales.orders");
+  const statusFilter = orderTabs.pick(rawStatusFilter);
 
   const dateRange: DateRange | undefined = React.useMemo(() => {
     if (!fromStr) return undefined;
@@ -1115,9 +1122,9 @@ function OrdersPageContent() {
     try {
       await updateOrder.mutateAsync({
         id: editingOrder.id,
-        guestName: editGuestName.trim() || undefined,
+        guestName: capitalizeWords(editGuestName.trim()) || undefined,
         guestPhone: editGuestPhone.trim() || undefined,
-        shippingAddress: editShippingAddress.trim(),
+        shippingAddress: capitalizeWords(editShippingAddress.trim()),
         reference: editReference.trim() || null,
         totalAmount,
         shippingCost,
@@ -1591,6 +1598,7 @@ function OrdersPageContent() {
   // status buckets itself, so filtering again here would only shrink the page
   // below its own size.
   const filtered = orders;
+  useRememberRows("orders.list", filtered?.length);
 
   const selectedOrders = Object.values(selectedById);
 
@@ -2300,23 +2308,13 @@ function OrdersPageContent() {
   };
 
   if (!mounted) {
-    return (
-      <div className="flex-1 space-y-1.5 sm:space-y-4 p-1.5 sm:p-4 md:p-8 pt-1.5 sm:pt-4 md:pt-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div className="h-8 w-48 bg-muted animate-pulse rounded-lg" />
-          <div className="h-10 w-36 bg-muted animate-pulse rounded-full" />
-        </div>
-        <div className="h-10 w-full max-w-xl bg-muted animate-pulse rounded-full" />
-        <div className="h-96 w-full bg-muted animate-pulse rounded-3xl" />
-      </div>
-    );
+    return <OrdersPageSkeleton />;
   }
 
   return (
     <div className="flex-1 space-y-1.5 sm:space-y-4 p-1.5 sm:p-4 md:p-8 pt-1.5 sm:pt-4 md:pt-6 animate-in fade-in duration-300">
-      <div className="flex flex-col items-end sm:flex-row sm:items-center justify-between gap-3">
-        <h1 className="hidden sm:block text-2xl font-bold">Order Management</h1>
-
+      <PageTitle title="Order Management" />
+      <div className="flex flex-col items-end sm:flex-row sm:items-center justify-end gap-3 empty:hidden">
         {permBalance && (
           <div
             onClick={() => setShowBalance(!showBalance)}
@@ -2381,47 +2379,47 @@ function OrdersPageContent() {
         <div className="w-full overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden pb-1">
           <TabsList className="inline-flex flex-nowrap items-center h-10 w-max sm:w-fit gap-1 bg-slate-200 dark:bg-card p-1 rounded-full border-none shadow-none">
             <TabsTrigger
-              value="ALL"
+              value="ALL" disabled={!orderTabs.allowed("ALL")}
               className="shrink-0 rounded-full px-4 h-8 text-xs font-semibold capitalize cursor-pointer transition-all text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 data-active:!bg-white data-active:!text-slate-900 data-active:shadow-xs data-[state=active]:!bg-white data-[state=active]:!text-slate-900 dark:data-active:!bg-slate-900 dark:data-active:!text-slate-100 border-none"
             >
               All ({allCount})
             </TabsTrigger>
             <TabsTrigger
-              value="TODAY"
+              value="TODAY" disabled={!orderTabs.allowed("TODAY")}
               className="shrink-0 rounded-full px-4 h-8 text-xs font-semibold capitalize cursor-pointer transition-all text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 data-active:!bg-white data-active:!text-slate-900 data-active:shadow-xs data-[state=active]:!bg-white data-[state=active]:!text-slate-900 dark:data-active:!bg-slate-900 dark:data-active:!text-slate-100 border-none"
             >
               Today Confirmed ({todayCount})
             </TabsTrigger>
             <TabsTrigger
-              value="PENDING"
+              value="PENDING" disabled={!orderTabs.allowed("PENDING")}
               className="shrink-0 rounded-full px-4 h-8 text-xs font-semibold capitalize cursor-pointer transition-all text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 data-active:!bg-white data-active:!text-slate-900 data-active:shadow-xs data-[state=active]:!bg-white data-[state=active]:!text-slate-900 dark:data-active:!bg-slate-900 dark:data-active:!text-slate-100 border-none flex items-center gap-1.5"
             >
               {STATUS_DOTS.PENDING}
               Pending ({pendingCount})
             </TabsTrigger>
             <TabsTrigger
-              value="CONFIRMED"
+              value="CONFIRMED" disabled={!orderTabs.allowed("CONFIRMED")}
               className="shrink-0 rounded-full px-4 h-8 text-xs font-semibold capitalize cursor-pointer transition-all text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 data-active:!bg-white data-active:!text-slate-900 data-active:shadow-xs data-[state=active]:!bg-white data-[state=active]:!text-slate-900 dark:data-active:!bg-slate-900 dark:data-active:!text-slate-100 border-none flex items-center gap-1.5"
             >
               {STATUS_DOTS.PROCESSING}
               Confirmed ({confirmedCount})
             </TabsTrigger>
             <TabsTrigger
-              value="DELIVERED"
+              value="DELIVERED" disabled={!orderTabs.allowed("DELIVERED")}
               className="shrink-0 rounded-full px-4 h-8 text-xs font-semibold capitalize cursor-pointer transition-all text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 data-active:!bg-white data-active:!text-slate-900 data-active:shadow-xs data-[state=active]:!bg-white data-[state=active]:!text-slate-900 dark:data-active:!bg-slate-900 dark:data-active:!text-slate-100 border-none flex items-center gap-1.5"
             >
               {STATUS_DOTS.DELIVERED}
               Delivered ({deliveredCount})
             </TabsTrigger>
             <TabsTrigger
-              value="CANCELLED"
+              value="CANCELLED" disabled={!orderTabs.allowed("CANCELLED")}
               className="shrink-0 rounded-full px-4 h-8 text-xs font-semibold capitalize cursor-pointer transition-all text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 data-active:!bg-white data-active:!text-slate-900 data-active:shadow-xs data-[state=active]:!bg-white data-[state=active]:!text-slate-900 dark:data-active:!bg-slate-900 dark:data-active:!text-slate-100 border-none flex items-center gap-1.5"
             >
               {STATUS_DOTS.CANCELLED}
               Cancelled ({cancelledCount})
             </TabsTrigger>
             <TabsTrigger
-              value="RETURNED"
+              value="RETURNED" disabled={!orderTabs.allowed("RETURNED")}
               className="shrink-0 rounded-full px-4 h-8 text-xs font-semibold capitalize cursor-pointer transition-all text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 data-active:!bg-white data-active:!text-slate-900 data-active:shadow-xs data-[state=active]:!bg-white data-[state=active]:!text-slate-900 dark:data-active:!bg-slate-900 dark:data-active:!text-slate-100 border-none flex items-center gap-1.5"
             >
               {STATUS_DOTS.REFUNDED}
@@ -2624,11 +2622,7 @@ function OrdersPageContent() {
 
 
         {isLoading ? (
-          <div className="p-6 space-y-4">
-            {Array.from({ length: 5 }).map((_, i) => (
-              <Skeleton key={i} className="h-12 w-full rounded-2xl" />
-            ))}
-          </div>
+          <OrdersTableSkeleton pageSize={pagination.pageSize} />
         ) : (
           <DataTable
             columns={columns}
@@ -3877,7 +3871,7 @@ function OrdersPageContent() {
                       value={editGuestName}
                       onChange={(e) => setEditGuestName(e.target.value)}
                       placeholder="Customer Name"
-                      className="h-9 text-xs bg-background"
+                      className="capitalize h-9 text-xs bg-background"
                     />
                   </div>
                   <div className="space-y-1.5">
@@ -3928,7 +3922,7 @@ function OrdersPageContent() {
                     onChange={(e) => setEditShippingAddress(e.target.value)}
                     placeholder="Full Delivery Address"
                     rows={3}
-                    className="text-xs resize-none bg-background leading-relaxed"
+                    className="capitalize text-xs resize-none bg-background leading-relaxed"
                   />
                 </div>
               </div>
@@ -4505,14 +4499,7 @@ function OrdersPageContent() {
 
 export default function OrdersPage() {
   return (
-    <Suspense
-      fallback={
-        <div className="p-4 sm:p-6 md:p-8 space-y-6 max-w-6xl mx-auto">
-          <div className="h-10 w-48 bg-gray-200 dark:bg-gray-700 animate-pulse rounded-full" />
-          <div className="h-64 w-full bg-gray-200 dark:bg-gray-700 animate-pulse rounded-3xl" />
-        </div>
-      }
-    >
+    <Suspense fallback={<OrdersPageSkeleton />}>
       <OrdersPageContent />
     </Suspense>
   );

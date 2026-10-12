@@ -7,6 +7,11 @@
 // still honoured: `expandPermissions` maps every legacy string to its granular
 // equivalent, so existing roles keep their access with no data migration.
 
+import { NAV_IDS, NAV_TABS, allowedTabIds, isTabPerm, tabAllowed, tabPerm } from "@/lib/dashboard-nav";
+
+// On top of modules, a role grants dashboard tabs (`tab:<id>`): which menus and
+// tabs it opens. See lib/dashboard-nav.ts and lib/tab-access.ts.
+
 export type Action = "read" | "write";
 
 // Extra fine-grained actions beyond read/write, shown as their own toggles in
@@ -76,6 +81,12 @@ export const MODULES = [
     key: "testimonials",
     label: "Testimonials",
     description: "Customer testimonials",
+    actions: ["read", "write"],
+  },
+  {
+    key: "promotions",
+    label: "Promotions",
+    description: "Offers such as free delivery",
     actions: ["read", "write"],
   },
   {
@@ -238,6 +249,7 @@ const MODULE_ROUTES: { module: ModuleKey; path: string }[] = [
   { module: "expenses", path: "/dashboard/expenses" },
   { module: "blog", path: "/dashboard/blog" },
   { module: "testimonials", path: "/dashboard/testimonials" },
+  { module: "promotions", path: "/dashboard/promotions" },
   { module: "users", path: "/dashboard/users" },
   { module: "settings", path: "/dashboard/settings" },
   { module: "roles", path: "/dashboard/settings/roles" },
@@ -254,17 +266,25 @@ export function landingPath(user: AuthUser): string | null {
   // A role's explicit custom URL always wins.
   if (user.landingUrl && user.landingUrl.trim()) return user.landingUrl.trim();
   if (user.role === "ADMIN" || user.role === "MODERATOR") return "/dashboard/orders";
-  const hit = MODULE_ROUTES.find((r) => can(user, r.module, "read"));
-  return hit?.path ?? null;
+  // A role may open only some of a module's tabs: land on the module's route
+  // when its tab is open, otherwise on the module's first open tab.
+  const granted = expandPermissions(user.permissions);
+  for (const route of MODULE_ROUTES) {
+    const open = NAV_TABS.filter((tab) => tab.module === route.module && tabAllowed(granted, tab));
+    if (open.length === 0) continue;
+    return (open.find((tab) => tab.href === route.path) ?? open[0]).href;
+  }
+  return null;
 }
 
 /** Every granular permission string the role editor can grant. */
-export const ALL_PERMISSIONS: ReadonlySet<string> = new Set(
-  (MODULES as readonly ModuleDef[]).flatMap((m) => [
+export const ALL_PERMISSIONS: ReadonlySet<string> = new Set([
+  ...(MODULES as readonly ModuleDef[]).flatMap((m) => [
     ...m.actions.map((a) => `${m.key}:${a}`),
     ...(m.extras ?? []).map((e) => `${m.key}:${e.key}`),
-  ])
-);
+  ]),
+  ...NAV_IDS.map(tabPerm),
+]);
 
 /** A granular permission from MODULES, or a legacy flat string that is still honoured. */
 export function isKnownPermission(permission: string): boolean {
@@ -278,13 +298,23 @@ export function isKnownPermission(permission: string): boolean {
  * Does `actor` hold every permission in `wanted`? Both sides are expanded
  * first, so legacy strings and write-implies-read/extras count. ADMIN holds
  * everything.
+ *
+ * Tabs are compared by what each side actually opens, not by the literal
+ * `tab:*` strings: a role with no tab grants opens every tab of its readable
+ * modules, so it holds (and grants) those tabs too.
  */
 export function holdsAll(actor: AuthUser, wanted: readonly string[] | null | undefined): boolean {
   if (!actor) return false;
   if (actor.role === "ADMIN") return true;
   const mine = expandPermissions(actor.permissions);
-  for (const p of expandPermissions(wanted ? [...wanted] : [])) {
+  const theirs = expandPermissions(wanted ? [...wanted] : []);
+  for (const p of theirs) {
+    if (isTabPerm(p)) continue;
     if (!mine.has(p)) return false;
+  }
+  const myTabs = allowedTabIds(mine);
+  for (const id of allowedTabIds(theirs)) {
+    if (!myTabs.has(id)) return false;
   }
   return true;
 }

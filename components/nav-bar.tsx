@@ -48,7 +48,10 @@ const NAV_LINKS = [
   // Hidden md–lg: six Bangla labels plus the search bar don't fit that range; the footer still links it.
   { id: 4, name: "navAbout" as const, path: "/about", hideMdToLg: true },
   { id: 5, name: "navContact" as const, path: "/contact" },
-  { id: 6, name: "shop" as const, path: "/shop", hasBadge: false, icon: ShoppingBag },
+  // Hidden md–xl: a seventh label would squeeze the search bar to nothing below
+  // 1280px; the mobile menu and footer still link it.
+  { id: 6, name: "offers" as const, path: "/offer", icon: BadgePercent, hideMdToXl: true },
+  { id: 7, name: "shop" as const, path: "/shop", hasBadge: false, icon: ShoppingBag },
 ];
 
 function NavbarLinks({ onNavigate }: { onNavigate?: () => void }) {
@@ -73,7 +76,7 @@ function NavbarLinks({ onNavigate }: { onNavigate?: () => void }) {
       <Link
         key={link.name}
         href={link.path}
-        className={`flex items-center gap-1.5 whitespace-nowrap text-[15px] font-medium transition-colors hover:text-primary ${link.hideMdToLg ? "md:max-lg:hidden" : ""} ${isActive ? "text-primary font-semibold" : "text-slate-600 dark:text-slate-400"
+        className={`flex items-center gap-1.5 whitespace-nowrap text-[15px] font-medium transition-colors hover:text-primary ${link.hideMdToLg ? "md:max-lg:hidden" : ""} ${link.hideMdToXl ? "md:max-xl:hidden" : ""} ${isActive ? "text-primary font-semibold" : "text-slate-600 dark:text-slate-400"
           }`}
         onClick={onNavigate}
       >
@@ -389,6 +392,7 @@ export function NavbarSkeleton() {
             <Skeleton className="h-4 w-24" />
             <Skeleton className="h-4 w-24 md:max-lg:hidden" />
             <Skeleton className="h-4 w-16" />
+            <Skeleton className="h-4 w-14 md:max-xl:hidden" />
             <Skeleton className="h-4 w-12" />
           </div>
           <Skeleton className="mx-2 lg:mx-4 h-10 max-w-xs flex-1 rounded-full" />

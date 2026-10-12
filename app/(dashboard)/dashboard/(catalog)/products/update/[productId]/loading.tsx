@@ -1,7 +1,5 @@
-import { ProductFormSkeleton } from "@/components/dashboard/skeletons"
+import { UpdateProductPageSkeleton } from "./update-product-skeleton"
 
-// Same 2/3 + 1/3 card layout as the create page, not FormPageSkeleton's
-// generic single-column form.
 export default function Loading() {
-  return <ProductFormSkeleton />
+  return <UpdateProductPageSkeleton />
 }

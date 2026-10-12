@@ -1,6 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
+import { capitalizeWords } from "@/lib/capitalize-words";
 import Link from "next/link";
 import React, { useEffect } from "react";
 import { useForm } from "react-hook-form";
@@ -224,7 +225,11 @@ function AccountClientPage({ name }: AccountClientPageProps) {
   }, [currentUser, profileForm]);
 
   const onProfileSubmit = (values: ProfileValues) => {
-    updateProfile(values);
+    updateProfile({
+      ...values,
+      name: capitalizeWords(values.name),
+      address: values.address && capitalizeWords(values.address),
+    });
   };
 
   const onPasswordSubmit = (values: PasswordValues) => {
@@ -577,7 +582,7 @@ function AccountClientPage({ name }: AccountClientPageProps) {
                                   <Textarea
                                     placeholder="House/Flat, Road, Area, District, City"
                                     rows={4}
-                                    className="rounded-2xl"
+                                    className="rounded-2xl capitalize"
                                     {...field}
                                   />
                                 </FormControl>
@@ -674,7 +679,7 @@ function AccountClientPage({ name }: AccountClientPageProps) {
                                 <FormControl>
                                   <Input
                                     placeholder="Your full name"
-                                    className="h-11 rounded-2xl"
+                                    className="capitalize h-11 rounded-2xl"
                                     {...field}
                                   />
                                 </FormControl>

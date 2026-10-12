@@ -2,7 +2,6 @@
 
 import React from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useCurrency } from "@/hooks/use-currency";
 import { useWaBreakdown, type WaQuery } from "../api/use-web-analytics";
@@ -11,6 +10,7 @@ import { formatCount, keyLabel } from "../lib/format";
 import { useWaT, type WaKey } from "../lib/i18n";
 import { CardPager, usePage } from "./card-pager";
 import { RowIcon } from "./row-icon";
+import { BreakdownRowsSkeleton } from "./wa-skeletons";
 
 export interface BreakdownTab {
   dim: Dimension;
@@ -70,11 +70,7 @@ export function BreakdownPanel({
           </span>
         </div>
         {isLoading && !data ? (
-          <div className="space-y-2">
-            {[0, 1, 2, 3, 4].map((i) => (
-              <Skeleton key={i} className="h-8 w-full" />
-            ))}
-          </div>
+          <BreakdownRowsSkeleton showOrders={showOrders} />
         ) : rows.length === 0 ? (
           <p className="py-6 text-center text-sm text-muted-foreground">{t("noDataRange")}</p>
         ) : (

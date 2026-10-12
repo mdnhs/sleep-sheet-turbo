@@ -14,9 +14,9 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Skeleton } from "@/components/ui/skeleton";
 import { useSettings, useUpdateSettings } from "@/features/settings/api/use-settings";
 import { Loader2 } from "lucide-react";
+import { ShippingFormSkeleton } from "./settings-skeletons";
 
 const shippingSchema = z.object({
   shipping_inside_dhaka: z.number({ error: "Must be a number" }).min(0, "Must be ≥ 0"),
@@ -47,12 +47,7 @@ export function ShippingForm() {
   }, [data, form]);
 
   if (isLoading) {
-    return (
-      <div className="space-y-4">
-        <Skeleton className="h-10 w-full" />
-        <Skeleton className="h-10 w-full" />
-      </div>
-    );
+    return <ShippingFormSkeleton />;
   }
 
   return (

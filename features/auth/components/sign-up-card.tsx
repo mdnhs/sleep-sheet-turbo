@@ -1,5 +1,6 @@
 "use client";
 import React, { useState } from "react";
+import { capitalizeWords } from "@/lib/capitalize-words";
 import { useForm } from "react-hook-form";
 import { Eye, EyeOff } from "lucide-react";
 
@@ -38,7 +39,7 @@ function SignUpCard() {
     },
   });
   const onSubmit = (value: z.infer<typeof RegisterSchema>) => {
-    mutate({ json: value }, {
+    mutate({ json: { ...value, name: capitalizeWords(value.name) } }, {
       onSuccess: () => {
         router.push("/signin");
       }
@@ -75,7 +76,7 @@ function SignUpCard() {
                       type="text"
                       placeholder={isBn ? "পুরো নাম" : "Full Name"}
                       {...field}
-                      className="w-full "
+                      className="capitalize w-full "
                     />
                   </FormControl>
                   <FormMessage />

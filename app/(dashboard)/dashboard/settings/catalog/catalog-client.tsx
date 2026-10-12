@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Loader2, Database, Copy, Check, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
+import { PageTitle } from "@/components/dashboard-page-title";
 
 type FeedFormat = "xml" | "csv" | "json";
 
@@ -89,12 +90,7 @@ export function CatalogSettings() {
 
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Meta Catalog</h1>
-        <p className="text-muted-foreground text-sm">
-          Product feed for Facebook / Meta Commerce Catalog
-        </p>
-      </div>
+      <PageTitle title="Meta Catalog" description="Product feed for Facebook / Meta Commerce Catalog" />
 
       <div className="space-y-6">
         <div className="rounded-3xl bg-white dark:bg-card p-6 border-none shadow-none space-y-4">

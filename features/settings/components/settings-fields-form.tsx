@@ -5,13 +5,13 @@ import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useSettings, useUpdateSettings } from "@/features/settings/api/use-settings";
 import { toast } from "sonner";
 import { blankRequiredKeys, toSettingsPatch, type SettingsSection } from "@/features/settings/settings-fields";
 import type { SettingsPatch } from "@/lib/settings/registry";
+import { SettingsFieldsFormSkeleton } from "./settings-skeletons";
 
 /** A settings page built from a field list. The server validates every value against the registry. */
 export function SettingsFieldsForm({ sections, submitLabel }: { sections: SettingsSection[]; submitLabel: string }) {
@@ -38,13 +38,7 @@ export function SettingsFieldsForm({ sections, submitLabel }: { sections: Settin
   }
 
   if (isLoading) {
-    return (
-      <div className="space-y-4">
-        {sections.map((section) => (
-          <Skeleton key={section.title} className="h-40 w-full rounded-3xl" />
-        ))}
-      </div>
-    );
+    return <SettingsFieldsFormSkeleton sections={sections} />;
   }
 
   return (

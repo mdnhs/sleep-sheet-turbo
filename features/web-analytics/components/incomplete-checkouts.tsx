@@ -17,10 +17,10 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useCurrency } from "@/hooks/use-currency";
+import { useRememberRows } from "@/hooks/use-skeleton-rows";
 import { getOptimizedImageUrl } from "@/lib/utils";
 import { type DraftView, type WaQuery, useDismissDraft, useRecoverDraft, useWaDrafts } from "../api/use-web-analytics";
 import type { CheckoutDraftRow, DraftSummary } from "../lib/types";
@@ -28,6 +28,7 @@ import { formatCount, formatPercent } from "../lib/format";
 import { useLanguage } from "@/hooks/use-language";
 import { useWaT } from "../lib/i18n";
 import { CardPager, usePage } from "./card-pager";
+import { DraftStatsSkeleton, DraftsTableSkeleton } from "./wa-skeletons";
 
 function itemsSummary(items: CheckoutDraftRow["items"]): string {
   return items
@@ -88,6 +89,8 @@ export function IncompleteCheckouts({ q }: { q: WaQuery }) {
   const { formatAmount } = useCurrency();
   const t = useWaT();
   const { language } = useLanguage();
+  // Lets DraftsTableSkeleton draw as many rows as this table showed (not a placeholder page's).
+  useRememberRows("analytics.drafts", isPlaceholderData ? undefined : data?.rows.length);
 
   if (data === null) return null;
   const rows = data?.rows ?? [];
@@ -115,7 +118,7 @@ export function IncompleteCheckouts({ q }: { q: WaQuery }) {
     // Stretches to the grid row, so it's never shorter than the funnel card beside it.
     <Card className="ring-0 self-stretch">
       <CardContent className="flex flex-col gap-4">
-        {summary ? <DraftStats summary={summary} /> : <Skeleton className="h-16 w-full" />}
+        {summary ? <DraftStats summary={summary} /> : <DraftStatsSkeleton />}
         <Tabs value={view} onValueChange={(value) => setView(value as DraftView)}>
           <TabsList variant="line">
             <TabsTrigger value="open">
@@ -132,7 +135,7 @@ export function IncompleteCheckouts({ q }: { q: WaQuery }) {
         </Tabs>
         {/* Page 0 placeholder is the other tab's list: show a skeleton, not the wrong rows. */}
         {(isLoading && !data) || (isPlaceholderData && page === 0) ? (
-          <Skeleton className="h-40 w-full" />
+          <DraftsTableSkeleton />
         ) : rows.length === 0 ? (
           <p className="py-6 text-center text-sm text-muted-foreground">
             {view === "open" ? t("noIncomplete") : t("noCompleted")}

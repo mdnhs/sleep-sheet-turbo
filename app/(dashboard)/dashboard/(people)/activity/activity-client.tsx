@@ -1,5 +1,6 @@
 "use client";
 
+import { PageTitle } from "@/components/dashboard-page-title";
 import { useState } from "react";
 import { useQueryState, parseAsString, parseAsInteger, parseAsStringEnum } from "nuqs";
 import type { ColumnDef, PaginationState, Updater } from "@tanstack/react-table";
@@ -7,7 +8,9 @@ import { DataTable } from "@/components/ui/data-table";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Skeleton } from "@/components/ui/skeleton";
+import { useSubTabs } from "@/hooks/use-sub-tabs";
+import { ActivityTableSkeleton } from "./activity-skeleton";
+import { useRememberRows } from "@/hooks/use-skeleton-rows";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
@@ -260,7 +263,9 @@ const METHOD_STYLES: Record<string, string> = {
 
 export function ActivityClient() {
   const [search, setSearch] = useQueryState("search", parseAsString.withDefault(""));
-  const [statusFilter, setStatusFilter] = useQueryState("status", parseAsStringEnum(["ALL", "ERROR"]).withDefault("ALL"));
+  const [rawStatusFilter, setStatusFilter] = useQueryState("status", parseAsStringEnum(["ALL", "ERROR"]).withDefault("ALL"));
+  const activityTabs = useSubTabs("people.activity");
+  const statusFilter = activityTabs.pick(rawStatusFilter);
   const [page, setPage] = useQueryState("page", parseAsInteger.withDefault(1));
   const [limit, setLimit] = useQueryState("limit", parseAsInteger.withDefault(20));
 
@@ -283,6 +288,7 @@ export function ActivityClient() {
   const totalPages = data && "totalPages" in data ? data.totalPages : 0;
   const total = data && "total" in data ? data.total : 0;
   const errorTotal = data && "errorTotal" in data ? data.errorTotal : 0;
+  useRememberRows("activity.list", isLoading ? undefined : logs.length);
 
   const handlePaginationChange = (updater: Updater<PaginationState>) => {
     const next = typeof updater === "function" ? updater(pagination) : updater;
@@ -294,14 +300,10 @@ export function ActivityClient() {
 
   return (
     <div className="flex-1 space-y-6 p-4 md:p-8 pt-4 md:pt-6 animate-in fade-in duration-300">
-      <div className="flex items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">Activity Log</h1>
-          <p className="text-muted-foreground text-xs sm:text-sm">
-            A plain-English history of what was created, changed, or deleted in the dashboard — and by whom
-          </p>
-        </div>
-      </div>
+      <PageTitle
+        title="Activity Log"
+        description="A plain-English history of what was created, changed, or deleted in the dashboard — and by whom"
+      />
 
       <div className="grid gap-3 sm:gap-4 grid-cols-2">
         <div className="rounded-3xl bg-white dark:bg-card p-4 sm:p-6 border-none shadow-none flex flex-col justify-between min-h-[120px] sm:min-h-[136px]">
@@ -345,13 +347,13 @@ export function ActivityClient() {
           >
             <TabsList className="flex flex-nowrap items-center h-9 w-max sm:w-fit gap-1 bg-slate-100 dark:bg-muted/40 p-1 rounded-full">
               <TabsTrigger
-                value="ALL"
+                value="ALL" disabled={!activityTabs.allowed("ALL")}
                 className="shrink-0 rounded-full px-3.5 h-7 text-xs font-semibold cursor-pointer transition-colors data-[state=active]:bg-slate-900 data-[state=active]:text-white dark:data-[state=active]:bg-slate-100 dark:data-[state=active]:text-slate-900 data-[state=inactive]:text-slate-600 dark:data-[state=inactive]:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100"
               >
                 Everything
               </TabsTrigger>
               <TabsTrigger
-                value="ERROR"
+                value="ERROR" disabled={!activityTabs.allowed("ERROR")}
                 className="shrink-0 rounded-full px-3.5 h-7 text-xs font-semibold cursor-pointer transition-colors data-[state=active]:bg-slate-900 data-[state=active]:text-white dark:data-[state=active]:bg-slate-100 dark:data-[state=active]:text-slate-900 data-[state=inactive]:text-slate-600 dark:data-[state=inactive]:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 flex items-center gap-1.5"
               >
                 <AlertTriangle className="h-3.5 w-3.5 text-red-500" />
@@ -375,7 +377,7 @@ export function ActivityClient() {
         </div>
 
         {isLoading ? (
-          <Skeleton className="h-64 w-full rounded-2xl" />
+          <ActivityTableSkeleton pageSize={limit} />
         ) : (
           <DataTable
             columns={columns}

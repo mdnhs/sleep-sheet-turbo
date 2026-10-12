@@ -1,4 +1,5 @@
 "use client";
+import { PageTitle } from "@/components/dashboard-page-title";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Form,
@@ -144,7 +145,7 @@ function AddProductClient() {
 
   return (
     <div className="container mx-auto p-3 sm:p-4 animate-in fade-in duration-300">
-      <h1 className="text-3xl font-bold mb-4 sm:mb-6">Add New Product</h1>
+      <PageTitle title="Add New Product" />
 
       <Form {...form}>
         <form className="space-y-3 sm:space-y-4" onSubmit={form.handleSubmit(onSubmit)}>

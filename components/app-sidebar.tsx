@@ -23,13 +23,15 @@ import {
   IconLayoutDashboard,
   IconPackage,
   IconSettings,
+  IconDiscount,
   IconShoppingCart,
   IconChartBar,
   IconUsers,
 } from "@tabler/icons-react"
 import { useCurrent } from "@/features/auth/api/use-current"
-import { can } from "@/lib/permissions"
-import { dashboardSections, isTabActive, visibleTabs, type SectionKey } from "@/lib/dashboard-sections"
+import { canAccessTab, firstAccessibleTab } from "@/lib/tab-access"
+import { accessibleTabs, dashboardSections, isTabActive, type SectionKey } from "@/lib/dashboard-sections"
+import { settingsNav } from "@/app/(dashboard)/dashboard/settings/settings-nav"
 import { useSettings } from "@/features/settings/api/use-settings"
 import { storeProfileFromSettings } from "@/lib/settings/store-profile"
 
@@ -46,27 +48,41 @@ const sectionItems: { key: SectionKey; icon: React.ReactNode }[] = [
   { key: "people", icon: <IconUsers /> },
 ]
 
-function buildItems(
-  user: Parameters<typeof can>[0],
+// A menu shows when the user's role opens at least one of its tabs
+// (lib/tab-access.ts); the tabs it doesn't open are disabled inside the page.
+export function buildItems(
+  user: Parameters<typeof canAccessTab>[0],
   pathname: string
 ): SidebarItem[] {
   const items: SidebarItem[] = []
-  if (can(user, "dashboard", "read")) {
+  if (canAccessTab(user, "dashboard")) {
     items.push({ title: "Dashboard", url: "/dashboard", icon: <IconLayoutDashboard /> })
   }
   for (const { key, icon } of sectionItems) {
-    const tabs = visibleTabs(key, user)
-    const first = tabs.find((tab) => !tab.socialManager)
-    if (!first) continue
-    items.push({
-      title: dashboardSections[key].title,
-      url: first.href,
-      icon,
-      isActive: tabs.some((tab) => !tab.socialManager && isTabActive(tab, pathname)),
-    })
+    const tabs = accessibleTabs(key, user)
+    if (tabs.length > 0) {
+      items.push({
+        title: dashboardSections[key].title,
+        url: tabs[0].href,
+        icon,
+        isActive: tabs.some((tab) => isTabActive(tab, pathname)),
+      })
+    }
+    // A page of its own, right after Catalog whether or not Catalog shows.
+    if (key === "catalog" && canAccessTab(user, "promotions")) {
+      items.push({ title: "Promotion", url: "/dashboard/promotions", icon: <IconDiscount /> })
+    }
   }
-  if (can(user, "settings", "read")) {
-    items.push({ title: "Settings", url: "/dashboard/settings", icon: <IconSettings /> })
+  // Settings holds pages gated by other modules too (Roles: "roles"), so it
+  // shows when any of them opens and goes to the first one.
+  const settingsPage = firstAccessibleTab(user, settingsNav.flatMap((group) => group.items))
+  if (settingsPage) {
+    items.push({
+      title: "Settings",
+      url: settingsPage.href,
+      icon: <IconSettings />,
+      isActive: pathname.startsWith("/dashboard/settings"),
+    })
   }
   return items
 }

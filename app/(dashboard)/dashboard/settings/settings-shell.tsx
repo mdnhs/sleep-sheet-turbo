@@ -4,53 +4,73 @@ import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useCurrent } from "@/features/auth/api/use-current";
-import { can } from "@/lib/permissions";
+import { isTabActive } from "@/lib/dashboard-nav";
+import { canAccessTab } from "@/lib/tab-access";
 import { cn } from "@/lib/utils";
+import { NoTabAccess } from "@/components/no-tab-access";
+import { Skeleton } from "@/components/ui/skeleton";
 import { settingsNav } from "./settings-nav";
 
+/**
+ * Settings has two tab levels: groups on the left, the group's pages across
+ * the top. Only the groups and pages the user's role opens are listed;
+ * opening any other page directly shows a "no access" notice. (The in-page
+ * tabs inside a page are disabled instead, see hooks/use-sub-tabs.ts.)
+ *
+ * The server doesn't know the user's permissions, so until the client has
+ * mounted and loaded the user both tab levels are skeletons.
+ */
+const subscribeNothing = () => () => {};
 
 export function SettingsShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { data: user } = useCurrent();
+  const mounted = React.useSyncExternalStore(subscribeNothing, () => true, () => false);
+  const pending = !mounted || user === undefined;
 
-  // Keep only tabs the user can open, then drop groups left empty.
-  const groups = React.useMemo(
+  const allGroups = React.useMemo(
     () =>
-      settingsNav
-        .map((group) => ({
-          ...group,
-          items: group.items.filter((item) => can(user ?? null, item.module, "read")),
-        }))
-        .filter((group) => group.items.length > 0),
+      settingsNav.map((group) => ({
+        ...group,
+        items: group.items.map((item) => ({ ...item, allowed: canAccessTab(user ?? null, item) })),
+      })),
     [user]
   );
+  const groups = allGroups.filter((group) => group.items.some((item) => item.allowed));
 
-  const activeGroup = groups.find((group) =>
-    group.items.some((item) => pathname === item.href || pathname.startsWith(`${item.href}/`))
-  );
+  const activeGroup = allGroups.find((group) => group.items.some((item) => isTabActive(item, pathname)));
+  const activeItem = activeGroup?.items.find((item) => isTabActive(item, pathname));
+  // `user` is undefined while loading: keep showing the page until we know.
+  // MODERATOR access is decided per page/route (isAllowed bypasses), not here.
+  const blocked = !pending && user?.role !== "MODERATOR" && activeItem && !activeItem.allowed;
+  const openItems = activeGroup?.items.filter((item) => item.allowed) ?? [];
 
   return (
     <div className="flex-1 space-y-6 p-4 md:p-8 pt-4 md:pt-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
-        <p className="text-muted-foreground text-sm">
-          Manage your store configuration, integrations, and preferences
-        </p>
-      </div>
-
       <div className="flex flex-col gap-6 md:flex-row md:items-start">
         {/* Left tabs: one per group. Horizontal scroll on mobile. Styled like account page tabs. */}
         <nav
           aria-label="Settings sections"
           className="flex gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:w-56 md:shrink-0 md:flex-col md:overflow-visible"
         >
-          {groups.map((group) => {
+          {pending &&
+            settingsNav.map((group) => (
+              <div
+                key={group.key}
+                aria-hidden
+                className="flex shrink-0 items-center gap-3 rounded-2xl border-2 border-transparent bg-white px-3.5 py-2.5 shadow-xs dark:bg-card"
+              >
+                <Skeleton className="size-7 shrink-0 rounded-xl" />
+                <Skeleton className="h-4 w-20 rounded-md" />
+              </div>
+            ))}
+          {!pending && groups.map((group) => {
             const Icon = group.icon;
             const isActive = group.key === activeGroup?.key;
             return (
               <Link
                 key={group.key}
-                href={group.items[0].href}
+                href={group.items.find((item) => item.allowed)!.href}
                 aria-current={isActive ? "page" : undefined}
                 className={cn(
                   "group flex items-center gap-3 whitespace-nowrap rounded-2xl border-2 px-3.5 py-2.5 text-sm font-medium transition-all duration-200 cursor-pointer shadow-xs",
@@ -77,15 +97,22 @@ export function SettingsShell({ children }: { children: React.ReactNode }) {
 
         <div className="min-w-0 flex-1 space-y-6">
           {/* Nested tabs: pages inside the active group. */}
-          {activeGroup && activeGroup.items.length > 1 && (
+          {pending && activeGroup && activeGroup.items.length > 1 && (
+            <div aria-hidden className="inline-flex h-10 w-max max-w-full items-center gap-1 overflow-hidden rounded-full bg-slate-200 p-1 dark:bg-card">
+              {activeGroup.items.map((item) => (
+                <Skeleton key={item.href} className="h-8 w-24 shrink-0 rounded-full bg-white/70 dark:bg-muted" />
+              ))}
+            </div>
+          )}
+          {!pending && activeGroup && openItems.length > 1 && (
             <div className="w-full overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
               <nav
                 aria-label={`${activeGroup.title} settings`}
                 className="inline-flex flex-nowrap items-center h-10 w-max sm:w-fit gap-1 bg-slate-200 dark:bg-card p-1 rounded-full border-none shadow-none"
               >
-                {activeGroup.items.map((item) => {
+                {openItems.map((item) => {
                   const Icon = item.icon;
-                  const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
+                  const isActive = item === activeItem;
                   return (
                     <Link
                       key={item.href}
@@ -107,7 +134,7 @@ export function SettingsShell({ children }: { children: React.ReactNode }) {
             </div>
           )}
 
-          {children}
+          {blocked ? <NoTabAccess title={activeItem.title} /> : children}
         </div>
       </div>
     </div>

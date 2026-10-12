@@ -1,5 +1,6 @@
 "use client";
 
+import { PageTitle } from "@/components/dashboard-page-title";
 import { useState } from "react";
 import { useQueryState, parseAsString, parseAsStringEnum } from "nuqs";
 import {
@@ -16,7 +17,8 @@ import { useCurrency } from "@/hooks/use-currency";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { TableSkeleton } from "@/components/dashboard/skeletons";
+import { ExpenseTableSkeleton } from "./expenses-skeleton";
+import { useRememberRows } from "@/hooks/use-skeleton-rows";
 import { Label } from "@/components/ui/label";
 import {
   Dialog,
@@ -189,6 +191,7 @@ export default function ExpensesClientPage() {
   };
 
   const expenses = expenseData?.data;
+  useRememberRows("expenses.list", expensesLoading ? undefined : (expenses?.length ?? 0));
 
   const dateFilterButtons: { type: DateFilter; label: string }[] = [
     { type: "all", label: "All Time" },
@@ -199,11 +202,8 @@ export default function ExpensesClientPage() {
 
   return (
     <div className="p-4 sm:p-6 md:p-8 space-y-6 max-w-6xl mx-auto animate-in fade-in duration-300">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">Expenses</h1>
-          <p className="text-muted-foreground text-xs sm:text-sm">Log and manage your business expenses</p>
-        </div>
+      <PageTitle title="Expenses" description="Log and manage your business expenses" />
+      <div className="flex flex-col sm:flex-row justify-end items-start sm:items-center gap-4">
         <div className="flex flex-wrap sm:flex-nowrap gap-2 w-full sm:w-auto">
           <Dialog open={isCategoryDialogOpen} onOpenChange={setIsCategoryDialogOpen}>
             <DialogTrigger render={<Button variant="outline" className="gap-2 rounded-full border bg-slate-50 dark:bg-muted/40 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 transition-colors h-9 px-4 flex-1 sm:flex-none" />}>
@@ -371,7 +371,7 @@ export default function ExpensesClientPage() {
 
         <div>
           {expensesLoading ? (
-            <TableSkeleton rows={6} cols={5} />
+            <ExpenseTableSkeleton />
           ) : !expenses || expenses.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">No expenses match these filters.</div>
           ) : (

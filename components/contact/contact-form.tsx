@@ -39,6 +39,7 @@ export function ContactForm() {
           id="name"
           name="name"
           value={formData.name}
+          className="capitalize"
           onChange={handleChange}
           placeholder={t("contactFormNamePlaceholder")}
           required

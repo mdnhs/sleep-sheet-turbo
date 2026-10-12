@@ -13,7 +13,6 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { Skeleton } from "@/components/ui/skeleton";
 import { ConfirmDialog } from "@/components/conform-dialouge";
 import { Plus, Copy, Check, KeyRound, Trash2 } from "lucide-react";
 import { format } from "date-fns";
@@ -24,6 +23,9 @@ import {
   useCreateApiKey,
   useRevokeApiKey,
 } from "@/features/api-keys/api/use-api-keys";
+import { PageTitle } from "@/components/dashboard-page-title";
+import { ApiKeysTableSkeleton } from "../settings-skeletons";
+import { useRememberRows } from "@/hooks/use-skeleton-rows";
 
 interface ApiKeyRow {
   id: string;
@@ -48,6 +50,8 @@ export function ApiKeysClient() {
   const [revokeTarget, setRevokeTarget] = useState<ApiKeyRow | null>(null);
 
   const rows = (keys ?? []) as ApiKeyRow[];
+  // DataTable pages client-side, 10 rows per page.
+  useRememberRows("api-keys.list", isLoading ? undefined : Math.min(rows.length, 10));
 
   const handleCreate = (e: React.FormEvent) => {
     e.preventDefault();
@@ -147,13 +151,11 @@ export function ApiKeysClient() {
 
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
-      <div className="flex items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">API Keys</h1>
-          <p className="text-muted-foreground text-xs sm:text-sm">
-            Server-to-server credentials — for the MCP server, scripts, or other integrations. A key acts as its creator, with the same role and permissions.
-          </p>
-        </div>
+      <PageTitle
+        title="API Keys"
+        description="Server-to-server credentials — for the MCP server, scripts, or other integrations. A key acts as its creator, with the same role and permissions."
+      />
+      <div className="flex items-center justify-end gap-4">
         <Button onClick={() => setCreateOpen(true)} className="gap-2 text-white bg-slate-900 hover:bg-slate-800 dark:bg-indigo-600 dark:hover:bg-indigo-700 whitespace-nowrap rounded-full px-5 h-9 text-xs font-semibold">
           <Plus className="h-4 w-4" />
           New Key
@@ -162,7 +164,7 @@ export function ApiKeysClient() {
 
       <div className="rounded-3xl bg-white dark:bg-card p-6 border-none shadow-none space-y-4">
         {isLoading ? (
-          <Skeleton className="h-64 w-full rounded-2xl" />
+          <ApiKeysTableSkeleton />
         ) : (
           <DataTable columns={columns} data={rows} />
         )}

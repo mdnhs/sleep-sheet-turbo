@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { SEO_DEFAULTS } from "@/lib/settings/defaults";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -8,11 +9,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useSettings, useUpdateSettings } from "@/features/settings/api/use-settings";
+import { SeoFormSkeleton } from "@/features/settings/components/settings-skeletons";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useSubTabs } from "@/hooks/use-sub-tabs";
 import { Globe, Search, Users, Bot, Shield, BarChart2 } from "lucide-react";
 
 const seoSchema = z.object({
@@ -30,6 +32,8 @@ const seoSchema = z.object({
 type SeoFormValues = z.infer<typeof seoSchema>;
 
 export function SeoForm() {
+  const seoTabs = useSubTabs("settings.seo");
+  const [seoTabsValue, setSeoTabsValue] = useState("general");
   const { data, isLoading } = useSettings();
   const { mutate, isPending } = useUpdateSettings();
 
@@ -64,33 +68,27 @@ export function SeoForm() {
   }
 
   if (isLoading) {
-    return (
-      <div className="space-y-6">
-        {Array.from({ length: 5 }).map((_, i) => (
-          <Skeleton key={i} className="h-16 w-full" />
-        ))}
-      </div>
-    );
+    return <SeoFormSkeleton />;
   }
 
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        <Tabs defaultValue="general" className="w-full">
+        <Tabs value={seoTabs.pick(seoTabsValue)} onValueChange={(value) => setSeoTabsValue(value as string)} className="w-full">
           <TabsList className="bg-slate-100 dark:bg-slate-800/60 p-1 rounded-2xl flex flex-wrap h-auto gap-1 border-none mb-4">
-            <TabsTrigger value="general" className="rounded-xl gap-2 text-xs font-semibold py-2 px-4 cursor-pointer">
+            <TabsTrigger value="general" disabled={!seoTabs.allowed("general")} className="rounded-xl gap-2 text-xs font-semibold py-2 px-4 cursor-pointer">
               <Globe className="h-4 w-4 text-indigo-500" />
               General SEO
             </TabsTrigger>
-            <TabsTrigger value="analytics" className="rounded-xl gap-2 text-xs font-semibold py-2 px-4 cursor-pointer">
+            <TabsTrigger value="analytics" disabled={!seoTabs.allowed("analytics")} className="rounded-xl gap-2 text-xs font-semibold py-2 px-4 cursor-pointer">
               <BarChart2 className="h-4 w-4 text-emerald-500" />
               Analytics & Verification
             </TabsTrigger>
-            <TabsTrigger value="social" className="rounded-xl gap-2 text-xs font-semibold py-2 px-4 cursor-pointer">
+            <TabsTrigger value="social" disabled={!seoTabs.allowed("social")} className="rounded-xl gap-2 text-xs font-semibold py-2 px-4 cursor-pointer">
               <Users className="h-4 w-4 text-blue-500" />
               Social & Branding
             </TabsTrigger>
-            <TabsTrigger value="crawlers" className="rounded-xl gap-2 text-xs font-semibold py-2 px-4 cursor-pointer">
+            <TabsTrigger value="crawlers" disabled={!seoTabs.allowed("crawlers")} className="rounded-xl gap-2 text-xs font-semibold py-2 px-4 cursor-pointer">
               <Bot className="h-4 w-4 text-purple-500" />
               AI Crawlers
             </TabsTrigger>

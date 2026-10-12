@@ -1,5 +1,7 @@
 "use client";
 
+import { PageTitle } from "@/components/dashboard-page-title";
+import { capitalizeWords } from "@/lib/capitalize-words";
 import { useState, useMemo } from "react";
 import { useQueryState, parseAsString } from "nuqs";
 import type { ColumnDef, Updater } from "@tanstack/react-table";
@@ -21,8 +23,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Plus, Search, KeyRound } from "lucide-react";
-import { Skeleton } from "@/components/ui/skeleton";
-import { TableSkeleton } from "@/components/dashboard/skeletons";
+import { UsersPageSkeleton } from "./users-skeleton";
+import { useRememberRows } from "@/hooks/use-skeleton-rows";
 
 import { useGetUsers } from "@/features/users/api/use-get-users";
 import { useGetRoles } from "@/features/roles/api/use-get-roles";
@@ -68,6 +70,11 @@ export function UsersClient() {
         u.role.toLowerCase().includes(q)
     );
   }, [safeUsers, searchQuery]);
+  // DataTable pages client-side, 10 rows per page.
+  useRememberRows(
+    "users.list",
+    loadingUsers || loadingRoles ? undefined : Math.min(filteredUsers.length, 10),
+  );
 
   const handleRoleChange = (userId: string, roleId: string) => {
     updateRole.mutate({ id: userId, roleId: roleId === "none" ? null : roleId });
@@ -77,7 +84,7 @@ export function UsersClient() {
     e.preventDefault();
     createUser.mutate(
       {
-        name,
+        name: capitalizeWords(name),
         email,
         password,
         roleId: selectedRole === "none" ? null : selectedRole,
@@ -170,32 +177,13 @@ export function UsersClient() {
   ];
 
   if (loadingUsers || loadingRoles) {
-    return (
-      <div className="flex-1 space-y-6 p-4 md:p-8 pt-4 md:pt-6">
-        <div className="flex items-center justify-between gap-4">
-          <div>
-            <Skeleton className="h-8 w-32 rounded-xl mb-2" />
-            <Skeleton className="h-4 w-60 rounded-xl" />
-          </div>
-          <Skeleton className="h-9 w-28 rounded-full" />
-        </div>
-        <div className="rounded-3xl bg-white dark:bg-card p-4 sm:p-6 border-none shadow-none space-y-4">
-          <Skeleton className="h-10 w-full sm:max-w-sm rounded-full" />
-          <TableSkeleton rows={6} cols={4} />
-        </div>
-      </div>
-    );
+    return <UsersPageSkeleton />;
   }
 
   return (
     <div className="flex-1 space-y-6 p-4 md:p-8 pt-4 md:pt-6 animate-in fade-in duration-300">
-      <div className="flex items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Staff</h1>
-          <p className="text-muted-foreground text-sm">
-            Manage team members and assign custom roles
-          </p>
-        </div>
+      <PageTitle title="Staff" description="Manage team members and assign custom roles" />
+      <div className="flex items-center justify-end gap-4">
         <Button onClick={() => setCreateOpen(true)} className="gap-2 text-white bg-slate-900 hover:bg-slate-800 dark:bg-indigo-600 dark:hover:bg-indigo-700 whitespace-nowrap rounded-full px-5 h-9 text-xs font-semibold">
           <Plus className="h-4 w-4" />
           Add User
@@ -234,6 +222,7 @@ export function UsersClient() {
               <Input
                 placeholder="John Doe"
                 value={name}
+                className="capitalize"
                 onChange={(e) => setName(e.target.value)}
                 required
               />

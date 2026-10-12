@@ -50,15 +50,13 @@ import { useDeleteProduct } from "@/features/dashboard/api/use-delete-product"
 import { useBulkDeleteProducts } from "@/features/dashboard/api/use-bulk-delete-products"
 import { useBulkUpdateFeatured } from "@/features/dashboard/api/use-bulk-update-featured"
 import { useCurrency } from "@/hooks/use-currency"
+import { useRememberRows, useSkeletonRows } from "@/hooks/use-skeleton-rows"
 import { sanitizeRichText } from "@/lib/sanitize"
 import { Skeleton } from "@/components/ui/skeleton"
-import {
-  CardGridSkeleton,
-  FilterBarSkeleton,
-  PaginationSkeleton,
-  TableSkeleton,
-} from "@/components/dashboard/skeletons"
+import { PRODUCTS_SKELETON_MAX, ProductsDuplicateGroupsSkeleton } from "./products-skeleton"
+import { RememberedProductsSkeleton } from "./products-view-skeleton"
 import Link from "next/link"
+import { PageTitle } from "@/components/dashboard-page-title"
 
 export type ProductColumn = {
   id: string
@@ -156,6 +154,12 @@ export default function ProductsClientPage() {
     },
     { enabled: isDuplicates }
   )
+
+  // How many cards / rows / groups each view drew, so its skeleton matches next time.
+  useRememberRows("products.grid", isGrid ? products?.data?.length : undefined)
+  useRememberRows("products.table", isTable ? products?.data?.length : undefined)
+  useRememberRows("products.duplicates", isDuplicates ? duplicateGroups?.data?.length : undefined)
+  const duplicateSkeletonGroups = useSkeletonRows("products.duplicates", PRODUCTS_SKELETON_MAX.duplicates)
 
   const detailsProduct = (products?.data ?? []).find((p) => p.id === detailsId) ?? null
   const detailsHtml = detailsProduct?.description ? sanitizeRichText(detailsProduct.description) : ""
@@ -401,32 +405,16 @@ export default function ProductsClientPage() {
     </div>
   )
 
+  const pageTitle = <PageTitle title="Products" description="Manage your product catalog and inventory" />
+
   if (isLoading) {
-    return (
-      <div className="flex-1 space-y-3 sm:space-y-6 p-2 sm:p-4 md:p-8 pt-2 sm:pt-4 md:pt-6">
-        <div className="flex items-center justify-end sm:justify-between gap-3">
-          <div className="hidden sm:block">
-            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">Products</h1>
-            <p className="text-muted-foreground text-xs sm:text-sm">Manage your product catalog and inventory</p>
-          </div>
-          <Skeleton className="h-9 w-40 rounded-full shrink-0" />
-        </div>
-        <div className="rounded-3xl bg-white dark:bg-card p-2 sm:p-6 space-y-2 sm:space-y-4">
-          <FilterBarSkeleton />
-          {isGrid ? <CardGridSkeleton count={limit > 12 ? 12 : limit} /> : <TableSkeleton rows={Math.min(limit, 10)} cols={7} />}
-          <PaginationSkeleton />
-        </div>
-      </div>
-    )
+    return <RememberedProductsSkeleton view={isDuplicates ? "duplicates" : isGrid ? "grid" : "table"} limit={limit} />
   }
 
   return (
     <div className="flex-1 space-y-3 sm:space-y-6 p-2 sm:p-4 md:p-8 pt-2 sm:pt-4 md:pt-6 animate-in fade-in duration-300">
-      <div className="flex items-center justify-end sm:justify-between gap-3">
-        <div className="hidden sm:block">
-          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">Products</h1>
-          <p className="text-muted-foreground text-xs sm:text-sm">Manage your product catalog and inventory</p>
-        </div>
+      {pageTitle}
+      <div className="flex items-center justify-end gap-3">
         <div className="flex items-center gap-2 shrink-0">
           <Button nativeButton={false} render={<Link href="/dashboard/products/create" />} className="gap-2 text-white bg-slate-900 hover:bg-slate-800 dark:bg-indigo-600 dark:hover:bg-indigo-700 whitespace-nowrap rounded-full px-4 sm:px-5 h-9 text-xs font-semibold shrink-0">
             <Plus className="h-4 w-4" />
@@ -485,11 +473,7 @@ export default function ProductsClientPage() {
             {duplicatesFilterBar}
 
             {isDuplicatesLoading ? (
-              <div className="space-y-3">
-                {Array.from({ length: 3 }).map((_, i) => (
-                  <Skeleton key={i} className="h-28 rounded-2xl" />
-                ))}
-              </div>
+              <ProductsDuplicateGroupsSkeleton count={duplicateSkeletonGroups} />
             ) : (duplicateGroups?.data ?? []).length === 0 ? (
               <div className="rounded-2xl border border-slate-100 dark:border-slate-800 p-12 text-center text-muted-foreground text-sm">
                 No duplicate images found.

@@ -5,9 +5,9 @@ import { ExternalLink, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Skeleton } from "@/components/ui/skeleton";
 import { useSettings, useUpdateSettings } from "@/features/settings/api/use-settings";
 import { isValidSocialManagerUrl } from "@/lib/social-manager";
+import { SocialManagerFormSkeleton } from "./settings-skeletons";
 
 export function SocialManagerForm() {
   const { data: settings, isLoading } = useSettings();
@@ -15,12 +15,7 @@ export function SocialManagerForm() {
   const [edit, setEdit] = useState<string | null>(null);
 
   if (isLoading) {
-    return (
-      <div className="rounded-3xl bg-white dark:bg-card p-6 space-y-4">
-        <Skeleton className="h-6 w-48 rounded-xl" />
-        <Skeleton className="h-10 w-full rounded-2xl" />
-      </div>
-    );
+    return <SocialManagerFormSkeleton />;
   }
 
   const saved = settings?.social_manager_url ?? "";

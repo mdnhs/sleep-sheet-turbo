@@ -1,5 +1,5 @@
-import { BlogFormSkeleton } from "@/components/dashboard/skeletons"
+import { UpdateBlogPageSkeleton } from "./update-blog-skeleton"
 
 export default function Loading() {
-  return <BlogFormSkeleton />
+  return <UpdateBlogPageSkeleton />
 }

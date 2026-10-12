@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { useSettings, useUpdateSettings } from "@/features/settings/api/use-settings";
 import { Switch } from "@/components/ui/switch";
 import { Plus, Trash2, Pencil, Check, X } from "lucide-react";
+import { PosPaymentMethodsSkeleton } from "./settings-skeletons";
 
 interface PaymentMethod {
   id: string;
@@ -14,7 +15,7 @@ interface PaymentMethod {
 }
 
 export function PosPaymentMethods() {
-  const { data } = useSettings();
+  const { data, isLoading } = useSettings();
   const { mutate, isPending } = useUpdateSettings();
   const [newLabel, setNewLabel] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -61,6 +62,10 @@ export function PosPaymentMethods() {
     save(methods.map(m => m.id === id ? { ...m, label, value } : m));
     cancelEdit();
   };
+
+  if (isLoading) {
+    return <PosPaymentMethodsSkeleton />;
+  }
 
   return (
     <div className="space-y-4">

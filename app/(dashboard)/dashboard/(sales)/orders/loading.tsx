@@ -1,5 +1,5 @@
-import { TablePageSkeleton } from "@/components/dashboard/skeletons"
+import { OrdersPageSkeleton } from "./orders-skeleton";
 
 export default function Loading() {
-  return <TablePageSkeleton tabs />
+  return <OrdersPageSkeleton />;
 }

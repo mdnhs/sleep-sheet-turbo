@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Loader2, Eye, EyeOff } from "lucide-react";
+import { GoogleSheetsFormSkeleton } from "./settings-skeletons";
 
 const googleSheetsSchema = z.object({
   google_sheets_client_email: z.string(),
@@ -39,11 +40,7 @@ export function GoogleSheetsForm() {
   }
 
   if (isLoading) {
-    return (
-      <div className="rounded-3xl bg-white dark:bg-card p-6 border-none shadow-none flex items-center justify-center py-8">
-        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-      </div>
-    );
+    return <GoogleSheetsFormSkeleton />;
   }
 
   return (

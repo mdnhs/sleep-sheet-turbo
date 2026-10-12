@@ -9,6 +9,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Loader2, Eye, EyeOff } from "lucide-react";
+import { BdCourierFormSkeleton } from "./settings-skeletons";
 
 const bdCourierSchema = z.object({
   bdcourier_api_key: z.string().min(1, "API key is required"),
@@ -33,11 +34,7 @@ export function BdCourierForm() {
   }
 
   if (isLoading) {
-    return (
-      <div className="rounded-3xl bg-white dark:bg-card p-6 border-none shadow-none flex items-center justify-center py-8">
-        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-      </div>
-    );
+    return <BdCourierFormSkeleton />;
   }
 
   return (

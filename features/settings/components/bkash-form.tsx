@@ -9,13 +9,13 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import {
   useSettings,
   useSettingsSecrets,
   useUpdateSettings,
 } from "@/features/settings/api/use-settings";
+import { BkashFormSkeleton } from "./settings-skeletons";
 
 type CredentialKey = "bkash_app_key" | "bkash_app_secret" | "bkash_username" | "bkash_password";
 
@@ -74,12 +74,7 @@ export function BkashForm() {
   });
 
   if (isLoading || secretsLoading) {
-    return (
-      <div className="space-y-3">
-        <Skeleton className="h-14 w-full" />
-        <Skeleton className="h-40 w-full" />
-      </div>
-    );
+    return <BkashFormSkeleton />;
   }
 
   const enabled = saved.enabled ?? settings?.payment_method_bkash === "true";
@@ -110,6 +105,7 @@ export function BkashForm() {
 
   return (
     <div className="space-y-4">
+      <div className="grid gap-3 md:grid-cols-2">
       <div className="flex items-center justify-between rounded-lg border px-4 py-3">
         <div className="flex flex-col pr-4">
           <span className="text-sm font-semibold">bKash</span>
@@ -131,31 +127,33 @@ export function BkashForm() {
         />
       </div>
 
-      <div className="rounded-lg border p-4 space-y-4">
-        <div className="space-y-2">
-          <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            Environment
-          </Label>
-          <div className="flex gap-2">
-            {(["sandbox", "live"] as const).map((m) => (
-              <Button
-                key={m}
-                type="button"
-                size="sm"
-                variant={mode === m ? "default" : "outline"}
-                className="rounded-full capitalize"
-                onClick={() => setModeEdit(m)}
-              >
-                {m}
-              </Button>
-            ))}
-          </div>
-          <p className="text-xs text-muted-foreground">
+      {/* Not saved on flip like the switch beside it: Live <-> Sandbox moves
+          real customers' payments, so it waits for Save Changes. */}
+      <div className="flex items-center justify-between rounded-lg border px-4 py-3">
+        <div className="flex flex-col pr-4">
+          <span className="flex items-center gap-2 text-sm font-semibold">
+            {mode === "live" ? "Live" : "Sandbox"}
+            {modeEdit !== null && modeEdit !== savedMode && (
+              <Badge variant="outline" className="text-[10px]">Unsaved</Badge>
+            )}
+          </span>
+          <span className="text-xs text-muted-foreground">
             {mode === "sandbox"
-              ? "Sandbox: test payments with bKash's test wallet — no real money moves. Use the sandbox credentials from your bKash developer account."
-              : "Live: real customer payments. Use the production credentials bKash issued to your merchant account."}
-          </p>
+              ? "Test payments with bKash's test wallet — no real money moves. Use the sandbox credentials from your bKash developer account."
+              : "Real customer payments. Use the production credentials bKash issued to your merchant account."}
+            {modeEdit !== null && modeEdit !== savedMode && " Takes effect when you save."}
+          </span>
         </div>
+        <Switch
+          aria-label="Live mode"
+          checked={mode === "live"}
+          disabled={isPending}
+          onCheckedChange={(checked) => setModeEdit(checked ? "live" : "sandbox")}
+        />
+      </div>
+      </div>
+
+      <div className="rounded-lg border p-4 space-y-4">
 
         {secretsError && (
           <p className="text-xs text-destructive">

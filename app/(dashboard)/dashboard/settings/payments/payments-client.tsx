@@ -5,16 +5,12 @@ import { PaymentsForm } from "@/features/settings/components/payments-form";
 import { BkashForm } from "@/features/settings/components/bkash-form";
 import { PosPaymentMethods } from "@/features/settings/components/pos-payment-methods";
 import { CreditCard, Store } from "lucide-react";
+import { PageTitle } from "@/components/dashboard-page-title";
 
 export function PaymentsSettings() {
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Payment Methods</h1>
-        <p className="text-muted-foreground text-sm">
-          Enable or disable payment options at checkout and point of sale
-        </p>
-      </div>
+      <PageTitle title="Payment Methods" description="Enable or disable payment options at checkout and point of sale" />
 
       <div className="space-y-6">
         <div className="rounded-3xl bg-white dark:bg-card p-6 border-none shadow-none space-y-4">

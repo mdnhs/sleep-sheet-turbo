@@ -1,4 +1,6 @@
 "use client"
+import { PageTitle } from "@/components/dashboard-page-title"
+import { capitalizeWords } from "@/lib/capitalize-words";
 import { useWebsiteSettings } from "@/hooks/use-website-settings"
 import { useEffect, useState, useCallback, useMemo } from "react"
 import { useGetInfiniteProducts } from "@/features/product/api/use-get-products"
@@ -16,6 +18,7 @@ import {
 } from "@/components/ui/select"
 
 import { Skeleton } from "@/components/ui/skeleton"
+import { PosProductGridSkeleton } from "./pos-skeleton"
 import { toast } from "sonner"
 import { useRouter } from "next/navigation"
 import { useCurrency } from "@/hooks/use-currency"
@@ -286,9 +289,9 @@ export default function PosClientPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          customerName: customerName.trim(),
+          customerName: capitalizeWords(customerName.trim()),
           customerPhone: customerPhone.trim() || undefined,
-          customerAddress: customerAddress.trim() || undefined,
+          customerAddress: capitalizeWords(customerAddress.trim()) || undefined,
           reference: reference.trim() || undefined,
           note: note.trim() || undefined,
           shippingType,
@@ -458,7 +461,7 @@ export default function PosClientPage() {
         <div className="border-t p-4 space-y-3 shrink-0 bg-background">
           <div className="space-y-2">
             <Input
-              placeholder="Customer name *"
+              placeholder="Customer name *" className="capitalize"
               value={customerName}
               onChange={(e) => setCustomerName(e.target.value)}
             />
@@ -469,7 +472,7 @@ export default function PosClientPage() {
               type="tel"
             />
             <Input
-              placeholder="Address (optional)"
+              placeholder="Address (optional)" className="capitalize"
               value={customerAddress}
               onChange={(e) => setCustomerAddress(e.target.value)}
             />
@@ -568,13 +571,11 @@ export default function PosClientPage() {
 
   return (
     <div className="flex-1 flex flex-col lg:flex-row h-[calc(100vh-4rem)] p-2 sm:p-4 md:p-6 gap-3 sm:gap-6 relative animate-in fade-in duration-300">
+      <PageTitle title="Point of Sale" />
       {/* Left Panel - Product Browser */}
       <div className="flex-1 flex flex-col rounded-3xl bg-white dark:bg-card p-1.5 sm:p-6 border-none shadow-none overflow-hidden pb-16 lg:pb-0">
         {/* Search & Filter Bar */}
         <div className="pb-2 sm:pb-4 border-b space-y-1.5 sm:space-y-3 shrink-0">
-          <div className="hidden sm:flex items-center justify-between">
-            <h1 className="text-2xl font-bold tracking-tight">Point of Sale</h1>
-          </div>
           <div className="flex flex-wrap sm:flex-nowrap items-center gap-2">
             <div className="relative flex-1 min-w-[140px]">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -636,15 +637,7 @@ export default function PosClientPage() {
         {/* Product Grid */}
         <div className="flex-1 overflow-y-auto pt-2 sm:pt-4">
           {isLoading ? (
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-1.5 sm:gap-3">
-              {Array.from({ length: 8 }).map((_, i) => (
-                <div key={i} className="space-y-2">
-                  <Skeleton className="aspect-square rounded-2xl" />
-                  <Skeleton className="h-4 w-3/4" />
-                  <Skeleton className="h-4 w-1/2" />
-                </div>
-              ))}
-            </div>
+            <PosProductGridSkeleton />
           ) : products.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
               <Package className="h-12 w-12 mb-3" />

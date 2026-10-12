@@ -1,12 +1,13 @@
 "use client";
 
+import { PageTitle } from "@/components/dashboard-page-title";
 import { useState, useMemo } from "react";
 import { useQueryState, parseAsString } from "nuqs";
 import type { ColumnDef } from "@tanstack/react-table";
 import { DataTable } from "@/components/ui/data-table";
 import { Input } from "@/components/ui/input";
-import { Skeleton } from "@/components/ui/skeleton";
-import { TableSkeleton } from "@/components/dashboard/skeletons";
+import { CustomersPageSkeleton } from "./customers-skeleton";
+import { useRememberRows } from "@/hooks/use-skeleton-rows";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -50,6 +51,8 @@ export function CustomersClient() {
         (cust.phone ?? "").toLowerCase().includes(q)
     );
   }, [safeCustomers, searchQuery]);
+  // DataTable pages client-side, 10 rows per page.
+  useRememberRows("customers.list", isLoading ? undefined : Math.min(filteredCustomers.length, 10));
 
   const stats = useMemo(() => {
     const monthStart = startOfMonth(new Date());
@@ -129,33 +132,12 @@ export function CustomersClient() {
   ];
 
   if (isLoading) {
-    return (
-      <div className="flex-1 space-y-6 p-4 md:p-8 pt-4 md:pt-6">
-        <div>
-          <Skeleton className="h-8 w-40 rounded-xl mb-2" />
-          <Skeleton className="h-4 w-64 rounded-xl" />
-        </div>
-        <div className="grid gap-3 sm:gap-4 grid-cols-2 lg:grid-cols-3">
-          <Skeleton className="h-28 rounded-3xl" />
-          <Skeleton className="h-28 rounded-3xl" />
-          <Skeleton className="h-28 rounded-3xl col-span-2 lg:col-span-1" />
-        </div>
-        <div className="rounded-3xl bg-white dark:bg-card p-4 sm:p-6 border-none shadow-none space-y-4">
-          <Skeleton className="h-10 w-full sm:max-w-sm rounded-full" />
-          <TableSkeleton rows={10} cols={7} />
-        </div>
-      </div>
-    );
+    return <CustomersPageSkeleton />;
   }
 
   return (
     <div className="flex-1 space-y-6 p-4 md:p-8 pt-4 md:pt-6 animate-in fade-in duration-300">
-      <div>
-        <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">Customers</h1>
-        <p className="text-muted-foreground text-xs sm:text-sm">
-          Shoppers who registered on your storefront
-        </p>
-      </div>
+      <PageTitle title="Customers" description="Shoppers who registered on your storefront" />
 
       <div className="grid gap-3 sm:gap-4 grid-cols-2 lg:grid-cols-3">
         <div className="rounded-3xl bg-white dark:bg-card p-4 sm:p-6 border-none shadow-none flex flex-col justify-between min-h-[120px] sm:min-h-[136px]">

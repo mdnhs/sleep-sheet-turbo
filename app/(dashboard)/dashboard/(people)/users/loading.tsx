@@ -1,5 +1,5 @@
-import { TablePageSkeleton } from "@/components/dashboard/skeletons"
+import { UsersPageSkeleton } from "./users-skeleton"
 
 export default function Loading() {
-  return <TablePageSkeleton />
+  return <UsersPageSkeleton />
 }

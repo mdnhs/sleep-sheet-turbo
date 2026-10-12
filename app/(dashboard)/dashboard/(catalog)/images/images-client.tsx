@@ -1,5 +1,6 @@
 "use client";
 
+import { PageTitle } from "@/components/dashboard-page-title";
 import { useEffect, useMemo, useState } from "react";
 import { ColumnDef } from "@tanstack/react-table";
 import { Copy, Download, ImageOff, Loader2, RefreshCw } from "lucide-react";
@@ -9,7 +10,8 @@ import * as XLSX from "xlsx";
 import { DataTable } from "@/components/ui/data-table";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { TableSkeleton } from "@/components/dashboard/skeletons";
+import { ImagesDataTableSkeleton } from "./images-skeleton";
+import { useRememberRows } from "@/hooks/use-skeleton-rows";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
@@ -83,6 +85,8 @@ export default function ImagesClientPage() {
         r.categoryLabel.toLowerCase().includes(q),
     );
   }, [rows, search]);
+  // DataTable pages client-side, 10 rows per page.
+  useRememberRows("images.list", isLoading ? undefined : Math.min(filteredRows.length, 10));
 
   const selectedRows = filteredRows.filter((_, index) => rowSelection[index.toString()]);
 
@@ -273,19 +277,10 @@ export default function ImagesClientPage() {
 
   return (
     <div className="flex-1 space-y-6 p-4 md:p-8 pt-4 md:pt-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h2 className="text-2xl md:text-3xl font-extrabold tracking-tight">
-            Images
-          </h2>
-          <p className="text-sm text-muted-foreground">
-            All product images with their Cloudinary URLs, by category.
-          </p>
-        </div>
-      </div>
+      <PageTitle title="Images" description="All product images with their Cloudinary URLs, by category." />
 
       {isLoading ? (
-        <TableSkeleton rows={10} cols={5} />
+        <ImagesDataTableSkeleton />
       ) : (
         <div className="animate-in fade-in duration-300">
         <DataTable

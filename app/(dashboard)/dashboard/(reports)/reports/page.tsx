@@ -1,5 +1,6 @@
 "use client";
 
+import { PageTitle } from "@/components/dashboard-page-title";
 import { useState } from "react";
 import { useQueryState, parseAsString, parseAsStringEnum } from "nuqs";
 import Image from "next/image";
@@ -20,7 +21,8 @@ import { subDays, subMonths, startOfDay, endOfDay, startOfMonth, endOfMonth, for
 import React from "react";
 
 import { Skeleton } from "@/components/ui/skeleton";
-import { TableSkeleton } from "@/components/dashboard/skeletons";
+import { ReportsDataSkeleton, ReportsPageSkeleton } from "./reports-skeleton";
+import { useRememberRows } from "@/hooks/use-skeleton-rows";
 
 type FilterType = "all" | "today" | "week" | "month" | "last_month" | "custom";
 
@@ -208,6 +210,8 @@ function ReportsContent() {
 
   const { data, isLoading } = useGetReports(dateRange);
   const { data: monthlyReportsData, isLoading: isMonthlyLoading } = useGetMonthlyReports();
+  useRememberRows("reports.pages", isLoading ? undefined : (data?.pageWiseBreakdown?.length ?? 0));
+  useRememberRows("reports.months", isMonthlyLoading ? undefined : (monthlyReportsData?.monthlyData?.length ?? 0));
 
   const handleFilter = (type: FilterType) => {
     setActiveFilter(type);
@@ -247,8 +251,8 @@ function ReportsContent() {
   return (
     <div className="flex-col">
       <div className="flex-1 space-y-6 p-4 md:p-8 pt-4 md:pt-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <h2 className="text-2xl md:text-3xl font-extrabold tracking-tight">Reports & Profit/Loss</h2>
+        <PageTitle title="Reports & Profit/Loss" />
+        <div className="flex flex-col sm:flex-row sm:items-center justify-end gap-4">
           <div className="flex flex-wrap items-center gap-2">
             {filterButtons.map(({ type, label }) => (
               <button
@@ -270,20 +274,7 @@ function ReportsContent() {
         </div>
 
         {isLoading ? (
-          <div className="space-y-6">
-            <div className="grid gap-3 sm:gap-4 grid-cols-2 lg:grid-cols-6">
-              <Skeleton className="h-28 rounded-3xl" />
-              <Skeleton className="h-28 rounded-3xl" />
-              <Skeleton className="h-28 rounded-3xl" />
-              <Skeleton className="h-28 rounded-3xl" />
-              <Skeleton className="h-28 rounded-3xl" />
-              <Skeleton className="h-28 rounded-3xl" />
-            </div>
-            <div className="rounded-3xl bg-white dark:bg-card p-4 sm:p-6 border-none shadow-none space-y-4">
-              <Skeleton className="h-6 w-48 rounded-xl" />
-              <TableSkeleton rows={12} cols={6} />
-            </div>
-          </div>
+          <ReportsDataSkeleton />
         ) : data ? (
           <div className="space-y-6 animate-in fade-in duration-300">
             <div className="grid gap-3 sm:gap-4 grid-cols-2 lg:grid-cols-6">
@@ -1111,7 +1102,7 @@ function OrderDetailDialog({
 
 export default function ReportsPage() {
   return (
-    <React.Suspense fallback={<div className="p-8"><Skeleton className="h-96 w-full rounded-3xl" /></div>}>
+    <React.Suspense fallback={<ReportsPageSkeleton />}>
       <ReportsContent />
     </React.Suspense>
   );

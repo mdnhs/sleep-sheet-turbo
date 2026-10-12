@@ -1,4 +1,6 @@
 "use client"
+import { PageTitle } from "@/components/dashboard-page-title"
+import { capitalizeWords } from "@/lib/capitalize-words";
 import { useEffect, useState, useRef } from "react"
 import { useQueryState, parseAsString, parseAsInteger } from "nuqs"
 import type { ColumnDef, PaginationState, Updater } from "@tanstack/react-table"
@@ -21,8 +23,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { Skeleton } from "@/components/ui/skeleton"
-import { TableSkeleton } from "@/components/dashboard/skeletons"
+import { TestimonialsPageSkeleton } from "./testimonials-skeleton"
+import { useRememberRows } from "@/hooks/use-skeleton-rows"
 import { Input } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
 import { MoreVertical, Search, Trash2, Loader2, Star, ImageIcon, Plus, X, ImagePlus } from "lucide-react"
@@ -147,7 +149,7 @@ export default function TestimonialsClientPage() {
 
     createTestimonial(
       { 
-        name: testimonialName, 
+        name: capitalizeWords(testimonialName),
         message: testimonialMessage, 
         rating: testimonialRating, 
         role: testimonialRole as "FASHION_ENTHUSIAST" | "CUSTOMER" | "INFLUENCER" | "OTHER",
@@ -182,7 +184,7 @@ export default function TestimonialsClientPage() {
       { 
         id: testimonialToEdit.id,
         json: {
-          name: testimonialName, 
+          name: capitalizeWords(testimonialName),
           message: testimonialMessage, 
           rating: testimonialRating, 
           role: testimonialRole as "FASHION_ENTHUSIAST" | "CUSTOMER" | "INFLUENCER" | "OTHER",
@@ -328,32 +330,16 @@ export default function TestimonialsClientPage() {
   }
 
   const selectedCount = Object.keys(rowSelection).length
+  useRememberRows("testimonials.list", isLoading ? undefined : (testimonials?.data?.length ?? 0))
 
   if (isLoading) {
-    return (
-      <div className="flex-1 space-y-6 p-4 md:p-8 pt-4 md:pt-6">
-        <div className="flex items-center justify-between gap-4">
-          <div>
-            <Skeleton className="h-8 w-40 rounded-xl mb-2" />
-            <Skeleton className="h-4 w-64 rounded-xl" />
-          </div>
-          <Skeleton className="h-9 w-36 rounded-full" />
-        </div>
-        <div className="rounded-3xl bg-white dark:bg-card p-4 sm:p-6 border-none shadow-none space-y-4">
-          <Skeleton className="h-10 w-full sm:max-w-sm rounded-full" />
-          <TableSkeleton rows={10} cols={6} />
-        </div>
-      </div>
-    )
+    return <TestimonialsPageSkeleton pageSize={limit} />
   }
 
   return (
     <div className="flex-1 space-y-6 p-4 md:p-8 pt-4 md:pt-6 animate-in fade-in duration-300">
-      <div className="flex items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Testimonials</h1>
-          <p className="text-muted-foreground text-sm">Manage customer feedback, reviews, and testimonials</p>
-        </div>
+      <PageTitle title="Testimonials" description="Manage customer feedback, reviews, and testimonials" />
+      <div className="flex items-center justify-end gap-4">
         <Dialog open={createOpen} onOpenChange={setCreateOpen}>
           <DialogTrigger className={cn(buttonVariants(), "gap-2 text-white bg-slate-900 hover:bg-slate-800 dark:bg-indigo-600 dark:hover:bg-indigo-700 whitespace-nowrap rounded-full px-5 h-9 text-xs font-semibold")}>
             <Plus className="h-4 w-4" />
@@ -367,7 +353,7 @@ export default function TestimonialsClientPage() {
               <div className="space-y-1">
                 <label className="text-sm text-muted-foreground">Name</label>
                 <Input
-                  placeholder="Reviewer Name (Optional)"
+                  placeholder="Reviewer Name (Optional)" className="capitalize"
                   value={testimonialName}
                   onChange={(e) => setTestimonialName(e.target.value)}
                 />
@@ -566,7 +552,7 @@ export default function TestimonialsClientPage() {
             <div className="space-y-1">
               <label className="text-sm text-muted-foreground">Name</label>
               <Input
-                placeholder="Reviewer Name (Optional)"
+                placeholder="Reviewer Name (Optional)" className="capitalize"
                 value={testimonialName}
                 onChange={(e) => setTestimonialName(e.target.value)}
               />

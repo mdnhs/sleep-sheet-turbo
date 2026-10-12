@@ -6,6 +6,7 @@ import { parseAsString, parseAsStringEnum, useQueryState, useQueryStates } from 
 import type { DateRange } from "react-day-picker";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useSubTabs } from "@/hooks/use-sub-tabs";
 import { DateRangePicker } from "@/components/ui/date-range-picker";
 import type { WaQuery } from "../api/use-web-analytics";
 import { DIMENSION_KEYS, type Dimension, type Filters } from "../lib/dimensions";
@@ -32,7 +33,9 @@ export function WebAnalyticsDashboard() {
     "range",
     parseAsStringEnum<RangePreset>(["today", "7d", "30d", "90d", "custom"]).withDefault("7d"),
   );
-  const [tab, setTab] = useQueryState("tab", parseAsStringEnum(["funnel", "overview"]).withDefault("funnel"));
+  const [rawTab, setTab] = useQueryState("tab", parseAsStringEnum(["funnel", "overview"]).withDefault("funnel"));
+  const analyticsTabs = useSubTabs("reports.analytics");
+  const tab = analyticsTabs.pick(rawTab);
   const [fromStr, setFromStr] = useQueryState("from", parseAsString.withDefault(""));
   const [toStr, setToStr] = useQueryState("to", parseAsString.withDefault(""));
   const [metric, setMetric] = useQueryState("metric", parseAsStringEnum<Metric>([...METRICS]).withDefault("visitors"));
@@ -92,8 +95,8 @@ export function WebAnalyticsDashboard() {
       className="flex flex-col gap-4"
     >
       <TabsList>
-        <TabsTrigger value="funnel">{t("mainTabFunnel")}</TabsTrigger>
-        <TabsTrigger value="overview">{t("mainTabOverview")}</TabsTrigger>
+        <TabsTrigger value="funnel" disabled={!analyticsTabs.allowed("funnel")}>{t("mainTabFunnel")}</TabsTrigger>
+        <TabsTrigger value="overview" disabled={!analyticsTabs.allowed("overview")}>{t("mainTabOverview")}</TabsTrigger>
       </TabsList>
       <div className="flex flex-wrap items-center gap-2">
         {RANGE_PRESETS.map((p) => (

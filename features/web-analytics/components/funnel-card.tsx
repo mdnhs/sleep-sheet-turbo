@@ -2,11 +2,11 @@
 
 import { CreditCard, Eye, MapPin, PackageCheck, Phone, ShoppingCart, User, Users, type LucideIcon } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
 import { useWaFunnel, type WaQuery } from "../api/use-web-analytics";
 import { formatCount, formatPercent } from "../lib/format";
 import { useWaT, type WaKey } from "../lib/i18n";
 import type { Funnel } from "../lib/types";
+import { FunnelStepsSkeleton } from "./wa-skeletons";
 
 const STEPS: { key: keyof Funnel; labelKey: WaKey; icon: LucideIcon }[] = [
   { key: "visited", labelKey: "stepVisited", icon: Users },
@@ -31,7 +31,7 @@ export function FunnelCard({ q }: { q: WaQuery }) {
       </CardHeader>
       <CardContent>
         {isLoading && !data ? (
-          <Skeleton className="h-56 w-full" />
+          <FunnelStepsSkeleton />
         ) : (
           <ol className="space-y-5">
             {STEPS.map((step, i) => {

@@ -3,11 +3,11 @@
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart";
-import { Skeleton } from "@/components/ui/skeleton";
 import { useLanguage } from "@/hooks/use-language";
 import { useWaOverview, type WaQuery } from "../api/use-web-analytics";
 import { useWaT } from "../lib/i18n";
 import { bucketLabel, pointValue, type Metric } from "../lib/format";
+import { TrendAreaSkeleton } from "./wa-skeletons";
 
 const IS_RATE: ReadonlySet<Metric> = new Set<Metric>(["bounceRate", "conversionRate"]);
 
@@ -32,7 +32,7 @@ export function TrendChart({ q, metric }: { q: WaQuery; metric: Metric }) {
       </CardHeader>
       <CardContent>
         {isLoading && !data ? (
-          <Skeleton className="h-64 w-full" />
+          <TrendAreaSkeleton />
         ) : (
           <ChartContainer config={config} className="h-64 w-full">
             <AreaChart data={points} margin={{ left: 4, right: 12 }}>

@@ -1,13 +1,13 @@
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useWaProducts, type WaQuery } from "../api/use-web-analytics";
 import { getOptimizedImageUrl } from "@/lib/utils";
 import { formatCount, formatPercent } from "../lib/format";
 import { useWaT } from "../lib/i18n";
 import { CardPager, usePage } from "./card-pager";
+import { ProductsTableRowsSkeleton } from "./wa-skeletons";
 
 export function ProductsTable({ q }: { q: WaQuery }) {
   const [page, setPage] = usePage(JSON.stringify(q));
@@ -22,7 +22,7 @@ export function ProductsTable({ q }: { q: WaQuery }) {
       </CardHeader>
       <CardContent>
         {isLoading && !data ? (
-          <Skeleton className="h-56 w-full" />
+          <ProductsTableRowsSkeleton />
         ) : rows.length === 0 ? (
           <p className="py-6 text-center text-sm text-muted-foreground">{t("noProductViews")}</p>
         ) : (

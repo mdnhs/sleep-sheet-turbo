@@ -1,4 +1,5 @@
 'use client';
+import { PageTitle } from "@/components/dashboard-page-title";
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
@@ -64,10 +65,7 @@ export default function CreateBlogClient() {
 
   return (
     <div className="flex-1 space-y-6 p-4 md:p-8 pt-4 md:pt-6 max-w-5xl mx-auto animate-in fade-in duration-300">
-      <div>
-        <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">Create Blog Post</h1>
-        <p className="text-muted-foreground text-xs sm:text-sm">Publish new article or announcement</p>
-      </div>
+      <PageTitle title="Create Blog Post" description="Publish new article or announcement" />
 
       <div className="rounded-3xl bg-white dark:bg-card p-4 sm:p-6 border-none shadow-none space-y-6">
         <form onSubmit={handleSubmit} className="space-y-4">

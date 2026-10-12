@@ -6,16 +6,12 @@ import { CourierForm } from "@/features/settings/components/courier-form";
 import { BdCourierForm } from "@/features/settings/components/bdcourier-form";
 import { GoogleSheetsForm } from "@/features/settings/components/google-sheets-form";
 import { Truck } from "lucide-react";
+import { PageTitle } from "@/components/dashboard-page-title";
 
 export function ShippingSettings() {
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Shipping & Courier</h1>
-        <p className="text-muted-foreground text-sm">
-          Configure shipping costs and courier API credentials
-        </p>
-      </div>
+      <PageTitle title="Shipping & Courier" description="Configure shipping costs and courier API credentials" />
       <div className="space-y-6">
         <div className="rounded-3xl bg-white dark:bg-card p-6 border-none shadow-none space-y-4">
           <h2 className="text-base font-bold tracking-tight">Shipping Costs</h2>

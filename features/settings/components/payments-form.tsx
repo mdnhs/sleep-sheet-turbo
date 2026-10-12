@@ -1,8 +1,8 @@
 "use client";
 
-import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import { useSettings, useUpdateSettings } from "@/features/settings/api/use-settings";
+import { PaymentsFormSkeleton } from "./settings-skeletons";
 
 export function PaymentsForm() {
   const { data, isLoading } = useSettings();
@@ -12,12 +12,7 @@ export function PaymentsForm() {
 
 
   if (isLoading) {
-    return (
-      <div className="space-y-4">
-        <Skeleton className="h-14 w-full" />
-        <Skeleton className="h-14 w-full" />
-      </div>
-    );
+    return <PaymentsFormSkeleton />;
   }
 
   return (
