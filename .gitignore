@@ -58,3 +58,6 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 .vitest/
+
+# local DB dumps (scripts/sync-prod-to-preview.sh)
+/.db-backups
