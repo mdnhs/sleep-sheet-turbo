@@ -67,10 +67,12 @@ export function NavMain({
   return (
     <div className="space-y-1">
       {groups.map((group) => (
-        <SidebarGroup key={group.label} className="py-1">
-          <SidebarGroupLabel className="text-[11px] font-bold tracking-wider uppercase text-muted-foreground/70 px-2 mb-1">
-            {group.label}
-          </SidebarGroupLabel>
+        <SidebarGroup key={group.label || "main"} className="py-1">
+          {group.label && (
+            <SidebarGroupLabel className="text-[11px] font-bold tracking-wider uppercase text-muted-foreground/70 px-2 mb-1">
+              {group.label}
+            </SidebarGroupLabel>
+          )}
           <SidebarMenu>
             {group.items.map((item) =>
               item.items && item.items.length > 0 ? (
@@ -116,7 +118,7 @@ export function NavMain({
                   ) : (
                   <SidebarMenuButton
                     tooltip={item.title}
-                    isActive={pathname === item.url || (item.url !== "/dashboard" && pathname.startsWith(`${item.url}/`))}
+                    isActive={item.isActive ?? (pathname === item.url || (item.url !== "/dashboard" && pathname.startsWith(`${item.url}/`)))}
                     render={<Link href={item.url} onClick={() => setOpenMobile(false)} />}
                   >
                     {item.icon}
