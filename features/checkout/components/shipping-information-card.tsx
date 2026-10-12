@@ -348,18 +348,44 @@ function ShippingInformationCard({ initialSettings }: ShippingInformationCardPro
                         field.onChange(val);
                       }}
                       value={field.value}
-                      className="grid grid-cols-2 gap-2"
+                      className="grid grid-cols-1 sm:grid-cols-2 gap-2.5"
                     >
                       {cardEnabled && (
-                        <div className={`border-2 rounded-xl overflow-hidden transition-all duration-200 ${selectedPaymentMethod === "card" ? "border-foreground bg-muted/20" : "border-border/40"}`}>
-                          <Label className="flex items-center justify-between p-3 cursor-pointer w-full m-0">
-                            <div className="flex items-center gap-2.5">
-                              <div className={`h-8 w-8 rounded-lg flex items-center justify-center transition-colors ${selectedPaymentMethod === "card" ? "bg-foreground text-background" : "bg-muted text-foreground"}`}>
-                                <CreditCard className="h-3.5 w-3.5" />
+                        <div
+                          className={`relative border-2 rounded-xl overflow-hidden transition-all duration-200 ${
+                            selectedPaymentMethod === "card"
+                              ? "border-foreground bg-muted/20 shadow-sm"
+                              : "border-border/60 hover:border-border hover:bg-muted/10"
+                          } ${selectedPaymentMethod === "card" ? "sm:col-span-2" : ""}`}
+                        >
+                          <Label className="flex items-center justify-between p-3 sm:p-3.5 cursor-pointer w-full m-0 gap-3">
+                            <div className="flex items-center gap-3 min-w-0">
+                              <div
+                                className={`h-9 w-9 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
+                                  selectedPaymentMethod === "card"
+                                    ? "bg-foreground text-background"
+                                    : "bg-muted text-foreground"
+                                }`}
+                              >
+                                <CreditCard className="h-4 w-4" />
                               </div>
-                              <span className="font-bold text-xs sm:text-sm">{t("cardPayment")}</span>
+                              <div className="flex flex-col min-w-0">
+                                <span className="font-bold text-xs sm:text-sm text-foreground leading-tight">
+                                  {t("cardPayment")}
+                                </span>
+                                <span className="text-[11px] text-muted-foreground font-normal leading-tight mt-0.5 truncate">
+                                  {t("cardPaymentDesc")}
+                                </span>
+                              </div>
                             </div>
-                            <RadioGroupItem value="card" className={selectedPaymentMethod === "card" ? "border-foreground text-foreground" : "opacity-50"} />
+                            <RadioGroupItem
+                              value="card"
+                              className={`shrink-0 ${
+                                selectedPaymentMethod === "card"
+                                  ? "border-foreground text-foreground"
+                                  : "opacity-50"
+                              }`}
+                            />
                           </Label>
                           {selectedPaymentMethod === "card" && (
                             <div className="px-4 pb-4 space-y-3 animate-in fade-in slide-in-from-top-2 duration-200">
@@ -418,29 +444,80 @@ function ShippingInformationCard({ initialSettings }: ShippingInformationCardPro
                         </div>
                       )}
                       {codEnabled && (
-                        <div className={`border-2 rounded-xl overflow-hidden transition-all duration-200 ${selectedPaymentMethod === "cod" ? "border-foreground bg-muted/20" : "border-border/40"}`}>
-                          <Label className="flex items-center justify-between p-3 cursor-pointer w-full m-0">
-                            <div className="flex items-center gap-2.5">
-                              <div className={`h-8 w-8 rounded-lg flex items-center justify-center transition-colors ${selectedPaymentMethod === "cod" ? "bg-foreground text-background" : "bg-muted text-foreground"}`}>
-                                <Truck className="h-3.5 w-3.5" />
+                        <div
+                          className={`relative border-2 rounded-xl overflow-hidden transition-all duration-200 h-full ${
+                            selectedPaymentMethod === "cod"
+                              ? "border-foreground bg-muted/20 shadow-sm"
+                              : "border-border/60 hover:border-border hover:bg-muted/10"
+                          }`}
+                        >
+                          <Label className="flex items-center justify-between p-3 sm:p-3.5 cursor-pointer w-full h-full m-0 gap-3">
+                            <div className="flex items-center gap-3 min-w-0">
+                              <div
+                                className={`h-9 w-9 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
+                                  selectedPaymentMethod === "cod"
+                                    ? "bg-foreground text-background"
+                                    : "bg-muted text-foreground"
+                                }`}
+                              >
+                                <Truck className="h-4 w-4" />
                               </div>
-                              <span className="font-bold text-xs sm:text-sm">{t("cashOnDelivery")}</span>
+                              <div className="flex flex-col min-w-0">
+                                <span className="font-bold text-xs sm:text-sm text-foreground leading-tight">
+                                  {t("cashOnDelivery")}
+                                </span>
+                                <span className="text-[11px] text-muted-foreground font-normal leading-tight mt-0.5">
+                                  {t("cashOnDeliveryDesc")}
+                                </span>
+                              </div>
                             </div>
-                            <RadioGroupItem value="cod" className={selectedPaymentMethod === "cod" ? "border-foreground text-foreground" : "opacity-50"} />
+                            <RadioGroupItem
+                              value="cod"
+                              className={`shrink-0 ${
+                                selectedPaymentMethod === "cod"
+                                  ? "border-foreground text-foreground"
+                                  : "opacity-50"
+                              }`}
+                            />
                           </Label>
                         </div>
                       )}
                       {bkashEnabled && (
-                        <div className={`border-2 rounded-xl overflow-hidden transition-all duration-200 ${selectedPaymentMethod === "bkash" ? "border-[#E2136E] bg-[#E2136E]/5" : "border-border/40"}`}>
-                          <Label className="flex items-center justify-between p-3 cursor-pointer w-full m-0">
-                            <div className="flex items-center gap-2.5">
-                              <Image src="/bkash-logo.png" alt="" width={32} height={32} className="h-8 w-8 rounded-lg shrink-0" />
-                              <div className="flex flex-col">
-                                <span className="font-bold text-xs sm:text-sm">{t("bkashPayment")}</span>
-                                <span className="text-[11px] text-muted-foreground font-normal">{t("bkashPaymentDesc")}</span>
+                        <div
+                          className={`relative border-2 rounded-xl overflow-hidden transition-all duration-200 h-full ${
+                            selectedPaymentMethod === "bkash"
+                              ? "border-[#E2136E] bg-[#E2136E]/5 shadow-sm"
+                              : "border-border/60 hover:border-border hover:bg-muted/10"
+                          }`}
+                        >
+                          <Label className="flex items-center justify-between p-3 sm:p-3.5 cursor-pointer w-full h-full m-0 gap-3">
+                            <div className="flex items-center gap-3 min-w-0">
+                              <div className="h-9 w-9 rounded-xl flex items-center justify-center shrink-0 overflow-hidden bg-white shadow-xs border border-border/30 p-1">
+                                <Image
+                                  src="/bkash-logo.png"
+                                  alt="bKash"
+                                  width={32}
+                                  height={32}
+                                  className="h-full w-full object-contain"
+                                />
+                              </div>
+                              <div className="flex flex-col min-w-0">
+                                <span className="font-bold text-xs sm:text-sm text-foreground leading-tight">
+                                  {t("bkashPayment")}
+                                </span>
+                                <span className="text-[11px] text-muted-foreground font-normal leading-tight mt-0.5">
+                                  {t("bkashPaymentDesc")}
+                                </span>
                               </div>
                             </div>
-                            <RadioGroupItem value="bkash" className={selectedPaymentMethod === "bkash" ? "border-[#E2136E] text-[#E2136E]" : "opacity-50"} />
+                            <RadioGroupItem
+                              value="bkash"
+                              className={`shrink-0 ${
+                                selectedPaymentMethod === "bkash"
+                                  ? "border-[#E2136E] text-[#E2136E]"
+                                  : "opacity-50"
+                              }`}
+                            />
                           </Label>
                         </div>
                       )}
