@@ -84,6 +84,9 @@ export const waEn = {
   whatsapp: "WhatsApp",
   dismiss: "Dismiss",
   dismissFailed: "Couldn't dismiss, try again",
+  dismissConfirmTitle: "Dismiss this lead?",
+  dismissConfirmDesc: "This incomplete checkout will be removed from the list.",
+  cancel: "Cancel",
 
   online: "online",
   activeLast5: "Active in the last 5 minutes",
@@ -184,6 +187,9 @@ export const waBn: Record<WaKey, string> = {
   whatsapp: "হোয়াটসঅ্যাপ",
   dismiss: "বাদ দিন",
   dismissFailed: "বাদ দেওয়া যায়নি, আবার চেষ্টা করুন",
+  dismissConfirmTitle: "এই লিড বাদ দেবেন?",
+  dismissConfirmDesc: "এই অসম্পূর্ণ চেকআউটটি তালিকা থেকে সরিয়ে ফেলা হবে।",
+  cancel: "বাতিল",
 
   online: "অনলাইন",
   activeLast5: "গত ৫ মিনিটে সক্রিয়",

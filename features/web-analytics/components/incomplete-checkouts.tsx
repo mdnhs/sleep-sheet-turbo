@@ -2,9 +2,20 @@
 
 import { formatDistanceToNow } from "date-fns";
 import { bn } from "date-fns/locale/bn";
-import { MessageCircle, Phone, X } from "lucide-react";
+import { useState } from "react";
+import { MessageCircle, Phone, Trash2 } from "lucide-react";
 import { toast } from "sonner";
-import { Button, buttonVariants } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -26,7 +37,8 @@ function itemsSummary(items: CheckoutDraftRow["items"]): string {
     .join(", ");
 }
 
-const iconLink = buttonVariants({ variant: "ghost", size: "icon", className: "size-7" });
+const iconButton =
+  "inline-flex size-7 shrink-0 items-center justify-center rounded-md text-white transition-transform active:scale-95";
 
 /** 01XXXXXXXXX → 8801XXXXXXXXX for wa.me links. */
 function whatsappLink(phone: string): string {
@@ -42,6 +54,7 @@ export function IncompleteCheckouts() {
   const [page, setPage] = usePage("drafts");
   const { data, isLoading, isPlaceholderData } = useWaDrafts(page);
   const dismiss = useDismissDraft();
+  const [dismissId, setDismissId] = useState<number | null>(null);
   const { formatAmount } = useCurrency();
   const t = useWaT();
   const { language } = useLanguage();
@@ -83,30 +96,28 @@ export function IncompleteCheckouts() {
                     <a href={`tel:${row.phone}`} className="text-xs text-muted-foreground tabular-nums hover:underline">
                       {row.phone}
                     </a>
-                    <div className="-ml-1.5 mt-1 flex gap-1">
-                      <a href={`tel:${row.phone}`} aria-label={`${t("call")} ${row.phone}`} className={iconLink}>
-                        <Phone className="size-4" />
+                    <div className="mt-2 flex items-center gap-2">
+                      <a href={`tel:${row.phone}`} aria-label={`${t("call")} ${row.phone}`} className={`${iconButton} bg-sky-600 hover:bg-sky-700`}>
+                        <Phone className="size-3.5" />
                       </a>
                       <a
                         href={whatsappLink(row.phone)}
                         target="_blank"
                         rel="noopener noreferrer"
                         aria-label={t("whatsapp")}
-                        className={iconLink}
+                        className={`${iconButton} bg-green-600 hover:bg-green-700`}
                       >
-                        <MessageCircle className="size-4" />
+                        <MessageCircle className="size-3.5" />
                       </a>
                       <Button
-                        variant="ghost"
-                        size="icon"
-                        className="size-7"
+                        type="button"
+                        className={`${iconButton} h-7 w-7 bg-rose-600 p-0 shadow-none hover:bg-rose-700`}
                         aria-label={t("dismiss")}
-                        disabled={dismiss.isPending}
-                        onClick={() =>
-                          dismiss.mutate(row.id, { onError: () => toast.error(t("dismissFailed")) })
-                        }
+                        title={t("dismiss")}
+                        disabled={dismiss.isPending && dismissId === row.id}
+                        onClick={() => setDismissId(row.id)}
                       >
-                        <X className="size-4" />
+                        <Trash2 className="size-3.5" />
                       </Button>
                     </div>
                   </TableCell>
@@ -144,6 +155,26 @@ export function IncompleteCheckouts() {
             </TableBody>
           </Table>
         )}
+        <AlertDialog open={dismissId !== null} onOpenChange={(open) => !open && setDismissId(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>{t("dismissConfirmTitle")}</AlertDialogTitle>
+              <AlertDialogDescription>{t("dismissConfirmDesc")}</AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>{t("cancel")}</AlertDialogCancel>
+              <AlertDialogAction
+                variant="destructive"
+                onClick={() => {
+                  if (dismissId !== null) dismiss.mutate(dismissId, { onError: () => toast.error(t("dismissFailed")) });
+                  setDismissId(null);
+                }}
+              >
+                {t("dismiss")}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
         <CardPager page={page} hasMore={data?.hasMore ?? false} loading={isPlaceholderData} onChange={setPage} />
       </CardContent>
     </Card>

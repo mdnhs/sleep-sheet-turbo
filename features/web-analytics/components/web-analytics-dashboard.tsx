@@ -117,8 +117,10 @@ export function WebAnalyticsDashboard() {
         <div className="flex justify-end">
           <LiveBadge />
         </div>
-        <FunnelCard q={q} />
-        <IncompleteCheckouts />
+        <div className="grid items-start gap-4 lg:grid-cols-2">
+          <FunnelCard q={q} />
+          <IncompleteCheckouts />
+        </div>
       </TabsContent>
       <TabsContent value="overview" className="flex flex-col gap-4">
         <KpiCards q={q} metric={metric} onSelect={(m) => void setMetric(m)} />
