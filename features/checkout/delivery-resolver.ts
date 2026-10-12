@@ -1,6 +1,7 @@
 import type { FieldErrors, Resolver } from "react-hook-form";
 import type { translations } from "@/hooks/use-language";
 import type { DeliveryAndPaymentFormValues } from "./schema";
+import { isValidBdMobile11 } from "@/features/fraud-checker/phone";
 
 type TranslateFn = (key: keyof typeof translations["en"]) => string;
 
@@ -20,6 +21,7 @@ export function validateDeliveryAndPayment(
 
   if (blank(values.fullName)) errors.fullName = t("errorFullNameRequired");
   if (blank(values.phone)) errors.phone = t("errorPhoneRequired");
+  else if (!isValidBdMobile11(values.phone)) errors.phone = t("errorPhoneInvalid");
   if (values.email && !EMAIL_RE.test(values.email)) errors.email = t("errorInvalidEmail");
   if (blank(values.address)) errors.address = t("errorAddressRequired");
   if (values.shippingZone !== "inside_dhaka" && values.shippingZone !== "outside_dhaka") {

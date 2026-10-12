@@ -131,6 +131,7 @@ export const translations = {
     sec: "Sec",
     errorFullNameRequired: "Full name is required",
     errorPhoneRequired: "Phone number is required",
+    errorPhoneInvalid: "Phone number must be exactly 11 digits (01XXXXXXXXX)",
     errorInvalidPhone:
       "Please enter a valid 11-digit mobile number (e.g. 017xxxxxxxx)",
     errorInvalidEmail: "Invalid email",
@@ -478,6 +479,7 @@ export const translations = {
     sec: "সেকেন্ড",
     errorFullNameRequired: "নাম আবশ্যক",
     errorPhoneRequired: "ফোন নম্বর আবশ্যক",
+    errorPhoneInvalid: "ফোন নম্বর অবশ্যই ১১ digit হতে হবে (01XXXXXXXXX)",
     errorInvalidPhone: "সঠিক ১১ ডিজিটের মোবাইল নম্বর দিন (যেমন: 017xxxxxxxx)",
     errorInvalidEmail: "সঠিক ইমেইল দিন",
     errorAddressRequired: "ঠিকানা আবশ্যক",

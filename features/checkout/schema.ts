@@ -3,6 +3,7 @@
 // checkout's client JS; this lets the bundler keep only what's used.
 import * as z from "zod";
 import type { translations } from "@/hooks/use-language";
+import { isValidBdMobile11 } from "@/features/fraud-checker/phone";
 
 type TranslateFn = (key: keyof typeof translations["en"]) => string;
 
@@ -12,7 +13,7 @@ export { SHIPPING_ZONES, type ShippingZone } from "./constants";
 export function createShippingInformationSchema(t: TranslateFn) {
   return z.object({
     fullName: z.string().trim().min(1, t("errorFullNameRequired")),
-    phone: z.string().trim().min(1, t("errorPhoneRequired")),
+    phone: z.string().trim().min(1, t("errorPhoneRequired")).refine(isValidBdMobile11, t("errorPhoneInvalid")),
     email: z.string().email(t("errorInvalidEmail")).optional().or(z.literal("")),
     address: z.string().trim().min(1, t("errorAddressRequired")),
     shippingZone: z.enum(["inside_dhaka", "outside_dhaka"], {

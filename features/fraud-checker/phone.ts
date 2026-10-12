@@ -11,3 +11,11 @@ export function normalizeBdPhone(input: string): string | null {
   if (digits.startsWith("880")) digits = digits.slice(2);
   return /^01[3-9]\d{8}$/.test(digits) ? digits : null;
 }
+
+/** True only for an 11-digit BD mobile number (01XXXXXXXXX); separators and Bengali digits are tolerated, a +880 prefix is not. */
+export function isValidBdMobile11(input: string): boolean {
+  const digits = input
+    .replace(/[০-৯]/g, (d) => String(d.charCodeAt(0) - 0x09e6))
+    .replace(/\D/g, "");
+  return /^01[3-9]\d{8}$/.test(digits);
+}

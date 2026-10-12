@@ -25,6 +25,7 @@ import { expireStaleBkashOrders, failBkashOrder, startBkashPayment } from "@/lib
 import { after } from "next/server";
 import { analyticsIdSchema, recordOrderEvent } from "@/features/web-analytics/server/record-order-event";
 import { markDraftConverted } from "@/features/web-analytics/server/drafts";
+import { isValidBdMobile11 } from "@/features/fraud-checker/phone";
 
 // Mirrors features/checkout/schema.ts (client-side form validation) so the
 // server never trusts shippingInfo/paymentInfo/guestItems shape or content
@@ -32,7 +33,7 @@ import { markDraftConverted } from "@/features/web-analytics/server/drafts";
 const checkoutSchema = z.object({
   shippingInfo: z.object({
     fullName: z.string().trim().min(1),
-    phone: z.string().trim().min(1),
+    phone: z.string().trim().min(1).refine(isValidBdMobile11),
     email: z.string().trim().email().optional().or(z.literal("")),
     address: z.string().trim().min(1),
     shippingZone: z.enum(["inside_dhaka", "outside_dhaka"]),
