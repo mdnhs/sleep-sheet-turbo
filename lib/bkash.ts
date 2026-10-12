@@ -6,6 +6,9 @@
 //   grant token → create payment (returns bkashURL) → customer pays on
 //   bKash's page → bKash redirects to our callback → execute payment.
 import { getSettingsMap } from "@/lib/settings-cache";
+import { db } from "@/db";
+import { siteSettings } from "@/db/schema";
+import { eq } from "drizzle-orm";
 
 const API_VERSION = "v1.2.0-beta";
 const SANDBOX_BASE =
@@ -63,13 +66,53 @@ export async function isBkashAvailable(): Promise<boolean> {
   return config.enabled && isBkashConfigured(config);
 }
 
-// bKash tokens live for an hour; reuse one per credential set instead of
-// granting a fresh one on every payment. In-process, so each warm instance
-// keeps its own — the grant call is cheap.
+// bKash tokens live for an hour; reuse one per credential set for 1 hour.
+// Checklist 0: Grant API can only be called twice per hour, so the id_token
+// must be persisted in database cache and reused across all gateway users and server instances.
 let tokenCache: { key: string; token: string; expiresAt: number } | null = null;
 
-export function resetBkashTokenCache(): void {
+async function loadTokenFromDb(key: string): Promise<{ token: string; expiresAt: number } | null> {
+  try {
+    const row = await db.query.siteSettings.findFirst({
+      where: eq(siteSettings.key, `_bkash_token_${key}`),
+    });
+    if (!row?.value) return null;
+    const parsed = JSON.parse(row.value) as { token: string; expiresAt: number };
+    if (parsed.token && parsed.expiresAt > Date.now()) {
+      return parsed;
+    }
+  } catch {
+    // If DB is unavailable or during early migrations/isolated unit tests, fall back cleanly.
+  }
+  return null;
+}
+
+async function saveTokenToDb(key: string, token: string, expiresAt: number): Promise<void> {
+  try {
+    const value = JSON.stringify({ token, expiresAt });
+    await db
+      .insert(siteSettings)
+      .values({
+        key: `_bkash_token_${key}`,
+        value,
+        updatedAt: new Date(),
+      })
+      .onConflictDoUpdate({
+        target: siteSettings.key,
+        set: { value, updatedAt: new Date() },
+      });
+  } catch {
+    // DB write failed
+  }
+}
+
+export function resetBkashTokenCache(key?: string): void {
   tokenCache = null;
+  if (key) {
+    try {
+      db.delete(siteSettings).where(eq(siteSettings.key, `_bkash_token_${key}`)).catch(() => {});
+    } catch {}
+  }
 }
 
 function sanitizeBkashLog(path: string, data: unknown): unknown {
@@ -148,15 +191,26 @@ interface TokenResponse {
   statusMessage?: string;
   errorCode?: string;
   errorMessage?: string;
+  errorMessageEn?: string;
   message?: string;
 }
 
 async function getToken(config: BkashConfig): Promise<string> {
   const key = [config.mode, config.appKey, config.username].join("|");
+
+  // 1. In-process memory cache (L1 fast path)
   if (tokenCache && tokenCache.key === key && tokenCache.expiresAt > Date.now()) {
     return tokenCache.token;
   }
 
+  // 2. Database cache (L2 persistent path: shared across instances/serverless for 1 hour)
+  const dbCached = await loadTokenFromDb(key);
+  if (dbCached && dbCached.expiresAt > Date.now()) {
+    tokenCache = { key, token: dbCached.token, expiresAt: dbCached.expiresAt };
+    return dbCached.token;
+  }
+
+  // 3. Grant API call (called at most once an hour per checklist item 0)
   const data = await bkashFetch<TokenResponse>(
     config,
     "/token/grant",
@@ -166,14 +220,18 @@ async function getToken(config: BkashConfig): Promise<string> {
 
   if (!data.id_token) {
     throw new BkashError(
-      data.statusMessage || data.errorMessage || data.message || "bKash rejected the credentials",
+      data.errorMessageEn || data.errorMessage || data.statusMessage || data.message || "bKash rejected the credentials",
       data.statusCode || data.errorCode,
     );
   }
 
-  // Refresh a minute early so a token never expires mid-request.
+  // Refresh 60 seconds before full expiration so token never expires mid-flight
   const ttlMs = Math.max(60, (data.expires_in ?? 3600) - 60) * 1000;
-  tokenCache = { key, token: data.id_token, expiresAt: Date.now() + ttlMs };
+  const expiresAt = Date.now() + ttlMs;
+
+  tokenCache = { key, token: data.id_token, expiresAt };
+  await saveTokenToDb(key, data.id_token, expiresAt);
+
   return data.id_token;
 }
 
@@ -183,7 +241,7 @@ async function authedHeaders(config: BkashConfig): Promise<Record<string, string
 
 /** Verifies the saved credentials by requesting a token. Throws BkashError. */
 export async function testBkashCredentials(config: BkashConfig): Promise<void> {
-  resetBkashTokenCache();
+  resetBkashTokenCache([config.mode, config.appKey, config.username].join("|"));
   await getToken(config);
 }
 
@@ -196,6 +254,8 @@ interface PaymentResponse {
   merchantInvoiceNumber?: string;
   statusCode?: string;
   statusMessage?: string;
+  errorMessage?: string;
+  errorMessageEn?: string;
 }
 
 export interface BkashPayment {
@@ -223,7 +283,9 @@ export async function createBkashPayment(
   );
 
   if (data.statusCode !== "0000" || !data.paymentID || !data.bkashURL) {
-    throw new BkashError(data.statusMessage || "bKash could not start the payment", data.statusCode);
+    const errorMsg =
+      data.errorMessageEn || data.errorMessage || data.statusMessage || "bKash could not start the payment";
+    throw new BkashError(errorMsg, data.statusCode);
   }
   return { paymentID: data.paymentID, bkashURL: data.bkashURL };
 }
@@ -246,31 +308,67 @@ function toResult(data: PaymentResponse): BkashResult | null {
 }
 
 /**
- * Captures a payment the customer has authorised. Returns the completed
- * transaction, or null when bKash says it did not go through. If the execute
- * call itself fails (timeout etc.) the payment may still have succeeded, so
- * the status endpoint is asked before giving up.
+ * Captures a payment the customer has authorized.
+ *
+ * bKash Checklist:
+ * 3. From Execute API response [transactionStatus = "Completed"] is for successful payment.
+ *    Any other response is a failure case; extract errorMessageEn to display on failure page.
+ * 4. Query payment API should be called if and only if there is NO response from the Execute API
+ *    (Timeout or null response). Other than this, do not call Query API in payment flow.
  */
 export async function executeBkashPayment(
   config: BkashConfig,
   paymentID: string,
-): Promise<BkashResult | null> {
+): Promise<BkashResult> {
+  let data: PaymentResponse | null = null;
+  let hasTimeoutOrNoResponse = false;
+
   try {
-    const data = await bkashFetch<PaymentResponse>(
+    data = await bkashFetch<PaymentResponse>(
       config,
       "/execute",
       { paymentID },
       await authedHeaders(config),
     );
-    const result = toResult(data);
-    if (result) return result;
-    // Already captured or duplicate callback (e.g. 2062 or 2029) — ask for the real state.
-    if (data.statusCode === "2062" || data.statusCode === "2029") return queryBkashPayment(config, paymentID);
-    return null;
   } catch (error) {
-    if (!(error instanceof BkashError)) throw error;
-    return queryBkashPayment(config, paymentID);
+    if (
+      error instanceof BkashError &&
+      (error.message.includes("did not respond in time") ||
+        error.message.includes("Could not reach bKash") ||
+        error.message.includes("unreadable response"))
+    ) {
+      hasTimeoutOrNoResponse = true;
+    } else {
+      throw error;
+    }
   }
+
+  // Fallback ONLY when there was NO response or timeout from Execute API (Checklist item 4)
+  if (hasTimeoutOrNoResponse || !data) {
+    console.warn(`[bKash Execute] No response/timeout from Execute API for ${paymentID}. Fallback to Query Payment API.`);
+    const queried = await queryBkashPayment(config, paymentID);
+    if (queried) return queried;
+    throw new BkashError(
+      "bKash Execute API did not respond in time and transaction could not be verified",
+      "TIMEOUT",
+    );
+  }
+
+  // Response was received from Execute API
+  const result = toResult(data);
+  if (result) {
+    return result;
+  }
+
+  // Any other response is a failure case from Execute API (Checklist item 3).
+  // Surface proper errorMessageEn from the API response.
+  const errorMessageEn =
+    data.errorMessageEn ||
+    data.errorMessage ||
+    data.statusMessage ||
+    `Payment not completed (Status: ${data.transactionStatus || data.statusCode || "Failed"})`;
+
+  throw new BkashError(errorMessageEn, data.statusCode);
 }
 
 export async function queryBkashPayment(
@@ -285,3 +383,56 @@ export async function queryBkashPayment(
   );
   return toResult(data);
 }
+
+export interface BkashRefundInput {
+  paymentID: string;
+  trxID: string;
+  amount: number;
+  sku?: string;
+  reason?: string;
+}
+
+export interface BkashRefundResult {
+  statusCode: string;
+  statusMessage?: string;
+  originalTrxID?: string;
+  refundTrxID?: string;
+  transactionStatus?: string;
+  amount?: string;
+  currency?: string;
+  errorMessage?: string;
+  errorMessageEn?: string;
+}
+
+/**
+ * Executes a refund on a completed bKash transaction using the same stored id_token (Checklist item 5).
+ */
+export async function refundBkashPayment(
+  config: BkashConfig,
+  input: BkashRefundInput,
+): Promise<BkashRefundResult> {
+  const data = await bkashFetch<BkashRefundResult>(
+    config,
+    "/payment/refund",
+    {
+      paymentID: input.paymentID,
+      amount: input.amount.toFixed(2),
+      trxID: input.trxID,
+      sku: input.sku || "Refund",
+      reason: input.reason || "Customer refund",
+    },
+    await authedHeaders(config),
+  );
+
+  if (data.statusCode !== "0000" || data.transactionStatus !== "Completed") {
+    const errorMsg =
+      data.errorMessageEn ||
+      data.errorMessage ||
+      data.statusMessage ||
+      `bKash refund failed (${data.statusCode || "Failed"})`;
+    throw new BkashError(errorMsg, data.statusCode);
+  }
+
+  return data;
+}
+

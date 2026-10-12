@@ -101,9 +101,11 @@ function ShippingInformationCard({ initialSettings }: ShippingInformationCardPro
   useEffect(() => {
     const url = new URL(window.location.href);
     const outcome = url.searchParams.get("payment");
+    const message = url.searchParams.get("message");
     if (outcome !== "failed" && outcome !== "cancelled") return;
-    toast.error(outcome === "cancelled" ? t("bkashPaymentCancelled") : t("bkashPaymentFailed"));
+    toast.error(message || (outcome === "cancelled" ? t("bkashPaymentCancelled") : t("bkashPaymentFailed")));
     url.searchParams.delete("payment");
+    if (message) url.searchParams.delete("message");
     window.history.replaceState(null, "", url.pathname + url.search);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

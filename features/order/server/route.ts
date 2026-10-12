@@ -3,6 +3,8 @@ import { batch, db } from "@/db";
 import { orders, orderItems, payments, paymentLogs, orderTimelineEvents, users, products, blockedIps } from "@/db/schema";
 import { eq, ne, and, or, not, ilike, inArray, desc, gte, lte, sql, count } from "drizzle-orm";
 import { awaitingBkashPayment } from "@/lib/bkash-orders";
+import { BkashError, getBkashConfig, isBkashConfigured, refundBkashPayment } from "@/lib/bkash";
+import { recordPaymentLog } from "@/lib/payment-logger";
 import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
 import { sessionMiddleware } from "@/lib/session-middleware";
@@ -674,6 +676,191 @@ const app = new Hono()
     // totalAmount, which nothing else in the request path catches. The
     // `orders_refunded_amount_within_total` CHECK constraint (see migration
     // 0021) is the last-resort backstop if this guard is ever bypassed.
+    const [updated] = await db.update(orders)
+      .set({
+        status: "CANCELLED",
+        cancellationReason: reason ?? order.cancellationReason ?? null,
+        updatedAt: new Date(),
+      })
+      .where(and(eq(orders.id, id), ne(orders.status, "CANCELLED")))
+      .returning();
+
+    if (!updated) {
+      return c.json({ error: "Order is already cancelled" }, 400);
+    }
+
+    // The status flip above is now guaranteed exclusive, so batching the
+    // restock + timeline entry together no longer needs its own guard.
+    await db.transaction(async (tx) => {
+      await tx.insert(orderTimelineEvents).values({
+        orderId: id,
+        status: "CANCELLED",
+        message:
+          `Order cancelled` +
+          (reason ? ` — ${reason}` : "") +
+          (restock ? ". Items restocked." : "."),
+      });
+
+      // Return the reserved goods to inventory.
+      if (restock) {
+        for (const item of order.items) {
+          if (!item.productId) continue;
+          await tx.update(products)
+            .set({ stock: sql`${products.stock} + ${item.quantity}` })
+            .where(eq(products.id, item.productId));
+        }
+      }
+    });
+
+    const updatedOrder = await db.query.orders.findFirst({
+      where: eq(orders.id, id),
+      with: {
+        user: true,
+        items: { with: { product: { columns: { name: true } } } },
+      },
+    });
+
+    setActivityMeta(c, {
+      name: `#${order.orderNumber}`,
+      changes: [
+        { label: "Status", from: titleCase(order.status), to: "Cancelled" },
+        ...(reason ? [{ label: "Reason", to: reason } as ActivityChange] : []),
+        ...(updatedOrder ? buildOrderContext(updatedOrder) : []),
+      ],
+    });
+
+    return c.json(updatedOrder);
+  } catch (error) {
+    console.error("Failed to cancel order:", error);
+    return c.json({ error: "Failed to cancel order" }, 500);
+  }
+})
+
+.post("/:id/refund", sessionMiddleware, zValidator("json", z.object({
+  amount: z.number().positive(),
+  reason: z.string().max(500).optional(),
+  restock: z.boolean().optional().default(true),
+})), async (c) => {
+  const user = c.get("user");
+  if (!isAllowed(user, "orders", "refund", ["MODERATOR"])) {
+    return c.json({ error: "Unauthorized" }, 401);
+  }
+
+  const id = c.req.param("id");
+  const { amount, reason, restock } = c.req.valid("json");
+
+  // Round to 2dp throughout so float noise never blocks a valid full refund
+  // or lets a refund creep a cent over the total.
+  const round2 = (n: number) => Math.round(n * 100) / 100;
+  const EPS = 0.005;
+
+  try {
+    const order = await db.query.orders.findFirst({
+      where: eq(orders.id, id),
+      with: { items: true },
+    });
+
+    if (!order) {
+      return c.json({ error: "Order not found" }, 404);
+    }
+    if (order.status === "CANCELLED") {
+      return c.json({ error: "A cancelled order cannot be refunded" }, 400);
+    }
+
+    const alreadyRefunded = order.refundedAmount ?? 0;
+    const refundable = round2(order.totalAmount - alreadyRefunded);
+    if (refundable <= 0) {
+      return c.json({ error: "Order is already fully refunded" }, 400);
+    }
+
+    const refundAmount = round2(amount);
+    if (refundAmount > refundable + EPS) {
+      return c.json(
+        { error: `Refund exceeds the refundable amount (${refundable})` },
+        400,
+      );
+    }
+
+    const newRefunded = round2(alreadyRefunded + refundAmount);
+    const isFull = newRefunded >= order.totalAmount - EPS;
+    // True only on the single transition into a fully-refunded state, so we
+    // never restock the same order twice across repeated partial refunds.
+    const becameFull = isFull && alreadyRefunded < order.totalAmount - EPS;
+
+    const updateFields: Partial<typeof orders.$inferInsert> = {
+      refundedAmount: newRefunded,
+      refundReason: reason ?? order.refundReason ?? null,
+      refundedAt: new Date(),
+      paymentStatus: isFull ? "REFUNDED" : "PARTIALLY_REFUNDED",
+      updatedAt: new Date(),
+    };
+    // A full refund also moves the order itself to REFUNDED; partial refunds
+    // leave the fulfilment status (e.g. DELIVERED) untouched.
+    if (isFull) updateFields.status = "REFUNDED";
+
+    // Conditional update: only applies while refundedAmount still equals
+    // what we read above (compare-and-swap on the exact value) and the
+    // order hasn't been cancelled meanwhile. Two concurrent refund requests
+    // (two tabs, a double-click) can both read the same alreadyRefunded and
+    // both pass the "within refundable" check earlier — without this WHERE,
+    // both writes would apply and the total refunded could exceed
+    // totalAmount, which nothing else in the request path catches. The
+    // `orders_refunded_amount_within_total` CHECK constraint (see migration
+    // 0021) is the last-resort backstop if this guard is ever bypassed.
+    // Checklist item 5: Process bKash Refund API using stored token if order was paid via bKash
+    if (order.paymentMethod === "BKASH") {
+      const bkashConfig = await getBkashConfig();
+      if (isBkashConfigured(bkashConfig)) {
+        const logs = await db.query.paymentLogs.findMany({
+          where: eq(paymentLogs.orderId, id),
+        });
+        const executeLog = logs.find((l) => l.endpoint === "/execute" && l.isSuccess);
+        const createLog = logs.find((l) => l.endpoint === "/create" && l.paymentId);
+        const paymentID = executeLog?.paymentId || createLog?.paymentId;
+        const trxID = executeLog?.trxId || order.reference?.replace(/^bKash TrxID:\s*/, "");
+
+        if (paymentID && trxID) {
+          try {
+            const refundRes = await refundBkashPayment(bkashConfig, {
+              paymentID,
+              trxID,
+              amount: refundAmount,
+              reason: reason ?? undefined,
+            });
+
+            await recordPaymentLog({
+              orderId: order.id,
+              orderNumber: order.orderNumber,
+              endpoint: "/payment/refund",
+              paymentId: paymentID,
+              trxId: refundRes.refundTrxID || trxID,
+              amount: refundAmount,
+              request: { paymentID, trxID, amount: refundAmount, reason },
+              response: refundRes,
+              statusCode: refundRes.statusCode,
+              statusMessage: refundRes.statusMessage,
+              isSuccess: refundRes.statusCode === "0000",
+            });
+          } catch (bkashErr) {
+            const msg = bkashErr instanceof BkashError ? bkashErr.message : "bKash refund failed";
+            await recordPaymentLog({
+              orderId: order.id,
+              orderNumber: order.orderNumber,
+              endpoint: "/payment/refund",
+              paymentId: paymentID,
+              trxId: trxID,
+              amount: refundAmount,
+              request: { paymentID, trxID, amount: refundAmount, reason },
+              statusCode: bkashErr instanceof BkashError ? bkashErr.statusCode : "ERROR",
+              statusMessage: msg,
+              isSuccess: false,
+            });
+            return c.json({ error: `bKash Refund rejected: ${msg}` }, 400);
+          }
+        }
+      }
+    }
+
     const [updated] = await db.update(orders)
       .set(updateFields)
       .where(and(

@@ -1,10 +1,31 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@/lib/settings-cache", () => ({ getSettingsMap: vi.fn(async () => ({})) }));
+vi.mock("@/db", () => {
+  const store = new Map<string, string>();
+  return {
+    db: {
+      query: {
+        siteSettings: {
+          findFirst: vi.fn(async () => null),
+        },
+      },
+      insert: vi.fn(() => ({
+        values: vi.fn(() => ({
+          onConflictDoUpdate: vi.fn(async () => {}),
+        })),
+      })),
+      delete: vi.fn(() => ({
+        where: vi.fn(async () => {}),
+      })),
+    },
+  };
+});
 
 import {
   createBkashPayment,
   executeBkashPayment,
+  refundBkashPayment,
   isBkashConfigured,
   parseBkashConfig,
   resetBkashTokenCache,
@@ -144,13 +165,103 @@ describe("executeBkashPayment", () => {
     });
   });
 
-  it("returns null when the payment did not complete", async () => {
-    mockBkash({ ...token, "/execute": { statusCode: "2062", transactionStatus: "Failed" }, "/payment/status": { transactionStatus: "Initiated" } });
-    expect(await executeBkashPayment(config, "P1")).toBeNull();
+  it("throws errorMessageEn when payment does not complete, and DOES NOT call Query API", async () => {
+    const calls = mockBkash({
+      ...token,
+      "/execute": {
+        statusCode: "2023",
+        transactionStatus: "Failed",
+        errorMessageEn: "Insufficient Balance in Customer Wallet",
+      },
+    });
+
+    await expect(executeBkashPayment(config, "P1")).rejects.toThrow(
+      "Insufficient Balance in Customer Wallet",
+    );
+    // Checklist 4: Query Payment API must NOT be called if Execute API returned a response
+    expect(calls.some((c) => c.path === "/payment/status")).toBe(false);
   });
 
-  it("asks the status endpoint when the payment was already captured", async () => {
-    mockBkash({ ...token, "/execute": { statusCode: "2062" }, "/payment/status": completed });
-    expect((await executeBkashPayment(config, "P1"))?.trxID).toBe("TRX9");
+  it("falls back to Query Payment API ONLY on timeout/no response", async () => {
+    let executeAttempts = 0;
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string, init: RequestInit) => {
+        const path = url.replace(/^.*\/tokenized\/checkout/, "");
+        if (path === "/token/grant") {
+          return new Response(JSON.stringify({ id_token: "tok", expires_in: 3600, statusCode: "0000" }), { status: 200 });
+        }
+        if (path === "/execute") {
+          executeAttempts++;
+          const timeoutErr = new Error("The operation was aborted due to timeout");
+          timeoutErr.name = "TimeoutError";
+          throw timeoutErr;
+        }
+        if (path === "/payment/status") {
+          return new Response(JSON.stringify(completed), { status: 200 });
+        }
+        throw new Error(`Unexpected call: ${path}`);
+      }),
+    );
+
+    const result = await executeBkashPayment(config, "P1");
+    expect(executeAttempts).toBe(1);
+    expect(result.trxID).toBe("TRX9");
+    expect(result.paymentID).toBe("P1");
+  });
+});
+
+describe("refundBkashPayment", () => {
+  it("executes refund using stored id_token", async () => {
+    const calls = mockBkash({
+      ...token,
+      "/payment/refund": {
+        statusCode: "0000",
+        statusMessage: "Successful",
+        transactionStatus: "Completed",
+        originalTrxID: "TRX9",
+        refundTrxID: "REF999",
+        amount: "500.00",
+      },
+    });
+
+    const refund = await refundBkashPayment(config, {
+      paymentID: "P1",
+      trxID: "TRX9",
+      amount: 500,
+      reason: "Defective item",
+    });
+
+    expect(refund.statusCode).toBe("0000");
+    expect(refund.refundTrxID).toBe("REF999");
+
+    const refundCall = calls.find((c) => c.path === "/payment/refund")!;
+    expect(refundCall.headers.Authorization).toBe("tok");
+    expect(refundCall.headers["X-APP-Key"]).toBe("key");
+    expect(refundCall.body).toMatchObject({
+      paymentID: "P1",
+      trxID: "TRX9",
+      amount: "500.00",
+      reason: "Defective item",
+    });
+  });
+
+  it("throws errorMessageEn when bKash refund fails", async () => {
+    mockBkash({
+      ...token,
+      "/payment/refund": {
+        statusCode: "2068",
+        statusMessage: "Transaction is not available for refund",
+        errorMessageEn: "Transaction is not available for refund",
+      },
+    });
+
+    await expect(
+      refundBkashPayment(config, {
+        paymentID: "P1",
+        trxID: "TRX9",
+        amount: 500,
+      }),
+    ).rejects.toThrow("Transaction is not available for refund");
   });
 });
