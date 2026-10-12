@@ -46,9 +46,9 @@ function scheduleGtmIdentity(data: { phone?: string; email?: string }) {
 }
 
 const FLOATING_LABEL =
-  "pointer-events-none absolute left-10 top-5 z-10 -translate-y-1/2 px-1 text-sm font-normal leading-none text-muted-foreground transition-all duration-200 " +
-  "peer-focus:left-3 peer-focus:top-0 peer-focus:bg-card peer-focus:text-xs peer-focus:font-medium " +
-  "peer-[:not(:placeholder-shown)]:left-3 peer-[:not(:placeholder-shown)]:top-0 peer-[:not(:placeholder-shown)]:bg-card peer-[:not(:placeholder-shown)]:text-xs peer-[:not(:placeholder-shown)]:font-medium";
+  "pointer-events-none absolute left-10 top-5 z-10 -translate-y-1/2 rounded-full px-1 text-sm font-normal leading-5 text-muted-foreground transition-all duration-200 " +
+  "peer-focus:left-3 peer-focus:top-0 peer-focus:bg-card peer-focus:px-2 peer-focus:text-xs peer-focus:font-medium peer-focus:leading-none " +
+  "peer-[:not(:placeholder-shown)]:left-3 peer-[:not(:placeholder-shown)]:top-0 peer-[:not(:placeholder-shown)]:bg-card peer-[:not(:placeholder-shown)]:px-2 peer-[:not(:placeholder-shown)]:text-xs peer-[:not(:placeholder-shown)]:font-medium peer-[:not(:placeholder-shown)]:leading-none";
 
 interface ShippingInformationCardProps {
   initialSettings?: Record<string, string> | null;
@@ -195,32 +195,32 @@ function ShippingInformationCard({ initialSettings }: ShippingInformationCardPro
       <Form {...form}>
         <form className="space-y-3" onSubmit={form.handleSubmit(onSubmit, onInvalid)}>
           <Card className="bg-card rounded-2xl gap-3 p-3.5 sm:p-5 w-full ring-0">
-            <CardHeader className="p-0 mb-2.5">
+            <CardHeader className="p-0 sm:mb-2.5">
               <CardTitle className="text-lg sm:text-xl font-bold text-foreground">{t(bkashEnabled ? "deliveryInfoTitle" : "deliveryTitle")}</CardTitle>
             </CardHeader>
             <CardContent className="p-0 w-full space-y-2.5">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <FormField name="fullName" control={form.control} render={({ field }) => (
-                  <FormItem className="space-y-1">
+                  <FormItem className="gap-0.5 space-y-0">
                     <div className="relative">
                       <User aria-hidden="true" className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/60" />
                       <FormControl>
-                        <Input type="text" placeholder=" " className="peer h-10 rounded-xl border border-border/40 bg-slate-100 dark:bg-slate-800/50 py-0 pr-3 pl-10 text-sm shadow-inner placeholder:text-muted-foreground/50 focus-visible:bg-white dark:focus-visible:bg-slate-800 focus-visible:ring-2 focus-visible:ring-primary/20" {...field} />
+                        <Input type="text" placeholder=" " className="peer h-10 rounded-xl border border-border/40 bg-slate-100 dark:border-slate-600 dark:bg-slate-800 dark:shadow-md dark:shadow-black/40 py-0 pr-3 pl-10 text-sm shadow-inner placeholder:text-muted-foreground/50 focus-visible:bg-white dark:focus-visible:bg-slate-700 dark:focus-visible:border-slate-400 focus-visible:ring-2 focus-visible:ring-primary/20" {...field} />
                       </FormControl>
                       <FormLabel className={FLOATING_LABEL}>{t("fullNameLabel")} *</FormLabel>
                     </div>
-                    <FormMessage />
+                    <FormMessage className="text-xs" />
                   </FormItem>
                 )} />
                 <FormField name="phone" control={form.control} render={({ field }) => (
-                  <FormItem className="space-y-1">
+                  <FormItem className="gap-0.5 space-y-0">
                     <div className="relative">
                       <Phone aria-hidden="true" className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/60" />
                       <FormControl>
                         <Input
                           type="tel"
                           placeholder=" "
-                          className="peer h-10 rounded-xl border border-border/40 bg-slate-100 dark:bg-slate-800/50 py-0 pr-3 pl-10 text-sm shadow-inner placeholder:text-muted-foreground/50 focus-visible:bg-white dark:focus-visible:bg-slate-800 focus-visible:ring-2 focus-visible:ring-primary/20"
+                          className="peer h-10 rounded-xl border border-border/40 bg-slate-100 dark:border-slate-600 dark:bg-slate-800 dark:shadow-md dark:shadow-black/40 py-0 pr-3 pl-10 text-sm shadow-inner placeholder:text-muted-foreground/50 focus-visible:bg-white dark:focus-visible:bg-slate-700 dark:focus-visible:border-slate-400 focus-visible:ring-2 focus-visible:ring-primary/20"
                           {...field}
                           onBlur={(e) => {
                             field.onBlur();
@@ -233,20 +233,20 @@ function ShippingInformationCard({ initialSettings }: ShippingInformationCardPro
                       </FormControl>
                       <FormLabel className={FLOATING_LABEL}>{t("phoneLabel")} *</FormLabel>
                     </div>
-                    <FormMessage />
+                    <FormMessage className="text-xs" />
                   </FormItem>
                 )} />
               </div>
 
               <FormField name="email" control={form.control} render={({ field }) => (
-                <FormItem className="space-y-1">
+                <FormItem className="gap-0.5 space-y-0">
                   <div className="relative">
                     <Mail aria-hidden="true" className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/60" />
                     <FormControl>
                       <Input
                         type="email"
                         placeholder=" "
-                        className="peer h-10 rounded-xl border border-border/40 bg-slate-100 dark:bg-slate-800/50 py-0 pr-3 pl-10 text-sm shadow-inner placeholder:text-muted-foreground/50 focus-visible:bg-white dark:focus-visible:bg-slate-800 focus-visible:ring-2 focus-visible:ring-primary/20"
+                        className="peer h-10 rounded-xl border border-border/40 bg-slate-100 dark:border-slate-600 dark:bg-slate-800 dark:shadow-md dark:shadow-black/40 py-0 pr-3 pl-10 text-sm shadow-inner placeholder:text-muted-foreground/50 focus-visible:bg-white dark:focus-visible:bg-slate-700 dark:focus-visible:border-slate-400 focus-visible:ring-2 focus-visible:ring-primary/20"
                         {...field}
                         onBlur={(e) => {
                           field.onBlur();
@@ -259,20 +259,20 @@ function ShippingInformationCard({ initialSettings }: ShippingInformationCardPro
                     </FormControl>
                     <FormLabel className={FLOATING_LABEL}>{t("emailLabel")}</FormLabel>
                   </div>
-                  <FormMessage />
+                  <FormMessage className="text-xs" />
                 </FormItem>
               )} />
 
               <FormField name="address" control={form.control} render={({ field }) => (
-                <FormItem className="space-y-1">
+                <FormItem className="gap-0.5 space-y-0">
                   <div className="relative">
                     <MapPin aria-hidden="true" className="pointer-events-none absolute top-3 left-3 h-4 w-4 text-muted-foreground/60" />
                     <FormControl>
-                      <Textarea placeholder=" " rows={2} className="peer min-h-[44px] resize-none rounded-xl border border-border/40 bg-slate-100 dark:bg-slate-800/50 py-2 pr-3 pl-10 text-sm shadow-inner placeholder:text-muted-foreground/50 focus-visible:bg-white dark:focus-visible:bg-slate-800 focus-visible:ring-2 focus-visible:ring-primary/20" {...field} />
+                      <Textarea placeholder=" " rows={2} className="peer min-h-[44px] resize-none rounded-xl border border-border/40 bg-slate-100 dark:border-slate-600 dark:bg-slate-800 dark:shadow-md dark:shadow-black/40 py-2 pr-3 pl-10 text-sm shadow-inner placeholder:text-muted-foreground/50 focus-visible:bg-white dark:focus-visible:bg-slate-700 dark:focus-visible:border-slate-400 focus-visible:ring-2 focus-visible:ring-primary/20" {...field} />
                     </FormControl>
                     <FormLabel className={FLOATING_LABEL}>{t("addressLabel")} *</FormLabel>
                   </div>
-                  <FormMessage />
+                  <FormMessage className="text-xs" />
                 </FormItem>
               )} />
               <p className="sr-only">{t("checkoutDraftNotice")}</p>
@@ -338,8 +338,8 @@ function ShippingInformationCard({ initialSettings }: ShippingInformationCardPro
           </Card>
 
           {paymentMethodsCount > 1 && (
-            <Card className="bg-card rounded-2xl gap-3 p-3.5 sm:p-5 w-full ring-0">
-              <CardHeader className="p-0 mb-2.5">
+            <Card className="bg-card rounded-2xl gap-2 sm:gap-3 p-3.5 sm:p-5 w-full ring-0">
+              <CardHeader className="p-0 sm:mb-2.5">
                 <CardTitle className="text-lg sm:text-xl font-bold text-foreground">{t("paymentTitle")}</CardTitle>
               </CardHeader>
               <CardContent className="p-0">
@@ -351,7 +351,7 @@ function ShippingInformationCard({ initialSettings }: ShippingInformationCardPro
                         field.onChange(val);
                       }}
                       value={field.value}
-                      className="grid gap-2"
+                      className="grid grid-cols-2 gap-2"
                     >
                       {cardEnabled && (
                         <div className={`border-2 rounded-xl overflow-hidden transition-all duration-200 ${selectedPaymentMethod === "card" ? "border-foreground bg-muted/20" : "border-border/40"}`}>
