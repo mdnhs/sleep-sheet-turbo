@@ -348,20 +348,20 @@ function ShippingInformationCard({ initialSettings }: ShippingInformationCardPro
                         field.onChange(val);
                       }}
                       value={field.value}
-                      className="grid grid-cols-1 sm:grid-cols-2 gap-2.5"
+                      className="grid grid-cols-2 gap-2 sm:gap-2.5"
                     >
                       {cardEnabled && (
                         <div
                           className={`relative border-2 rounded-xl overflow-hidden transition-all duration-200 ${
                             selectedPaymentMethod === "card"
-                              ? "border-foreground bg-muted/20 shadow-sm"
+                              ? "border-foreground bg-muted/20 shadow-xs col-span-2"
                               : "border-border/60 hover:border-border hover:bg-muted/10"
-                          } ${selectedPaymentMethod === "card" ? "sm:col-span-2" : ""}`}
+                          }`}
                         >
-                          <Label className="flex items-center justify-between p-3 sm:p-3.5 cursor-pointer w-full m-0 gap-3">
-                            <div className="flex items-center gap-3 min-w-0">
+                          <Label className="flex items-center justify-between p-2.5 sm:p-3 cursor-pointer w-full m-0 gap-2">
+                            <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
                               <div
-                                className={`h-9 w-9 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
+                                className={`h-8 w-8 rounded-lg flex items-center justify-center shrink-0 transition-colors ${
                                   selectedPaymentMethod === "card"
                                     ? "bg-foreground text-background"
                                     : "bg-muted text-foreground"
@@ -369,14 +369,9 @@ function ShippingInformationCard({ initialSettings }: ShippingInformationCardPro
                               >
                                 <CreditCard className="h-4 w-4" />
                               </div>
-                              <div className="flex flex-col min-w-0">
-                                <span className="font-bold text-xs sm:text-sm text-foreground leading-tight">
-                                  {t("cardPayment")}
-                                </span>
-                                <span className="text-[11px] text-muted-foreground font-normal leading-tight mt-0.5 truncate">
-                                  {t("cardPaymentDesc")}
-                                </span>
-                              </div>
+                              <span className="font-bold text-xs sm:text-sm text-foreground leading-tight">
+                                {t("cardPayment")}
+                              </span>
                             </div>
                             <RadioGroupItem
                               value="card"
@@ -445,16 +440,16 @@ function ShippingInformationCard({ initialSettings }: ShippingInformationCardPro
                       )}
                       {codEnabled && (
                         <div
-                          className={`relative border-2 rounded-xl overflow-hidden transition-all duration-200 h-full ${
+                          className={`relative border-2 rounded-xl overflow-hidden transition-all duration-200 h-full min-h-[58px] flex flex-col justify-center ${
                             selectedPaymentMethod === "cod"
-                              ? "border-foreground bg-muted/20 shadow-sm"
+                              ? "border-foreground bg-muted/20 shadow-xs"
                               : "border-border/60 hover:border-border hover:bg-muted/10"
                           }`}
                         >
-                          <Label className="flex items-center justify-between p-3 sm:p-3.5 cursor-pointer w-full h-full m-0 gap-3">
-                            <div className="flex items-center gap-3 min-w-0">
+                          <Label className="flex items-center justify-between p-2.5 sm:p-3 cursor-pointer w-full h-full m-0 gap-2">
+                            <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
                               <div
-                                className={`h-9 w-9 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
+                                className={`h-8 w-8 rounded-lg flex items-center justify-center shrink-0 transition-colors ${
                                   selectedPaymentMethod === "cod"
                                     ? "bg-foreground text-background"
                                     : "bg-muted text-foreground"
@@ -462,14 +457,9 @@ function ShippingInformationCard({ initialSettings }: ShippingInformationCardPro
                               >
                                 <Truck className="h-4 w-4" />
                               </div>
-                              <div className="flex flex-col min-w-0">
-                                <span className="font-bold text-xs sm:text-sm text-foreground leading-tight">
-                                  {t("cashOnDelivery")}
-                                </span>
-                                <span className="text-[11px] text-muted-foreground font-normal leading-tight mt-0.5">
-                                  {t("cashOnDeliveryDesc")}
-                                </span>
-                              </div>
+                              <span className="font-bold text-xs sm:text-sm text-foreground leading-tight">
+                                {t("cashOnDelivery")}
+                              </span>
                             </div>
                             <RadioGroupItem
                               value="cod"
@@ -484,31 +474,26 @@ function ShippingInformationCard({ initialSettings }: ShippingInformationCardPro
                       )}
                       {bkashEnabled && (
                         <div
-                          className={`relative border-2 rounded-xl overflow-hidden transition-all duration-200 h-full ${
+                          className={`relative border-2 rounded-xl overflow-hidden transition-all duration-200 h-full min-h-[58px] flex flex-col justify-center ${
                             selectedPaymentMethod === "bkash"
-                              ? "border-[#E2136E] bg-[#E2136E]/5 shadow-sm"
+                              ? "border-[#E2136E] bg-[#E2136E]/5 shadow-xs"
                               : "border-border/60 hover:border-border hover:bg-muted/10"
                           }`}
                         >
-                          <Label className="flex items-center justify-between p-3 sm:p-3.5 cursor-pointer w-full h-full m-0 gap-3">
-                            <div className="flex items-center gap-3 min-w-0">
-                              <div className="h-9 w-9 rounded-xl flex items-center justify-center shrink-0 overflow-hidden bg-white shadow-xs border border-border/30 p-1">
+                          <Label className="flex items-center justify-between p-2.5 sm:p-3 cursor-pointer w-full h-full m-0 gap-2">
+                            <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
+                              <div className="h-8 w-8 rounded-lg flex items-center justify-center shrink-0 overflow-hidden bg-white shadow-2xs border border-border/30 p-1">
                                 <Image
                                   src="/bkash-logo.png"
                                   alt="bKash"
-                                  width={32}
-                                  height={32}
+                                  width={28}
+                                  height={28}
                                   className="h-full w-full object-contain"
                                 />
                               </div>
-                              <div className="flex flex-col min-w-0">
-                                <span className="font-bold text-xs sm:text-sm text-foreground leading-tight">
-                                  {t("bkashPayment")}
-                                </span>
-                                <span className="text-[11px] text-muted-foreground font-normal leading-tight mt-0.5">
-                                  {t("bkashPaymentDesc")}
-                                </span>
-                              </div>
+                              <span className="font-bold text-xs sm:text-sm text-foreground leading-tight">
+                                {t("bkashPayment")}
+                              </span>
                             </div>
                             <RadioGroupItem
                               value="bkash"
