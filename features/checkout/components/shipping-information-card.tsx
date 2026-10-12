@@ -45,11 +45,6 @@ function scheduleGtmIdentity(data: { phone?: string; email?: string }) {
   }
 }
 
-const FLOATING_LABEL =
-  "pointer-events-none absolute left-10 top-5 z-10 -translate-y-1/2 rounded-full px-1 text-sm font-normal leading-5 text-muted-foreground transition-all duration-200 " +
-  "peer-focus:left-3 peer-focus:top-0 peer-focus:bg-card peer-focus:px-2 peer-focus:text-xs peer-focus:font-medium peer-focus:leading-none " +
-  "peer-[:not(:placeholder-shown)]:left-3 peer-[:not(:placeholder-shown)]:top-0 peer-[:not(:placeholder-shown)]:bg-card peer-[:not(:placeholder-shown)]:px-2 peer-[:not(:placeholder-shown)]:text-xs peer-[:not(:placeholder-shown)]:font-medium peer-[:not(:placeholder-shown)]:leading-none";
-
 interface ShippingInformationCardProps {
   initialSettings?: Record<string, string> | null;
 }
@@ -205,9 +200,9 @@ function ShippingInformationCard({ initialSettings }: ShippingInformationCardPro
                     <div className="relative">
                       <User aria-hidden="true" className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/60" />
                       <FormControl>
-                        <Input type="text" placeholder=" " className="peer h-10 rounded-xl border border-border/40 bg-slate-100 dark:border-slate-600 dark:bg-slate-800 dark:shadow-md dark:shadow-black/40 py-0 pr-3 pl-10 text-sm shadow-inner placeholder:text-muted-foreground/50 focus-visible:bg-white dark:focus-visible:bg-slate-700 dark:focus-visible:border-slate-400 focus-visible:ring-2 focus-visible:ring-primary/20" {...field} />
+                        <Input type="text" placeholder={`${t("fullNameLabel")} *`} className="h-10 rounded-xl border border-border/40 bg-slate-100 dark:border-slate-600 dark:bg-slate-800 dark:shadow-md dark:shadow-black/40 pt-1 pb-0 pr-3 pl-10 text-sm shadow-inner placeholder:text-muted-foreground/50 focus-visible:bg-white dark:focus-visible:bg-slate-700 dark:focus-visible:border-slate-400 focus-visible:ring-2 focus-visible:ring-primary/20" {...field} />
                       </FormControl>
-                      <FormLabel className={FLOATING_LABEL}>{t("fullNameLabel")} *</FormLabel>
+                      <FormLabel className="sr-only">{t("fullNameLabel")} *</FormLabel>
                     </div>
                     <FormMessage className="text-xs" />
                   </FormItem>
@@ -219,8 +214,8 @@ function ShippingInformationCard({ initialSettings }: ShippingInformationCardPro
                       <FormControl>
                         <Input
                           type="tel"
-                          placeholder=" "
-                          className="peer h-10 rounded-xl border border-border/40 bg-slate-100 dark:border-slate-600 dark:bg-slate-800 dark:shadow-md dark:shadow-black/40 py-0 pr-3 pl-10 text-sm shadow-inner placeholder:text-muted-foreground/50 focus-visible:bg-white dark:focus-visible:bg-slate-700 dark:focus-visible:border-slate-400 focus-visible:ring-2 focus-visible:ring-primary/20"
+                          placeholder={`${t("phoneLabel")} *`}
+                          className="h-10 rounded-xl border border-border/40 bg-slate-100 dark:border-slate-600 dark:bg-slate-800 dark:shadow-md dark:shadow-black/40 pt-1 pb-0 pr-3 pl-10 text-sm shadow-inner placeholder:text-muted-foreground/50 focus-visible:bg-white dark:focus-visible:bg-slate-700 dark:focus-visible:border-slate-400 focus-visible:ring-2 focus-visible:ring-primary/20"
                           {...field}
                           onBlur={(e) => {
                             field.onBlur();
@@ -231,7 +226,7 @@ function ShippingInformationCard({ initialSettings }: ShippingInformationCardPro
                           }}
                         />
                       </FormControl>
-                      <FormLabel className={FLOATING_LABEL}>{t("phoneLabel")} *</FormLabel>
+                      <FormLabel className="sr-only">{t("phoneLabel")} *</FormLabel>
                     </div>
                     <FormMessage className="text-xs" />
                   </FormItem>
@@ -245,8 +240,8 @@ function ShippingInformationCard({ initialSettings }: ShippingInformationCardPro
                     <FormControl>
                       <Input
                         type="email"
-                        placeholder=" "
-                        className="peer h-10 rounded-xl border border-border/40 bg-slate-100 dark:border-slate-600 dark:bg-slate-800 dark:shadow-md dark:shadow-black/40 py-0 pr-3 pl-10 text-sm shadow-inner placeholder:text-muted-foreground/50 focus-visible:bg-white dark:focus-visible:bg-slate-700 dark:focus-visible:border-slate-400 focus-visible:ring-2 focus-visible:ring-primary/20"
+                        placeholder={`${t("emailLabel")}`}
+                        className="h-10 rounded-xl border border-border/40 bg-slate-100 dark:border-slate-600 dark:bg-slate-800 dark:shadow-md dark:shadow-black/40 pt-1 pb-0 pr-3 pl-10 text-sm shadow-inner placeholder:text-muted-foreground/50 focus-visible:bg-white dark:focus-visible:bg-slate-700 dark:focus-visible:border-slate-400 focus-visible:ring-2 focus-visible:ring-primary/20"
                         {...field}
                         onBlur={(e) => {
                           field.onBlur();
@@ -257,7 +252,7 @@ function ShippingInformationCard({ initialSettings }: ShippingInformationCardPro
                         }}
                       />
                     </FormControl>
-                    <FormLabel className={FLOATING_LABEL}>{t("emailLabel")}</FormLabel>
+                    <FormLabel className="sr-only">{t("emailLabel")}</FormLabel>
                   </div>
                   <FormMessage className="text-xs" />
                 </FormItem>
@@ -268,9 +263,9 @@ function ShippingInformationCard({ initialSettings }: ShippingInformationCardPro
                   <div className="relative">
                     <MapPin aria-hidden="true" className="pointer-events-none absolute top-3 left-3 h-4 w-4 text-muted-foreground/60" />
                     <FormControl>
-                      <Textarea placeholder=" " rows={2} className="peer min-h-[44px] resize-none rounded-xl border border-border/40 bg-slate-100 dark:border-slate-600 dark:bg-slate-800 dark:shadow-md dark:shadow-black/40 py-2 pr-3 pl-10 text-sm shadow-inner placeholder:text-muted-foreground/50 focus-visible:bg-white dark:focus-visible:bg-slate-700 dark:focus-visible:border-slate-400 focus-visible:ring-2 focus-visible:ring-primary/20" {...field} />
+                      <Textarea placeholder={`${t("addressLabel")} *`} rows={2} className="min-h-[44px] resize-none rounded-xl border border-border/40 bg-slate-100 dark:border-slate-600 dark:bg-slate-800 dark:shadow-md dark:shadow-black/40 py-2 pr-3 pl-10 text-sm shadow-inner placeholder:text-muted-foreground/50 focus-visible:bg-white dark:focus-visible:bg-slate-700 dark:focus-visible:border-slate-400 focus-visible:ring-2 focus-visible:ring-primary/20" {...field} />
                     </FormControl>
-                    <FormLabel className={FLOATING_LABEL}>{t("addressLabel")} *</FormLabel>
+                    <FormLabel className="sr-only">{t("addressLabel")} *</FormLabel>
                   </div>
                   <FormMessage className="text-xs" />
                 </FormItem>
