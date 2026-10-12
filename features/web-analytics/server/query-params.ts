@@ -27,6 +27,9 @@ export const productsQuerySchema = rangeQuerySchema.extend({
 });
 
 export const draftsQuerySchema = z.object({
+  from: z.iso.datetime({ offset: true }),
+  to: z.iso.datetime({ offset: true }),
+  view: z.enum(["open", "completed"]).default("open"),
   limit: z.coerce.number().int().min(1).max(50).default(10),
   offset: z.coerce.number().int().min(0).max(10_000).default(0),
 });

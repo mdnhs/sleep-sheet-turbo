@@ -973,8 +973,9 @@ export const analyticsEvents = pgTable("analytics_events", {
 // Checkout forms a visitor filled in (at least a valid phone) but never
 // submitted, so staff can call and recover the order. One row per analytics
 // session, upserted while the customer types; a placed order flips it to
-// "converted". Card details are never stored. Kept 30 days
-// (lib/data-retention.ts).
+// "converted", and staff mark it "recovered" when a call or WhatsApp message
+// closed the sale. Card details are never stored. Never purged: the
+// dashboard counts every draft ever captured.
 export const checkoutDrafts = pgTable("checkout_drafts", {
   id: bigint("id", { mode: "number" }).primaryKey().generatedAlwaysAsIdentity(),
   sessionId: text("session_id").notNull().unique(),
@@ -988,7 +989,7 @@ export const checkoutDrafts = pgTable("checkout_drafts", {
   value: money("value").notNull(),
   referrerHost: text("referrer_host"),
   utmSource: text("utm_source"),
-  status: text("status").$type<"open" | "converted" | "dismissed">().default("open").notNull(),
+  status: text("status").$type<"open" | "converted" | "recovered" | "dismissed">().default("open").notNull(),
   orderId: text("order_id"),
   createdAt: timestamp("created_at", { withTimezone: true, precision: 3 }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true, precision: 3 }).defaultNow().notNull(),

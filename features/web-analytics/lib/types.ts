@@ -88,11 +88,20 @@ export interface CheckoutDraftRow {
   value: number;
   referrerHost: string | null;
   utmSource: string | null;
+  status: "open" | "converted" | "recovered" | "dismissed";
+  orderId: string | null;
+  /** When the lead came in; the dashboard range filters on this. */
+  createdAt: string;
   updatedAt: string;
 }
 
 export interface DraftSummary {
+  /** Open + recovered: excludes drafts the customer converted on their own and ones staff dismissed. */
+  total: number;
   open: number;
+  /** Closed by staff on a call / WhatsApp. */
+  recovered: number;
+  /** Cart value of the open drafts. */
   value: number;
 }
 

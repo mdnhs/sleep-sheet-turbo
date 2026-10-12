@@ -1,11 +1,11 @@
-import { and, count, desc, eq, inArray, lt, or, sum } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, lte, or, sql } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/db";
 import { checkoutDrafts, products } from "@/db/schema";
 import { normalizeBdPhone } from "@/features/fraud-checker/phone";
 import type { CheckoutDraftRow, DraftSummary } from "../lib/types";
+import type { Range } from "./filters";
 
-export const DRAFT_RETENTION_DAYS = 60;
 export const MAX_DRAFT_BODY_BYTES = 16_384;
 
 const text = (max: number) =>
@@ -124,12 +124,29 @@ export async function markDraftConverted(input: {
   }
 }
 
-/** Open drafts, most recently active first. */
-export async function listOpenDrafts(limit: number, offset: number): Promise<CheckoutDraftRow[]> {
+export type DraftView = "open" | "completed";
+
+const VIEW_STATUSES: Record<DraftView, CheckoutDraftRow["status"][]> = {
+  open: ["open"],
+  // Closed by staff on a call / WhatsApp. Drafts the customer converted on
+  // their own never needed a call, so they're in neither list.
+  completed: ["recovered"],
+};
+
+/** Drafts whose lead came in (createdAt) inside the dashboard range. */
+function capturedIn(range: Range) {
+  return and(gte(checkoutDrafts.createdAt, range.start), lte(checkoutDrafts.createdAt, range.end));
+}
+
+/**
+ * Drafts in one view captured in the range, most recent first. For completed
+ * drafts updatedAt is when they completed: the status change is their last write.
+ */
+export async function listDrafts(view: DraftView, range: Range, limit: number, offset: number): Promise<CheckoutDraftRow[]> {
   const rows = await db
     .select()
     .from(checkoutDrafts)
-    .where(eq(checkoutDrafts.status, "open"))
+    .where(and(inArray(checkoutDrafts.status, VIEW_STATUSES[view]), capturedIn(range)))
     .orderBy(desc(checkoutDrafts.updatedAt), desc(checkoutDrafts.id))
     .limit(limit)
     .offset(offset);
@@ -150,16 +167,47 @@ export async function listOpenDrafts(limit: number, offset: number): Promise<Che
     value: row.value,
     referrerHost: row.referrerHost,
     utmSource: row.utmSource,
+    status: row.status,
+    orderId: row.orderId,
+    createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
   }));
 }
 
-export async function summarizeOpenDrafts(): Promise<DraftSummary> {
+/**
+ * Counts for drafts captured in the range, plus the open carts' value.
+ * `total` is open + recovered: drafts the customer converted on their own
+ * were never left incomplete, and dismissed ones were dropped by staff
+ * (spam, wrong number).
+ */
+export async function summarizeDrafts(range: Range): Promise<DraftSummary> {
+  const byStatus = (status: CheckoutDraftRow["status"]) =>
+    sql<number>`count(*) filter (where ${checkoutDrafts.status} = ${status})`.mapWith(Number);
   const [row] = await db
-    .select({ open: count(), value: sum(checkoutDrafts.value) })
+    .select({
+      total: sql<number>`count(*) filter (where ${checkoutDrafts.status} in ('open', 'recovered'))`.mapWith(Number),
+      open: byStatus("open"),
+      recovered: byStatus("recovered"),
+      value: sql<string | null>`sum(${checkoutDrafts.value}) filter (where ${checkoutDrafts.status} = 'open')`,
+    })
     .from(checkoutDrafts)
-    .where(eq(checkoutDrafts.status, "open"));
-  return { open: row?.open ?? 0, value: Number(row?.value ?? 0) };
+    .where(capturedIn(range));
+  return {
+    total: row?.total ?? 0,
+    open: row?.open ?? 0,
+    recovered: row?.recovered ?? 0,
+    value: Number(row?.value ?? 0),
+  };
+}
+
+/** Staff closed the sale on a call or WhatsApp. Returns false when no open draft had that id. */
+export async function recoverDraft(id: number): Promise<boolean> {
+  const rows = await db
+    .update(checkoutDrafts)
+    .set({ status: "recovered", updatedAt: new Date() })
+    .where(and(eq(checkoutDrafts.id, id), eq(checkoutDrafts.status, "open")))
+    .returning({ id: checkoutDrafts.id });
+  return rows.length > 0;
 }
 
 /** Staff closed the lead (called, wrong number, spam). Returns false when no open draft had that id. */
@@ -170,9 +218,4 @@ export async function dismissDraft(id: number): Promise<boolean> {
     .where(and(eq(checkoutDrafts.id, id), eq(checkoutDrafts.status, "open")))
     .returning({ id: checkoutDrafts.id });
   return rows.length > 0;
-}
-
-export async function purgeOldDrafts(): Promise<void> {
-  const cutoff = new Date(Date.now() - DRAFT_RETENTION_DAYS * 24 * 60 * 60 * 1000);
-  await db.delete(checkoutDrafts).where(lt(checkoutDrafts.updatedAt, cutoff));
 }

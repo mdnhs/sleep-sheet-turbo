@@ -4,7 +4,7 @@ import { sessionMiddleware } from "@/lib/session-middleware";
 import { canViewAnalytics, canViewCheckoutDrafts } from "@/lib/analytics-access";
 import { getPreviousRange } from "@/lib/date-utils";
 import { bucketUnit } from "../lib/buckets";
-import { dismissDraft, listOpenDrafts, summarizeOpenDrafts } from "./drafts";
+import { dismissDraft, listDrafts, recoverDraft, summarizeDrafts } from "./drafts";
 import { getBreakdown, getFunnel, getKpis, getLive, getProducts, getSeries } from "./queries";
 import {
   breakdownQuerySchema,
@@ -93,9 +93,15 @@ const app = new Hono()
   })
   .get("/drafts", sessionMiddleware, zValidator("query", draftsQuerySchema), async (c) => {
     if (!canViewCheckoutDrafts(c.get("user"))) return c.json(unauthorized, 403);
-    const { limit, offset } = c.req.valid("query");
+    const query = c.req.valid("query");
+    const parsed = toRangeAndFilters(query);
+    if (!parsed) return c.json(invalidRange, 400);
+    const { view, limit, offset } = query;
     try {
-      const [rows, summary] = await Promise.all([listOpenDrafts(limit + 1, offset), summarizeOpenDrafts()]);
+      const [rows, summary] = await Promise.all([
+        listDrafts(view, parsed.range, limit + 1, offset),
+        summarizeDrafts(parsed.range),
+      ]);
       return c.json({ rows: rows.slice(0, limit), hasMore: rows.length > limit, summary });
     } catch (err) {
       console.error("Web analytics drafts failed:", err);
@@ -109,6 +115,16 @@ const app = new Hono()
       return ok ? c.json({ ok: true }) : c.json({ error: "Not found" }, 404);
     } catch (err) {
       console.error("Web analytics draft dismiss failed:", err);
+      return c.json(failed, 500);
+    }
+  })
+  .post("/drafts/:id/recover", sessionMiddleware, zValidator("param", draftIdSchema), async (c) => {
+    if (!canViewCheckoutDrafts(c.get("user"))) return c.json(unauthorized, 403);
+    try {
+      const ok = await recoverDraft(c.req.valid("param").id);
+      return ok ? c.json({ ok: true }) : c.json({ error: "Not found" }, 404);
+    } catch (err) {
+      console.error("Web analytics draft recover failed:", err);
       return c.json(failed, 500);
     }
   });

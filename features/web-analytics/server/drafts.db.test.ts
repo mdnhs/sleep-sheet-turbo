@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { inArray } from "drizzle-orm";
 import { db } from "@/db";
 import { checkoutDrafts } from "@/db/schema";
-import { dismissDraft, listOpenDrafts, markDraftConverted, parseDraftBody, upsertDraft } from "./drafts";
+import { dismissDraft, listDrafts, markDraftConverted, parseDraftBody, recoverDraft, summarizeDrafts, upsertDraft } from "./drafts";
 
 // Runs against the local Docker Postgres:
 //   set -a && source .env && set +a && RUN_DB_TESTS=1 pnpm vitest run features/web-analytics/server/drafts.db.test.ts
@@ -11,6 +11,7 @@ const RUN = process.env.RUN_DB_TESTS === "1";
 
 const SESSIONS = ["draft-test-s1", "draft-test-s2"];
 const landing = { referrerHost: null, utmSource: null };
+const ALL_TIME = { start: new Date(0), end: new Date(Date.now() + 24 * 60 * 60 * 1000) };
 
 function draft(sessionId: string, phone: string, fullName = "Test") {
   const parsed = parseDraftBody(
@@ -60,7 +61,50 @@ describe.skipIf(!RUN)("checkout drafts", () => {
     const [row] = await rows();
     expect(await dismissDraft(row.id)).toBe(true);
     expect(await dismissDraft(row.id)).toBe(false);
-    const open = await listOpenDrafts(50, 0);
+    const open = await listDrafts("open", ALL_TIME, 50, 0);
     expect(open.find((d) => d.id === row.id)).toBeUndefined();
+  });
+
+  it("leaves dismissed drafts out of the total", async () => {
+    const before = await summarizeDrafts(ALL_TIME);
+    await upsertDraft(draft("draft-test-s1", "01700000001"), landing);
+    expect((await summarizeDrafts(ALL_TIME)).total - before.total).toBe(1);
+    const [row] = await rows();
+    await dismissDraft(row.id);
+    expect((await summarizeDrafts(ALL_TIME)).total - before.total).toBe(0);
+  });
+
+  it("only counts and lists drafts captured in the range", async () => {
+    await upsertDraft(draft("draft-test-s1", "01700000001"), landing);
+    const [row] = await rows();
+    const past = { start: new Date(0), end: new Date(row.createdAt.getTime() - 1) };
+    expect((await listDrafts("open", past, 50, 0)).find((d) => d.id === row.id)).toBeUndefined();
+    const before = await summarizeDrafts(past);
+    expect((await listDrafts("open", ALL_TIME, 50, 0)).find((d) => d.id === row.id)).toBeDefined();
+    expect(await summarizeDrafts(past)).toEqual(before);
+  });
+
+  it("recovers open drafts into the completed list and counts them", async () => {
+    const before = await summarizeDrafts(ALL_TIME);
+    await upsertDraft(draft("draft-test-s1", "01700000001"), landing);
+    await upsertDraft(draft("draft-test-s2", "01700000002"), landing);
+    const byS = Object.fromEntries((await rows()).map((r) => [r.sessionId, r]));
+    await markDraftConverted({ orderId: "ord-2", sessionId: "draft-test-s2" });
+
+    expect(await recoverDraft(byS["draft-test-s1"].id)).toBe(true);
+    expect(await recoverDraft(byS["draft-test-s1"].id)).toBe(false);
+    expect(await recoverDraft(byS["draft-test-s2"].id)).toBe(false);
+
+    const ids = [byS["draft-test-s1"].id, byS["draft-test-s2"].id];
+    const open = await listDrafts("open", ALL_TIME, 50, 0);
+    expect(open.filter((d) => ids.includes(d.id))).toHaveLength(0);
+    const completed = await listDrafts("completed", ALL_TIME, 50, 0);
+    expect(completed.filter((d) => ids.includes(d.id)).map((d) => d.status)).toEqual(["recovered"]);
+
+    const after = await summarizeDrafts(ALL_TIME);
+    // The customer-converted draft counts nowhere.
+    expect(after.total - before.total).toBe(1);
+    expect(after.recovered - before.recovered).toBe(1);
+    expect(after.open - before.open).toBe(0);
   });
 });

@@ -1,6 +1,5 @@
 import { Hono } from "hono";
 import { rateLimit } from "@/lib/rate-limit";
-import { sweepRetention } from "@/lib/data-retention";
 import { isBot } from "../lib/request-info";
 import { isSameOrigin, requestHost } from "./collect";
 import { MAX_DRAFT_BODY_BYTES, parseDraftBody, upsertDraft, type DraftPayload } from "./drafts";
@@ -10,7 +9,6 @@ export interface DraftCollectDeps {
   upsert: (draft: DraftPayload, landing: { referrerHost: string | null; utmSource: string | null }) => Promise<void>;
   findLanding: (sessionId: string) => Promise<{ referrerHost: string | null; utmSource: string | null } | null>;
   isEnabled: () => Promise<boolean>;
-  afterUpsert: () => void;
 }
 
 /**
@@ -35,7 +33,6 @@ export function createDraftCollectRoute(deps: DraftCollectDeps) {
         referrerHost: landing?.referrerHost ?? null,
         utmSource: landing?.utmSource ?? null,
       });
-      deps.afterUpsert();
     } catch (err) {
       console.error("Checkout draft collect failed:", err);
     }
@@ -47,5 +44,4 @@ export default createDraftCollectRoute({
   upsert: upsertDraft,
   findLanding: findLastSessionEvent,
   isEnabled: isAnalyticsEnabled,
-  afterUpsert: () => sweepRetention("drafts"),
 });

@@ -24,7 +24,6 @@ function setup(overrides: Partial<DraftCollectDeps> = {}) {
     },
     findLanding: async () => ({ referrerHost: "facebook.com", utmSource: "fb" }),
     isEnabled: async () => true,
-    afterUpsert: () => {},
     ...overrides,
   });
   const post = (body: unknown, headers: Record<string, string> = {}) =>
