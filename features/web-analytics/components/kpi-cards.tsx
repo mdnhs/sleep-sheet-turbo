@@ -5,8 +5,9 @@ import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useCurrency } from "@/hooks/use-currency";
 import { cn } from "@/lib/utils";
+import { useWaT } from "../lib/i18n";
 import { useWaOverview, type WaQuery } from "../api/use-web-analytics";
-import { formatCount, formatPercent, kpiValue, METRIC_LABELS, METRICS, trendPercent, type Metric } from "../lib/format";
+import { formatCount, formatPercent, kpiValue, METRICS, trendPercent, type Metric } from "../lib/format";
 
 const METRIC_ICONS: Record<Metric, LucideIcon> = {
   visitors: Users,
@@ -22,6 +23,7 @@ const LOWER_IS_BETTER: ReadonlySet<Metric> = new Set<Metric>(["bounceRate"]);
 export function KpiCards({ q, metric, onSelect }: { q: WaQuery; metric: Metric; onSelect: (metric: Metric) => void }) {
   const { data, isLoading } = useWaOverview(q);
   const { formatAmount } = useCurrency();
+  const t = useWaT();
 
   const format = (m: Metric, value: number) =>
     m === "revenue" ? formatAmount(value) : m === "bounceRate" || m === "conversionRate" ? formatPercent(value) : formatCount(value);
@@ -38,7 +40,7 @@ export function KpiCards({ q, metric, onSelect }: { q: WaQuery; metric: Metric; 
             <Card className={cn("gap-1 p-4 ring-0 transition-colors", metric === m ? "bg-primary/10" : "hover:bg-muted/50")}>
               <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
                 <Icon className="size-3.5" aria-hidden="true" />
-                {METRIC_LABELS[m]}
+                {t(m)}
               </span>
               {isLoading && !data ? (
                 <Skeleton className="h-8 w-20" />

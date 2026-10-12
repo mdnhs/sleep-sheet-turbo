@@ -5,10 +5,12 @@ import { format, parseISO, startOfDay, endOfDay } from "date-fns";
 import { parseAsString, parseAsStringEnum, useQueryState, useQueryStates } from "nuqs";
 import type { DateRange } from "react-day-picker";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DateRangePicker } from "@/components/ui/date-range-picker";
 import type { WaQuery } from "../api/use-web-analytics";
 import { DIMENSION_KEYS, type Dimension, type Filters } from "../lib/dimensions";
 import { METRICS, RANGE_PRESETS, presetRange, type Metric, type RangePreset } from "../lib/format";
+import { useWaT } from "../lib/i18n";
 import { BreakdownPanel } from "./breakdown-panel";
 import { FilterChips } from "./filter-chips";
 import { FunnelCard } from "./funnel-card";
@@ -25,10 +27,12 @@ const filterParsers = Object.fromEntries(DIMENSION_KEYS.map((key) => [key, parse
 >;
 
 export function WebAnalyticsDashboard() {
+  const t = useWaT();
   const [preset, setPreset] = useQueryState(
     "range",
     parseAsStringEnum<RangePreset>(["today", "7d", "30d", "90d", "custom"]).withDefault("7d"),
   );
+  const [tab, setTab] = useQueryState("tab", parseAsStringEnum(["funnel", "overview"]).withDefault("funnel"));
   const [fromStr, setFromStr] = useQueryState("from", parseAsString.withDefault(""));
   const [toStr, setToStr] = useQueryState("to", parseAsString.withDefault(""));
   const [metric, setMetric] = useQueryState("metric", parseAsStringEnum<Metric>([...METRICS]).withDefault("visitors"));
@@ -48,7 +52,10 @@ export function WebAnalyticsDashboard() {
       const from = parseISO(fromStr);
       const to = toStr ? parseISO(toStr) : from;
       if (!isNaN(from.getTime()) && !isNaN(to.getTime())) {
-        return { from: startOfDay(from).toISOString(), to: endOfDay(to).toISOString() };
+        return {
+          from: startOfDay(from).toISOString(),
+          to: endOfDay(to).toISOString(),
+        };
       }
     }
     return presetRange(preset === "custom" ? "7d" : preset, new Date());
@@ -79,60 +86,77 @@ export function WebAnalyticsDashboard() {
   const removeFilter = (dim: Dimension) => void setFilterValues({ [dim]: null } as FilterPatch);
 
   return (
-    <div className="flex flex-col gap-4">
+    <Tabs
+      value={tab}
+      onValueChange={(value) => void setTab(value as "funnel" | "overview")}
+      className="flex flex-col gap-4"
+    >
+      <TabsList>
+        <TabsTrigger value="funnel">{t("mainTabFunnel")}</TabsTrigger>
+        <TabsTrigger value="overview">{t("mainTabOverview")}</TabsTrigger>
+      </TabsList>
       <div className="flex flex-wrap items-center gap-2">
         {RANGE_PRESETS.map((p) => (
-          <Button key={p.value} size="sm" variant={preset === p.value ? "default" : "outline"} onClick={() => choosePreset(p.value)}>
-            {p.label}
+          <Button
+            key={p.value}
+            size="sm"
+            variant={preset === p.value ? "default" : "outline"}
+            onClick={() => choosePreset(p.value)}
+          >
+            {t(p.labelKey)}
           </Button>
         ))}
         <DateRangePicker value={customValue} onChange={chooseCustom} />
         <div className="ml-auto flex items-center gap-3">
-          <LiveBadge />
           <TrackingToggle />
         </div>
       </div>
       <TrackingOffBanner />
       <FilterChips filters={filters} onRemove={removeFilter} />
-      <KpiCards q={q} metric={metric} onSelect={(m) => void setMetric(m)} />
-      <TrendChart q={q} metric={metric} />
-      <div className="grid gap-4 lg:grid-cols-2">
-        <BreakdownPanel
-          q={q}
-          tabs={[
-            { dim: "path", label: "Pages" },
-            { dim: "route", label: "Routes" },
-            { dim: "hostname", label: "Hostnames" },
-          ]}
-          onSelect={addFilter}
-        />
-        <BreakdownPanel
-          q={q}
-          tabs={[
-            { dim: "referrer", label: "Referrers" },
-            { dim: "utmSource", label: "UTM Source" },
-            { dim: "utmMedium", label: "Medium" },
-            { dim: "utmCampaign", label: "Campaign" },
-          ]}
-          showOrders
-          onSelect={addFilter}
-        />
-        <BreakdownPanel q={q} tabs={[{ dim: "country", label: "Countries" }]} onSelect={addFilter} />
-        <BreakdownPanel
-          q={q}
-          tabs={[
-            { dim: "device", label: "Devices" },
-            { dim: "browser", label: "Browsers" },
-            { dim: "os", label: "OS" },
-          ]}
-          onSelect={addFilter}
-        />
-      </div>
-      <div className="grid gap-4 lg:grid-cols-2">
+      <TabsContent value="funnel" className="flex flex-col gap-4">
+        <div className="flex justify-end">
+          <LiveBadge />
+        </div>
         <FunnelCard q={q} />
+        <IncompleteCheckouts />
+      </TabsContent>
+      <TabsContent value="overview" className="flex flex-col gap-4">
+        <KpiCards q={q} metric={metric} onSelect={(m) => void setMetric(m)} />
+        <TrendChart q={q} metric={metric} />
+        <div className="grid gap-4 lg:grid-cols-2">
+          <BreakdownPanel
+            q={q}
+            tabs={[
+              { dim: "path", labelKey: "tabPages" },
+              { dim: "route", labelKey: "tabRoutes" },
+              { dim: "hostname", labelKey: "tabHostnames" },
+            ]}
+            onSelect={addFilter}
+          />
+          <BreakdownPanel
+            q={q}
+            tabs={[
+              { dim: "referrer", labelKey: "tabReferrers" },
+              { dim: "utmSource", labelKey: "tabUtmSource" },
+              { dim: "utmMedium", labelKey: "tabMedium" },
+              { dim: "utmCampaign", labelKey: "tabCampaign" },
+            ]}
+            showOrders
+            onSelect={addFilter}
+          />
+          <BreakdownPanel q={q} tabs={[{ dim: "country", labelKey: "tabCountries" }]} onSelect={addFilter} />
+          <BreakdownPanel
+            q={q}
+            tabs={[
+              { dim: "device", labelKey: "tabDevices" },
+              { dim: "browser", labelKey: "tabBrowsers" },
+              { dim: "os", labelKey: "tabOs" },
+            ]}
+            onSelect={addFilter}
+          />
+        </div>
         <ProductsTable q={q} />
-      </div>
-      <IncompleteCheckouts />
-    </div>
+      </TabsContent>
+    </Tabs>
   );
 }

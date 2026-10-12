@@ -1,6 +1,7 @@
 "use client";
 
 import { formatDistanceToNow } from "date-fns";
+import { bn } from "date-fns/locale/bn";
 import { MessageCircle, Phone, X } from "lucide-react";
 import { toast } from "sonner";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -8,9 +9,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useCurrency } from "@/hooks/use-currency";
+import { getOptimizedImageUrl } from "@/lib/utils";
 import { useDismissDraft, useWaDrafts } from "../api/use-web-analytics";
 import type { CheckoutDraftRow } from "../lib/types";
 import { formatCount } from "../lib/format";
+import { useLanguage } from "@/hooks/use-language";
+import { useWaT } from "../lib/i18n";
 import { CardPager, usePage } from "./card-pager";
 
 function itemsSummary(items: CheckoutDraftRow["items"]): string {
@@ -39,6 +43,8 @@ export function IncompleteCheckouts() {
   const { data, isLoading, isPlaceholderData } = useWaDrafts(page);
   const dismiss = useDismissDraft();
   const { formatAmount } = useCurrency();
+  const t = useWaT();
+  const { language } = useLanguage();
 
   if (data === null) return null;
   const rows = data?.rows ?? [];
@@ -46,27 +52,27 @@ export function IncompleteCheckouts() {
   return (
     <Card className="ring-0">
       <CardHeader>
-        <CardTitle className="text-base">Incomplete checkouts</CardTitle>
+        <CardTitle className="text-base">{t("incompleteTitle")}</CardTitle>
         <CardDescription>
           {data
-            ? `${formatCount(data.summary.open)} open · ${formatAmount(data.summary.value)} in carts`
-            : "Customers who entered a phone number at checkout but didn't order."}
+            ? `${formatCount(data.summary.open)} ${t("open")} · ${formatAmount(data.summary.value)} ${t("inCarts")}`
+            : t("incompleteDesc")}
         </CardDescription>
       </CardHeader>
       <CardContent>
         {isLoading && !data ? (
           <Skeleton className="h-40 w-full" />
         ) : rows.length === 0 ? (
-          <p className="py-6 text-center text-sm text-muted-foreground">No incomplete checkouts.</p>
+          <p className="py-6 text-center text-sm text-muted-foreground">{t("noIncomplete")}</p>
         ) : (
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Customer</TableHead>
-                <TableHead>Address</TableHead>
-                <TableHead>Cart</TableHead>
-                <TableHead className="text-right">Value</TableHead>
-                <TableHead className="text-right">Last active</TableHead>
+                <TableHead>{t("colCustomer")}</TableHead>
+                <TableHead>{t("colAddress")}</TableHead>
+                <TableHead>{t("colCart")}</TableHead>
+                <TableHead className="text-right">{t("colValue")}</TableHead>
+                <TableHead className="text-right">{t("colLastActive")}</TableHead>
                 <TableHead className="w-24" />
               </TableRow>
             </TableHeader>
@@ -82,23 +88,42 @@ export function IncompleteCheckouts() {
                   <TableCell className="max-w-48 truncate text-xs text-muted-foreground" title={row.address ?? undefined}>
                     {row.address || "—"}
                   </TableCell>
-                  <TableCell className="max-w-64 truncate text-xs" title={itemsSummary(row.items)}>
-                    {itemsSummary(row.items)}
+                  <TableCell className="max-w-64">
+                    <div className="flex items-center gap-2" title={itemsSummary(row.items)}>
+                      <div className="flex shrink-0 -space-x-2">
+                        {row.items.slice(0, 3).map((item, i) => (
+                          // eslint-disable-next-line @next/next/no-img-element -- Cloudinary URL is already resized by getOptimizedImageUrl.
+                          <img
+                            key={`${item.productId}-${i}`}
+                            src={item.image ? getOptimizedImageUrl(item.image, 48) : "/placeholder.jpg"}
+                            alt=""
+                            width={24}
+                            height={24}
+                            loading="lazy"
+                            className="size-6 rounded border border-background object-cover"
+                          />
+                        ))}
+                      </div>
+                      <span className="truncate text-xs">
+                        {row.items.length > 3 && `+${row.items.length - 3} · `}
+                        {itemsSummary(row.items)}
+                      </span>
+                    </div>
                   </TableCell>
                   <TableCell className="text-right tabular-nums">{formatAmount(row.value)}</TableCell>
                   <TableCell className="text-right text-xs text-muted-foreground whitespace-nowrap">
-                    {formatDistanceToNow(new Date(row.updatedAt), { addSuffix: true })}
+                    {formatDistanceToNow(new Date(row.updatedAt), { addSuffix: true, locale: language === "bn" ? bn : undefined })}
                   </TableCell>
                   <TableCell>
                     <div className="flex justify-end gap-1">
-                      <a href={`tel:${row.phone}`} aria-label={`Call ${row.phone}`} className={iconLink}>
+                      <a href={`tel:${row.phone}`} aria-label={`${t("call")} ${row.phone}`} className={iconLink}>
                         <Phone className="size-4" />
                       </a>
                       <a
                         href={whatsappLink(row.phone)}
                         target="_blank"
                         rel="noopener noreferrer"
-                        aria-label="WhatsApp"
+                        aria-label={t("whatsapp")}
                         className={iconLink}
                       >
                         <MessageCircle className="size-4" />
@@ -107,10 +132,10 @@ export function IncompleteCheckouts() {
                         variant="ghost"
                         size="icon"
                         className="size-7"
-                        aria-label="Dismiss"
+                        aria-label={t("dismiss")}
                         disabled={dismiss.isPending}
                         onClick={() =>
-                          dismiss.mutate(row.id, { onError: () => toast.error("Couldn't dismiss, try again") })
+                          dismiss.mutate(row.id, { onError: () => toast.error(t("dismissFailed")) })
                         }
                       >
                         <X className="size-4" />

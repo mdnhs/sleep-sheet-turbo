@@ -5,27 +5,29 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useWaFunnel, type WaQuery } from "../api/use-web-analytics";
 import { formatCount, formatPercent } from "../lib/format";
+import { useWaT, type WaKey } from "../lib/i18n";
 import type { Funnel } from "../lib/types";
 
-const STEPS: { key: keyof Funnel; label: string; icon: LucideIcon }[] = [
-  { key: "visited", label: "Visited", icon: Users },
-  { key: "viewedProduct", label: "Viewed a product", icon: Eye },
-  { key: "addedToCart", label: "Added to cart / Buy now", icon: ShoppingCart },
-  { key: "startedCheckout", label: "Started checkout", icon: CreditCard },
-  { key: "enteredName", label: "Entered name", icon: User },
-  { key: "enteredPhone", label: "Entered phone", icon: Phone },
-  { key: "enteredAddress", label: "Entered address", icon: MapPin },
-  { key: "ordered", label: "Placed an order", icon: PackageCheck },
+const STEPS: { key: keyof Funnel; labelKey: WaKey; icon: LucideIcon }[] = [
+  { key: "visited", labelKey: "stepVisited", icon: Users },
+  { key: "viewedProduct", labelKey: "stepViewedProduct", icon: Eye },
+  { key: "addedToCart", labelKey: "stepAddedToCart", icon: ShoppingCart },
+  { key: "startedCheckout", labelKey: "stepStartedCheckout", icon: CreditCard },
+  { key: "enteredName", labelKey: "stepEnteredName", icon: User },
+  { key: "enteredPhone", labelKey: "stepEnteredPhone", icon: Phone },
+  { key: "enteredAddress", labelKey: "stepEnteredAddress", icon: MapPin },
+  { key: "ordered", labelKey: "stepOrdered", icon: PackageCheck },
 ];
 
 export function FunnelCard({ q }: { q: WaQuery }) {
   const { data, isLoading } = useWaFunnel(q);
+  const t = useWaT();
   const top = data?.visited ?? 0;
 
   return (
     <Card className="ring-0">
       <CardHeader>
-        <CardTitle className="text-base">Conversion funnel</CardTitle>
+        <CardTitle className="text-base">{t("funnelTitle")}</CardTitle>
       </CardHeader>
       <CardContent>
         {isLoading && !data ? (
@@ -40,13 +42,13 @@ export function FunnelCard({ q }: { q: WaQuery }) {
                   <div className="mb-1 flex flex-wrap justify-between gap-x-2 text-sm">
                     <span className="flex items-center gap-2">
                       <step.icon className="size-4 text-muted-foreground" aria-hidden="true" />
-                      {step.label}
+                      {t(step.labelKey)}
                     </span>
                     <span className="tabular-nums">
                       <span className="font-medium">{formatCount(value)}</span>
                       {i > 0 && (
                         <span className="ml-2 text-muted-foreground">
-                          {formatPercent(prev ? Math.min(1, value / prev) : 0)} of previous · {formatCount(Math.max(0, prev - value))} dropped
+                          {formatPercent(prev ? Math.min(1, value / prev) : 0)} {t("ofPrevious")} · {formatCount(Math.max(0, prev - value))} {t("dropped")}
                         </span>
                       )}
                     </span>

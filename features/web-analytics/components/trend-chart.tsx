@@ -4,25 +4,29 @@ import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useLanguage } from "@/hooks/use-language";
 import { useWaOverview, type WaQuery } from "../api/use-web-analytics";
-import { bucketLabel, METRIC_LABELS, pointValue, type Metric } from "../lib/format";
+import { useWaT } from "../lib/i18n";
+import { bucketLabel, pointValue, type Metric } from "../lib/format";
 
 const IS_RATE: ReadonlySet<Metric> = new Set<Metric>(["bounceRate", "conversionRate"]);
 
 export function TrendChart({ q, metric }: { q: WaQuery; metric: Metric }) {
   const { data, isLoading } = useWaOverview(q);
-  const config = { value: { label: METRIC_LABELS[metric], color: "var(--chart-1)" } } satisfies ChartConfig;
+  const t = useWaT();
+  const { language } = useLanguage();
+  const config = { value: { label: t(metric), color: "var(--chart-1)" } } satisfies ChartConfig;
   const points = (data?.series ?? []).map((point) => {
     const value = pointValue(point, metric);
     // Rates are charted as percentages, one decimal.
-    return { label: bucketLabel(point.bucket, data!.unit), value: IS_RATE.has(metric) ? Math.round(value * 1000) / 10 : value };
+    return { label: bucketLabel(point.bucket, data!.unit, language), value: IS_RATE.has(metric) ? Math.round(value * 1000) / 10 : value };
   });
 
   return (
     <Card className="ring-0">
       <CardHeader>
         <CardTitle className="text-base">
-          {METRIC_LABELS[metric]}
+          {t(metric)}
           {IS_RATE.has(metric) ? " (%)" : ""}
         </CardTitle>
       </CardHeader>

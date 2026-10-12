@@ -84,7 +84,7 @@ export interface CheckoutDraftRow {
   email: string | null;
   address: string | null;
   shippingZone: string | null;
-  items: { productId: string; name: string; quantity: number; price: number; size?: string | null; color?: string | null }[];
+  items: { productId: string; name: string; quantity: number; price: number; size?: string | null; color?: string | null; image?: string | null }[];
   value: number;
   referrerHost: string | null;
   utmSource: string | null;

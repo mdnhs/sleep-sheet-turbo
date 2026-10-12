@@ -6,32 +6,34 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useWaProducts, type WaQuery } from "../api/use-web-analytics";
 import { getOptimizedImageUrl } from "@/lib/utils";
 import { formatCount, formatPercent } from "../lib/format";
+import { useWaT } from "../lib/i18n";
 import { CardPager, usePage } from "./card-pager";
 
 export function ProductsTable({ q }: { q: WaQuery }) {
   const [page, setPage] = usePage(JSON.stringify(q));
   const { data, isLoading, isPlaceholderData } = useWaProducts(q, page);
+  const t = useWaT();
   const rows = data?.rows ?? [];
 
   return (
     <Card className="ring-0">
       <CardHeader>
-        <CardTitle className="text-base">Products</CardTitle>
+        <CardTitle className="text-base">{t("productsTitle")}</CardTitle>
       </CardHeader>
       <CardContent>
         {isLoading && !data ? (
           <Skeleton className="h-56 w-full" />
         ) : rows.length === 0 ? (
-          <p className="py-6 text-center text-sm text-muted-foreground">No product views in this range.</p>
+          <p className="py-6 text-center text-sm text-muted-foreground">{t("noProductViews")}</p>
         ) : (
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Product</TableHead>
-                <TableHead className="text-right">Views</TableHead>
-                <TableHead className="text-right">Add to cart</TableHead>
-                <TableHead className="text-right">Orders</TableHead>
-                <TableHead className="text-right">View→Order</TableHead>
+                <TableHead>{t("colProduct")}</TableHead>
+                <TableHead className="text-right">{t("colViews")}</TableHead>
+                <TableHead className="text-right">{t("colAddToCart")}</TableHead>
+                <TableHead className="text-right">{t("colOrders")}</TableHead>
+                <TableHead className="text-right">{t("colViewToOrder")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>

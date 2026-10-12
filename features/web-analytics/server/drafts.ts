@@ -1,7 +1,7 @@
-import { and, count, desc, eq, lt, or, sum } from "drizzle-orm";
+import { and, count, desc, eq, inArray, lt, or, sum } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/db";
-import { checkoutDrafts } from "@/db/schema";
+import { checkoutDrafts, products } from "@/db/schema";
 import { normalizeBdPhone } from "@/features/fraud-checker/phone";
 import type { CheckoutDraftRow, DraftSummary } from "../lib/types";
 
@@ -133,6 +133,12 @@ export async function listOpenDrafts(limit: number, offset: number): Promise<Che
     .orderBy(desc(checkoutDrafts.updatedAt), desc(checkoutDrafts.id))
     .limit(limit)
     .offset(offset);
+  const productIds = [...new Set(rows.flatMap((row) => row.items.map((item) => item.productId)))];
+  const imageById = new Map<string, string | null>();
+  if (productIds.length > 0) {
+    const found = await db.select({ id: products.id, images: products.images }).from(products).where(inArray(products.id, productIds));
+    for (const product of found) imageById.set(product.id, product.images[0] ?? null);
+  }
   return rows.map((row) => ({
     id: row.id,
     fullName: row.fullName,
@@ -140,7 +146,7 @@ export async function listOpenDrafts(limit: number, offset: number): Promise<Che
     email: row.email,
     address: row.address,
     shippingZone: row.shippingZone,
-    items: row.items,
+    items: row.items.map((item) => ({ ...item, image: imageById.get(item.productId) ?? null })),
     value: row.value,
     referrerHost: row.referrerHost,
     utmSource: row.utmSource,

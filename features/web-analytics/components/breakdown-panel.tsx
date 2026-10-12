@@ -8,12 +8,13 @@ import { useCurrency } from "@/hooks/use-currency";
 import { useWaBreakdown, type WaQuery } from "../api/use-web-analytics";
 import { NONE, type Dimension } from "../lib/dimensions";
 import { formatCount, keyLabel } from "../lib/format";
+import { useWaT, type WaKey } from "../lib/i18n";
 import { CardPager, usePage } from "./card-pager";
 import { RowIcon } from "./row-icon";
 
 export interface BreakdownTab {
   dim: Dimension;
-  label: string;
+  labelKey: WaKey;
 }
 
 export function BreakdownPanel({
@@ -31,9 +32,10 @@ export function BreakdownPanel({
   const [page, setPage] = usePage(`${active}|${JSON.stringify(q)}`);
   const { data, isLoading, isPlaceholderData } = useWaBreakdown(q, active, page);
   const { formatAmount } = useCurrency();
+  const t = useWaT();
   const rows = data?.rows ?? [];
   const max = Math.max(1, ...rows.map((row) => row.visitors));
-  const activeLabel = tabs.find((tab) => tab.dim === active)?.label ?? "";
+  const activeLabel = t(tabs.find((tab) => tab.dim === active)?.labelKey ?? "path");
 
   return (
     <Card className="ring-0">
@@ -44,7 +46,7 @@ export function BreakdownPanel({
               <TabsList>
                 {tabs.map((tab) => (
                   <TabsTrigger key={tab.dim} value={tab.dim}>
-                    {tab.label}
+                    {t(tab.labelKey)}
                   </TabsTrigger>
                 ))}
               </TabsList>
@@ -60,11 +62,11 @@ export function BreakdownPanel({
           <span className="flex gap-6">
             {showOrders && (
               <>
-                <span className="w-10 text-right">Orders</span>
-                <span className="w-20 text-right">Revenue</span>
+                <span className="w-10 text-right">{t("colOrders")}</span>
+                <span className="w-20 text-right">{t("colRevenue")}</span>
               </>
             )}
-            <span className="w-12 text-right">Visitors</span>
+            <span className="w-12 text-right">{t("colVisitors")}</span>
           </span>
         </div>
         {isLoading && !data ? (
@@ -74,7 +76,7 @@ export function BreakdownPanel({
             ))}
           </div>
         ) : rows.length === 0 ? (
-          <p className="py-6 text-center text-sm text-muted-foreground">No data for this range.</p>
+          <p className="py-6 text-center text-sm text-muted-foreground">{t("noDataRange")}</p>
         ) : (
           <ul className="space-y-1">
             {rows.map((row) => (
@@ -91,7 +93,7 @@ export function BreakdownPanel({
                   />
                   <span className="relative flex min-w-0 items-center gap-2">
                     <RowIcon dim={active} rowKey={row.key} />
-                    <span className="truncate">{keyLabel(active, row.key)}</span>
+                    <span className="truncate">{keyLabel(active, row.key, t)}</span>
                   </span>
                   <span className="relative flex shrink-0 gap-6 tabular-nums">
                     {showOrders && (
