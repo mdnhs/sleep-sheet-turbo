@@ -1,10 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Eye, EyeOff, Loader2, PlugZap } from "lucide-react";
+import { Clock, Database, Eye, EyeOff, Loader2, PlugZap, RefreshCw, ShieldCheck } from "lucide-react";
 import { client } from "@/lib/rpc";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -47,8 +48,29 @@ export function BkashForm() {
       if (!res.ok || !data.ok) throw new Error(data.message || data.error || "Connection failed");
       return data.message ?? "Connected to bKash.";
     },
-    onSuccess: (message) => toast.success(message),
+    onSuccess: (message) => {
+      toast.success(message);
+      tokenQuery.refetch();
+    },
     onError: (error: Error) => toast.error(error.message),
+  });
+
+  const tokenQuery = useQuery({
+    queryKey: ["bkash-token-status"],
+    queryFn: async () => {
+      const res = await fetch("/api/bkash/token-status");
+      if (!res.ok) return null;
+      return (await res.json()) as {
+        configured: boolean;
+        isCached: boolean;
+        expiresAt: number | null;
+        expiresInSeconds: number | null;
+        tokenMasked: string | null;
+        cachedIn: "database" | "memory" | "none";
+        mode?: string;
+      };
+    },
+    refetchInterval: 15_000,
   });
 
   if (isLoading || secretsLoading) {
@@ -196,6 +218,78 @@ export function BkashForm() {
             <span className="text-xs text-muted-foreground">Save your changes before testing.</span>
           )}
         </div>
+
+        {tokenQuery.data?.configured && (
+          <div className="rounded-lg border bg-card p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <ShieldCheck className="h-4 w-4 text-emerald-600" />
+                <span className="text-xs font-semibold">bKash Grant Token (1-Hour Cache Status)</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 px-2 text-xs text-muted-foreground"
+                  onClick={() => tokenQuery.refetch()}
+                  disabled={tokenQuery.isFetching}
+                >
+                  <RefreshCw
+                    className={`h-3 w-3 mr-1 ${tokenQuery.isFetching ? "animate-spin" : ""}`}
+                  />
+                  Refresh
+                </Button>
+                {tokenQuery.data?.isCached ? (
+                  <Badge variant="outline" className="border-emerald-500/30 bg-emerald-50 text-emerald-700 text-[10px] dark:bg-emerald-950/30 dark:text-emerald-300">
+                    Active (Reused for 1h)
+                  </Badge>
+                ) : (
+                  <Badge variant="outline" className="text-[10px] text-muted-foreground">
+                    No Active Cache
+                  </Badge>
+                )}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
+              <div className="rounded border bg-muted/40 p-2.5 space-y-1">
+                <span className="text-[11px] text-muted-foreground flex items-center gap-1">
+                  <Database className="h-3 w-3" /> Storage Engine
+                </span>
+                <p className="font-mono font-medium text-foreground">
+                  {tokenQuery.data.cachedIn === "database"
+                    ? "PostgreSQL (site_settings)"
+                    : tokenQuery.data.cachedIn === "memory"
+                    ? "Server Memory"
+                    : "Not Cached"}
+                </p>
+              </div>
+
+              <div className="rounded border bg-muted/40 p-2.5 space-y-1">
+                <span className="text-[11px] text-muted-foreground flex items-center gap-1">
+                  <Clock className="h-3 w-3" /> Valid Remaining
+                </span>
+                <p className="font-mono font-medium text-foreground">
+                  {tokenQuery.data.expiresInSeconds && tokenQuery.data.expiresInSeconds > 0
+                    ? `${Math.floor(tokenQuery.data.expiresInSeconds / 60)}m ${tokenQuery.data.expiresInSeconds % 60}s`
+                    : "Expired / Pending call"}
+                </p>
+              </div>
+
+              <div className="rounded border bg-muted/40 p-2.5 space-y-1">
+                <span className="text-[11px] text-muted-foreground">Masked Bearer Token</span>
+                <p className="font-mono text-[11px] text-foreground truncate" title={tokenQuery.data.tokenMasked || ""}>
+                  {tokenQuery.data.tokenMasked || "None"}
+                </p>
+              </div>
+            </div>
+
+            <p className="text-[11px] text-muted-foreground leading-relaxed">
+              In compliance with bKash Technical Checklist Item 0, the Grant Token is stored in the database and reused for all subsequent checkout and refund API calls across all users for 1 hour.
+            </p>
+          </div>
+        )}
 
         <div className="rounded-md bg-muted/50 p-3 text-xs text-muted-foreground space-y-1">
           <p className="font-semibold text-foreground">Whitelist this in your bKash merchant panel</p>

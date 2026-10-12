@@ -12,6 +12,7 @@ import {
   BkashError,
   executeBkashPayment,
   getBkashConfig,
+  getBkashTokenStatus,
   isBkashConfigured,
   refundBkashPayment,
   testBkashCredentials,
@@ -275,6 +276,22 @@ const app = new Hono()
     const message = error instanceof BkashError ? error.message : "Could not verify credentials";
     return c.json({ ok: false, message }, 400);
   }
+})
+
+// Admin-only: check 1-hour token cache status (for bKash UAT validation / technical audit)
+.get("/token-status", sessionMiddleware, async (c) => {
+  const user = c.get("user");
+  if (!user || user.role !== "ADMIN") {
+    return c.json({ error: "Unauthorized" }, 401);
+  }
+
+  const config = await getBkashConfig();
+  if (!isBkashConfigured(config)) {
+    return c.json({ configured: false, isCached: false });
+  }
+
+  const status = await getBkashTokenStatus(config);
+  return c.json({ configured: true, mode: config.mode, ...status });
 });
 
 export default app;

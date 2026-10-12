@@ -115,6 +115,50 @@ export function resetBkashTokenCache(key?: string): void {
   }
 }
 
+export async function getBkashTokenStatus(config: BkashConfig): Promise<{
+  isCached: boolean;
+  expiresAt: number | null;
+  expiresInSeconds: number | null;
+  tokenMasked: string | null;
+  cachedIn: "database" | "memory" | "none";
+}> {
+  const key = [config.mode, config.appKey, config.username].join("|");
+  const dbCached = await loadTokenFromDb(key);
+  if (dbCached && dbCached.expiresAt > Date.now()) {
+    return {
+      isCached: true,
+      expiresAt: dbCached.expiresAt,
+      expiresInSeconds: Math.floor((dbCached.expiresAt - Date.now()) / 1000),
+      tokenMasked:
+        dbCached.token.length > 20
+          ? `${dbCached.token.slice(0, 16)}...${dbCached.token.slice(-6)}`
+          : `${dbCached.token.slice(0, 10)}...`,
+      cachedIn: "database",
+    };
+  }
+
+  if (tokenCache && tokenCache.key === key && tokenCache.expiresAt > Date.now()) {
+    return {
+      isCached: true,
+      expiresAt: tokenCache.expiresAt,
+      expiresInSeconds: Math.floor((tokenCache.expiresAt - Date.now()) / 1000),
+      tokenMasked:
+        tokenCache.token.length > 20
+          ? `${tokenCache.token.slice(0, 16)}...${tokenCache.token.slice(-6)}`
+          : `${tokenCache.token.slice(0, 10)}...`,
+      cachedIn: "memory",
+    };
+  }
+
+  return {
+    isCached: false,
+    expiresAt: null,
+    expiresInSeconds: null,
+    tokenMasked: null,
+    cachedIn: "none",
+  };
+}
+
 function sanitizeBkashLog(path: string, data: unknown): unknown {
   if (path === "/token/grant" && data && typeof data === "object") {
     const copy = { ...(data as Record<string, unknown>) };
