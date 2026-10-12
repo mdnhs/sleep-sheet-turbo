@@ -4402,7 +4402,7 @@ function OrdersPageContent() {
                 <div className="flex items-center gap-2 p-3 rounded-xl bg-pink-500/10 border border-pink-500/25 text-pink-700 dark:text-pink-400 text-xs">
                   <RotateCcw className="h-4 w-4 shrink-0 text-[#E2136E]" />
                   <span>
-                    <strong>bKash Gateway Refund:</strong> This will automatically process an online refund to the customer's bKash account via bKash Refund API.
+                    <strong>bKash Gateway Refund:</strong> This will automatically process an online refund to the customer&apos;s bKash account via bKash Refund API.
                   </span>
                 </div>
               )}

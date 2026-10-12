@@ -1,26 +1,23 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@/lib/settings-cache", () => ({ getSettingsMap: vi.fn(async () => ({})) }));
-vi.mock("@/db", () => {
-  const store = new Map<string, string>();
-  return {
-    db: {
-      query: {
-        siteSettings: {
-          findFirst: vi.fn(async () => null),
-        },
+vi.mock("@/db", () => ({
+  db: {
+    query: {
+      siteSettings: {
+        findFirst: vi.fn(async () => null),
       },
-      insert: vi.fn(() => ({
-        values: vi.fn(() => ({
-          onConflictDoUpdate: vi.fn(async () => {}),
-        })),
-      })),
-      delete: vi.fn(() => ({
-        where: vi.fn(async () => {}),
-      })),
     },
-  };
-});
+    insert: vi.fn(() => ({
+      values: vi.fn(() => ({
+        onConflictDoUpdate: vi.fn(async () => {}),
+      })),
+    })),
+    delete: vi.fn(() => ({
+      where: vi.fn(async () => {}),
+    })),
+  },
+}));
 
 import {
   createBkashPayment,
@@ -186,7 +183,7 @@ describe("executeBkashPayment", () => {
     let executeAttempts = 0;
     vi.stubGlobal(
       "fetch",
-      vi.fn(async (url: string, init: RequestInit) => {
+      vi.fn(async (url: string) => {
         const path = url.replace(/^.*\/tokenized\/checkout/, "");
         if (path === "/token/grant") {
           return new Response(JSON.stringify({ id_token: "tok", expires_in: 3600, statusCode: "0000" }), { status: 200 });
