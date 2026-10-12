@@ -1529,6 +1529,11 @@ function OrdersPageContent() {
     );
   };
 
+  const isRefundable = (o: ShippingOrder) =>
+    o.status !== "CANCELLED" &&
+    (o.paymentStatus === "COMPLETED" || o.paymentStatus === "PARTIALLY_REFUNDED") &&
+    (o.refundedAmount ?? 0) < o.totalAmount;
+
   const isDelivered = (o: ShippingOrder) => {
     if (isCancelled(o) || isReturned(o) || !hasBoughtPrice(o)) return false;
     const sfStatus = courierStatusOf(o);
@@ -2094,9 +2099,7 @@ function OrdersPageContent() {
         const canCancel =
           !orderIsCancelled && !orderIsReturned && !orderIsDelivered;
 
-        const canRefund =
-          orderIsDelivered &&
-          (order.refundedAmount ?? 0) < order.totalAmount;
+        const canRefund = isRefundable(order);
 
         const isWebsiteOrder = order.saleType !== "POS";
 
@@ -3039,14 +3042,7 @@ function OrdersPageContent() {
 
               {selectedOrder && (() => {
                 const target = selectedOrder as ShippingOrder;
-                const orderIsCancelled = isCancelled(target);
-                const orderIsReturned = isReturned(target);
-                const orderIsDelivered = isDelivered(target);
-
-                const canRefund =
-                  permRefund &&
-                  orderIsDelivered &&
-                  (target.refundedAmount ?? 0) < target.totalAmount;
+                const canRefund = permRefund && isRefundable(target);
 
                 return (
                   <div className="flex gap-2 pt-2">
