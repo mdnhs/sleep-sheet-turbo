@@ -55,6 +55,7 @@ import { sanitizeRichText } from "@/lib/sanitize"
 import { Skeleton } from "@/components/ui/skeleton"
 import { PRODUCTS_SKELETON_MAX, ProductsDuplicateGroupsSkeleton } from "./products-skeleton"
 import { RememberedProductsSkeleton } from "./products-view-skeleton"
+import { loadProductListPrefs, useProductListPrefs } from "@/features/product/state/use-product-list-prefs"
 import Link from "next/link"
 import { PageTitle } from "@/components/dashboard-page-title"
 
@@ -122,6 +123,40 @@ export default function ProductsClientPage() {
   const isDuplicates = view === "duplicates"
   const isTable = !isGrid && !isDuplicates
 
+  // The last page size / filters come back on the next visit unless the URL
+  // already names them; products wait for that so the old size isn't fetched first.
+  const rememberPrefs = useProductListPrefs((s) => s.remember)
+  const [prefsReady, setPrefsReady] = useState(false)
+  useEffect(() => {
+    let cancelled = false
+    loadProductListPrefs().then((saved) => {
+      if (cancelled) return
+      const params = new URLSearchParams(window.location.search)
+      if (!params.has("limit") && saved.limit) setLimit(saved.limit)
+      // Kept in the URL even when it matches the default: that default comes
+      // from settings, which may not have loaded yet.
+      if (!params.has("category") && saved.category) setCategoryId(saved.category, { clearOnDefault: false })
+      if (!params.has("featured") && saved.featured) setFeaturedFilter(saved.featured)
+      if (!params.has("sort") && saved.sort) setSort(saved.sort)
+      if (!params.has("view") && saved.view) setView(saved.view)
+      setPrefsReady(true)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [setLimit, setCategoryId, setFeaturedFilter, setSort, setView])
+
+  const changeCategory = (val: string | null) => {
+    setCategoryId(val || "all", { clearOnDefault: false })
+    rememberPrefs({ category: val || "all" })
+  }
+
+  const changeLimit = (size: number) => {
+    setLimit(size)
+    setPage(1)
+    rememberPrefs({ limit: size })
+  }
+
   const pagination: PaginationState = {
     pageIndex: Math.max(0, page - 1),
     pageSize: limit,
@@ -144,14 +179,14 @@ export default function ProductsClientPage() {
     admin: "true",
     category: categoryId === "all" ? undefined : categoryId,
     featured: featuredFilter === "all" ? undefined : featuredFilter,
-  })
+  }, { enabled: prefsReady })
 
   const { data: duplicateGroups, isLoading: isDuplicatesLoading } = useGetDuplicateProducts(
     {
       category: categoryId === "all" ? undefined : categoryId,
       search: debouncedSearch,
     },
-    { enabled: isDuplicates }
+    { enabled: isDuplicates && prefsReady }
   )
 
   // How many cards / rows / groups each view drew, so its skeleton matches next time.
@@ -311,7 +346,7 @@ export default function ProductsClientPage() {
                 className="pl-9 w-full rounded-full text-xs font-semibold"
               />
             </div>
-            <Select value={categoryId} onValueChange={(val) => { setCategoryId(val || "all"); setPage(1); }}>
+            <Select value={categoryId} onValueChange={(val) => { changeCategory(val); setPage(1); }}>
               <SelectTrigger className="w-[130px] sm:w-[170px] rounded-full text-xs font-semibold bg-slate-50 dark:bg-muted/40 border-none shadow-none h-8 capitalize">
                 <SelectValue placeholder="Category">
                   {categoryId === "all" ? "All Categories" : categoryId}
@@ -327,7 +362,7 @@ export default function ProductsClientPage() {
               </SelectContent>
             </Select>
             <div className="grid grid-cols-2 sm:flex sm:items-center gap-2 sm:gap-2.5 w-full sm:w-auto">
-              <Select value={featuredFilter} onValueChange={(val) => { setFeaturedFilter(val || "all"); setPage(1); }}>
+              <Select value={featuredFilter} onValueChange={(val) => { setFeaturedFilter(val || "all"); rememberPrefs({ featured: val || "all" }); setPage(1); }}>
                 <SelectTrigger className="w-full sm:w-[140px] rounded-full text-xs font-semibold bg-slate-50 dark:bg-muted/40 border-none shadow-none h-8 capitalize">
                   <SelectValue placeholder="Status">
                     {FEATURED_OPTIONS.find((opt) => opt.value === featuredFilter)?.label ?? "Status"}
@@ -341,7 +376,7 @@ export default function ProductsClientPage() {
                   ))}
                 </SelectContent>
               </Select>
-              <Select value={sort} onValueChange={(val) => { setSort(val || "newest"); setPage(1); }}>
+              <Select value={sort} onValueChange={(val) => { setSort(val || "newest"); rememberPrefs({ sort: val || "newest" }); setPage(1); }}>
                 <SelectTrigger className="w-full sm:w-[170px] rounded-full text-xs font-semibold bg-slate-50 dark:bg-muted/40 border-none shadow-none h-8 capitalize">
                   <SelectValue placeholder="Sort by">
                     {SORT_OPTIONS.find((opt) => opt.value === sort)?.label ?? "Sort by"}
@@ -386,7 +421,7 @@ export default function ProductsClientPage() {
           className="pl-9 w-full rounded-full text-xs font-semibold"
         />
       </div>
-      <Select value={categoryId} onValueChange={(val) => setCategoryId(val || "all")}>
+      <Select value={categoryId} onValueChange={changeCategory}>
         <SelectTrigger className="w-full sm:w-[170px] rounded-full text-xs font-semibold bg-slate-50 dark:bg-muted/40 border-none shadow-none h-8 capitalize">
           <SelectValue placeholder="Category">
             {categoryId === "all" ? "All Categories" : categoryId}
@@ -406,7 +441,7 @@ export default function ProductsClientPage() {
 
   const pageTitle = <PageTitle title="Products" description="Manage your product catalog and inventory" />
 
-  if (isLoading) {
+  if (!prefsReady || isLoading) {
     return <RememberedProductsSkeleton view={isDuplicates ? "duplicates" : isGrid ? "grid" : "table"} limit={limit} />
   }
 
@@ -426,7 +461,7 @@ export default function ProductsClientPage() {
               aria-label="Table view"
               aria-pressed={isTable}
               title="Table view"
-              onClick={() => setView("table")}
+              onClick={() => { setView("table"); rememberPrefs({ view: "table" }) }}
               className={cn(
                 "rounded-full h-7 w-7",
                 isTable && "bg-white dark:bg-slate-800 shadow-sm"
@@ -440,7 +475,7 @@ export default function ProductsClientPage() {
               aria-label="Grid view"
               aria-pressed={isGrid}
               title="Grid view"
-              onClick={() => setView("grid")}
+              onClick={() => { setView("grid"); rememberPrefs({ view: "grid" }) }}
               className={cn(
                 "rounded-full h-7 w-7",
                 isGrid && "bg-white dark:bg-slate-800 shadow-sm"
@@ -661,9 +696,7 @@ export default function ProductsClientPage() {
                   <Select
                     value={limit.toString()}
                     onValueChange={(value) => {
-                      if (!value) return
-                      setLimit(Number(value))
-                      setPage(1)
+                      if (value) changeLimit(Number(value))
                     }}
                   >
                     <SelectTrigger className="h-8 w-[70px] rounded-lg text-xs font-semibold bg-slate-50 dark:bg-muted/40 border-none shadow-none">
@@ -710,8 +743,8 @@ export default function ProductsClientPage() {
           pagination={pagination}
           onPaginationChange={(updater: Updater<PaginationState>) => {
             const next = typeof updater === "function" ? updater(pagination) : updater
+            if (next.pageSize !== limit) return changeLimit(next.pageSize)
             setPage(next.pageIndex + 1)
-            setLimit(next.pageSize)
           }}
           rowSelection={rowSelection}
           onRowSelectionChange={(updater: Updater<Record<string, boolean>>) => {

@@ -14,7 +14,7 @@ interface ProductQueryParams {
   pos?: string;
 }
 
-export const useGetProducts = (params?: ProductQueryParams) => {
+export const useGetProducts = (params?: ProductQueryParams, options?: { enabled?: boolean }) => {
   return useQuery({
     queryKey: ["products", params],
     queryFn: async () => {
@@ -35,6 +35,7 @@ export const useGetProducts = (params?: ProductQueryParams) => {
     // needs to always come from a fresh request, not this client cache.
     staleTime: 0,
     placeholderData: keepPreviousData,
+    enabled: options?.enabled,
   });
 };
 
