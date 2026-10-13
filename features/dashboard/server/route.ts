@@ -16,6 +16,7 @@ import { productFormSchema, productFormDataToObject } from "./product-form-schem
 import { validateImageFiles } from "@/lib/validate-image-upload";
 import { buildProductSlug } from "@/lib/slug";
 import { deleteVideo, isOwnVideoUrl, signVideoUpload } from "@/lib/media";
+import { unusedMedia } from "@/features/media/server/usage";
 
 const app = new Hono();
 
@@ -30,6 +31,8 @@ async function resolveVideoUrl(raw: string | null): Promise<{ ok: true; url: str
 async function deleteVideoQuietly(url: string | null | undefined) {
   if (!url) return;
   try {
+    // Picked from the media library, it may still back another product.
+    if ((await unusedMedia([url])).length === 0) return;
     await deleteVideo(url);
   } catch (error) {
     console.error("Failed to delete product video:", error);
@@ -295,7 +298,7 @@ app.post('/upload',sessionMiddleware, async (c) => {
       if (removedImages.length > 0) {
         after(async () => {
           const results = await Promise.allSettled(
-            removedImages.map((img) => deleteImageFromStorage(img))
+            (await unusedMedia(removedImages)).map((img) => deleteImageFromStorage(img))
           );
           for (const result of results) {
             if (result.status === "rejected") {
@@ -427,7 +430,7 @@ app.post(
     const allImages = found.flatMap((product) => product.images);
     if (allImages.length > 0) {
       after(async () => {
-        const results = await Promise.allSettled(allImages.map((img) => deleteImageFromStorage(img)));
+        const results = await Promise.allSettled((await unusedMedia(allImages)).map((img) => deleteImageFromStorage(img)));
         for (const result of results) {
           if (result.status === "rejected") {
             console.error("Failed to delete product image after bulk delete:", result.reason);
@@ -540,7 +543,7 @@ app.delete('/:id', sessionMiddleware, async (c) => {
 
     if (product.images.length > 0) {
       after(async () => {
-        const results = await Promise.allSettled(product.images.map((img) => deleteImageFromStorage(img)));
+        const results = await Promise.allSettled((await unusedMedia(product.images)).map((img) => deleteImageFromStorage(img)));
         for (const result of results) {
           if (result.status === "rejected") {
             console.error("Failed to delete product image after product delete:", result.reason);
@@ -664,7 +667,7 @@ app.patch(
     if (removedImages.length > 0) {
       after(async () => {
         const results = await Promise.allSettled(
-          removedImages.map((img) => deleteImageFromStorage(img))
+          (await unusedMedia(removedImages)).map((img) => deleteImageFromStorage(img))
         );
         for (const result of results) {
           if (result.status === "rejected") {

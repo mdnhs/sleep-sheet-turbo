@@ -66,3 +66,16 @@ function settingsPageFor(key: string): string {
   if (key.startsWith("product_ad")) return "/dashboard/promotions";
   return "/dashboard/settings/website";
 }
+
+/**
+ * The given URLs nothing references any more. A library file can back several
+ * products (or a category, post…), so storage cleanup after an edit or delete
+ * only removes these — call it once the DB write that dropped a reference has
+ * committed.
+ */
+export async function unusedMedia(urls: string[]): Promise<string[]> {
+  const unique = [...new Set(urls)];
+  if (unique.length === 0) return [];
+  const usage = await mediaUsage(unique);
+  return unique.filter((url) => !usage.get(url)?.length);
+}

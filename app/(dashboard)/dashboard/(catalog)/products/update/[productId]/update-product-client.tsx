@@ -178,7 +178,7 @@ function UpdateProductClient() {
                 render={() => (
                   <FormItem>
                     <FormControl>
-                      <FileUpload form={form} name="productImages" />
+                      <FileUpload form={form} name="productImages" library />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

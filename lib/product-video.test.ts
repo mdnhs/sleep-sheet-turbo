@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   isCloudinaryVideoUrl,
+  isProductVideoKey,
   isR2VideoUrl,
   videoShareUrl,
   productVideoOgImage,
@@ -102,6 +103,14 @@ describe("R2 videos", () => {
     expect(isR2VideoUrl(`${r2}?x=1`, "https://media.example.com")).toBe(false);
     expect(isR2VideoUrl("https://media.example.com.evil.io/products-video/a.mp4", "https://media.example.com")).toBe(false);
     expect(isR2VideoUrl(r2, "")).toBe(false);
+  });
+
+  it("offers only library keys the product form accepts", () => {
+    expect(isProductVideoKey("products-video/AbC_123-xyz.mp4")).toBe(true);
+    expect(isProductVideoKey("products-video/clip.mov")).toBe(true);
+    expect(isProductVideoKey("products-video/clip.webm")).toBe(false);
+    expect(isProductVideoKey("library/clip.mp4")).toBe(false);
+    expect(isProductVideoKey("products-video/sub/clip.mp4")).toBe(false);
   });
 
   it("goes through Cloudflare Media Transformations when a transform origin is set", () => {

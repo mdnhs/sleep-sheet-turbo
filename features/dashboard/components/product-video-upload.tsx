@@ -1,10 +1,12 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { Film, Loader2, Trash2, Upload, X } from "lucide-react";
+import { Film, Images, Loader2, Trash2, Upload, X } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { MediaPicker } from "@/features/media/components/media-picker";
 import {
+  isProductVideoKey,
   PRODUCT_VIDEO_FORMATS,
   PRODUCT_VIDEO_MAX_BYTES,
   productVideoPoster,
@@ -38,6 +40,7 @@ export function ProductVideoUpload({ value, onChange }: ProductVideoUploadProps)
   const inputRef = useRef<HTMLInputElement>(null);
   const xhrRef = useRef<XMLHttpRequest | null>(null);
   const [progress, setProgress] = useState<number | null>(null);
+  const [pickerOpen, setPickerOpen] = useState(false);
 
   const uploading = progress !== null;
 
@@ -149,6 +152,9 @@ export function ProductVideoUpload({ value, onChange }: ProductVideoUploadProps)
             >
               <Upload className="mr-2 h-4 w-4" /> Replace
             </Button>
+            <Button type="button" variant="outline" size="sm" disabled={uploading} onClick={() => setPickerOpen(true)}>
+              <Images className="mr-2 h-4 w-4" /> Choose from library
+            </Button>
             <Button
               type="button"
               variant="outline"
@@ -175,6 +181,20 @@ export function ProductVideoUpload({ value, onChange }: ProductVideoUploadProps)
           </span>
         </button>
       )}
+
+      {!value && (
+        <Button type="button" variant="outline" size="sm" disabled={uploading} className="gap-2" onClick={() => setPickerOpen(true)}>
+          <Images className="h-4 w-4" /> Choose from library
+        </Button>
+      )}
+      <MediaPicker
+        open={pickerOpen}
+        onOpenChange={setPickerOpen}
+        kind="video"
+        accept={(item) => isProductVideoKey(item.key)}
+        exclude={value ? [value] : []}
+        onSelect={([url]) => url && onChange(url)}
+      />
 
       {uploading && (
         <div className="space-y-1.5" role="status" aria-live="polite">

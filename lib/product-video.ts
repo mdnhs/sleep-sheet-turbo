@@ -70,10 +70,14 @@ export function isR2VideoUrl(value: string, publicUrl: string): boolean {
     return false;
   }
   if (url.search || url.hash) return false;
-  const prefix = `${base}/${PRODUCT_VIDEO_FOLDER}/`;
-  if (!url.href.startsWith(prefix)) return false;
-  const name = url.href.slice(prefix.length);
-  return /^[A-Za-z0-9_-]+\.(mp4|mov)$/.test(name);
+  if (!url.href.startsWith(`${base}/`)) return false;
+  return isProductVideoKey(url.href.slice(base.length + 1));
+}
+
+/** An R2 object key that can be a product video: the video folder + one MP4/MOV file name. */
+export function isProductVideoKey(key: string): boolean {
+  const prefix = `${PRODUCT_VIDEO_FOLDER}/`;
+  return key.startsWith(prefix) && /^[A-Za-z0-9_-]+\.(mp4|mov)$/.test(key.slice(prefix.length));
 }
 
 function withTransform(url: string, transform: string, ext: string): string {

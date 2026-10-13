@@ -2,7 +2,7 @@
 
 import { useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { Copy, ExternalLink, FileQuestion, Film, Loader2, RefreshCw, Search, Trash2, Upload } from "lucide-react";
+import { Copy, ExternalLink, Loader2, RefreshCw, Search, Trash2, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { PageTitle } from "@/components/dashboard-page-title";
 import {
@@ -27,8 +27,8 @@ import { type InUse, useDeleteMedia, useMediaLibrary, useUploadMedia } from "@/f
 import { MEDIA_UPLOAD_FOLDERS, type MediaItem, type MediaUploadFolder } from "@/features/media/types";
 import { useHasMounted } from "@/hooks/use-has-mounted";
 import { isAllowed } from "@/lib/permissions";
-import { productVideoPoster } from "@/lib/product-video";
 import { getOptimizedImageUrl } from "@/lib/utils";
+import { MediaThumb } from "@/features/media/components/media-thumb";
 import { MediaGridSkeleton } from "./media-skeleton";
 
 const KIND_LABEL: Record<string, string> = {
@@ -54,27 +54,6 @@ function copy(url: string) {
   navigator.clipboard.writeText(url).then(
     () => toast.success("URL copied"),
     () => toast.error("Could not copy"),
-  );
-}
-
-function Thumb({ item, size }: { item: MediaItem; size: number }) {
-  if (item.kind === "image") {
-    // eslint-disable-next-line @next/next/no-img-element -- already resized by getOptimizedImageUrl
-    return <img src={getOptimizedImageUrl(item.url, size)} alt={item.name} loading="lazy" className="h-full w-full object-cover" />;
-  }
-  if (item.kind === "video") {
-    return (
-      <div className="relative h-full w-full bg-black">
-        {/* eslint-disable-next-line @next/next/no-img-element -- a generated still */}
-        <img src={productVideoPoster(item.url, size)} alt={item.name} loading="lazy" className="h-full w-full object-cover opacity-90" />
-        <Film className="absolute bottom-2 right-2 h-4 w-4 text-white drop-shadow" />
-      </div>
-    );
-  }
-  return (
-    <div className="flex h-full w-full items-center justify-center bg-muted">
-      <FileQuestion className="h-8 w-8 text-muted-foreground" />
-    </div>
   );
 }
 
@@ -307,7 +286,7 @@ export default function MediaClientPage() {
                     className="block aspect-square w-full overflow-hidden rounded-xl"
                     aria-label={`Open ${item.name}`}
                   >
-                    <Thumb item={item} size={320} />
+                    <MediaThumb item={item} size={320} />
                   </button>
                   {canWrite && (
                     <Checkbox
@@ -359,7 +338,7 @@ export default function MediaClientPage() {
                   <img src={getOptimizedImageUrl(open.url, 1200)} alt={open.name} className="max-h-[60vh] w-full object-contain" />
                 ) : (
                   <div className="aspect-video">
-                    <Thumb item={open} size={600} />
+                    <MediaThumb item={open} size={600} />
                   </div>
                 )}
               </div>

@@ -1,6 +1,6 @@
 /* eslint-disable @next/next/no-img-element */
 "use client";
-import { Upload, X, RefreshCw } from "lucide-react";
+import { Upload, X, RefreshCw, Images } from "lucide-react";
 import { useCallback, useRef, useState } from "react";
 import { useDropzone } from "react-dropzone";
 import {
@@ -9,6 +9,8 @@ import {
   UseFormReturn,
   FieldPathValue,
 } from "react-hook-form";
+import { Button } from "@/components/ui/button";
+import { MediaPicker } from "@/features/media/components/media-picker";
 
 interface FileUploadProps<T extends FieldValues> {
   form?: UseFormReturn<T>;
@@ -16,6 +18,8 @@ interface FileUploadProps<T extends FieldValues> {
   value?: (File | string)[];
   onChange?: (files: (File | string)[]) => void;
   endpoint?: string;
+  /** Also offer picking images already in the R2 media library. */
+  library?: boolean;
 }
 
 export function FileUpload<T extends FieldValues>({
@@ -23,6 +27,7 @@ export function FileUpload<T extends FieldValues>({
   name,
   value,
   onChange,
+  library = false,
 }: FileUploadProps<T>) {
   const MAX_SIZE = 5 * 1024 * 1024; // 5MB
 
@@ -30,6 +35,7 @@ export function FileUpload<T extends FieldValues>({
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [replaceIndex, setReplaceIndex] = useState<number | null>(null);
+  const [pickerOpen, setPickerOpen] = useState(false);
 
   const onDrop = useCallback(
     (acceptedFiles: File[]) => {
@@ -54,6 +60,14 @@ export function FileUpload<T extends FieldValues>({
     multiple: true,
     onDrop,
   });
+
+  const addFromLibrary = (urls: string[]) => {
+    const newFiles = [...files, ...urls.filter((url) => !files.includes(url))];
+    if (form && name) {
+      form.setValue(name, newFiles as FieldPathValue<T, Path<T>>, { shouldValidate: true });
+    }
+    if (onChange) onChange(newFiles);
+  };
 
   const removeFile = (index: number) => {
     const newFiles = files.filter((_, i) => i !== index);
@@ -112,6 +126,22 @@ export function FileUpload<T extends FieldValues>({
         </div>
       </div>
 
+      {library && (
+        <>
+          <Button type="button" variant="outline" size="sm" className="gap-2" onClick={() => setPickerOpen(true)}>
+            <Images className="h-4 w-4" /> Choose from library
+          </Button>
+          <MediaPicker
+            open={pickerOpen}
+            onOpenChange={setPickerOpen}
+            kind="image"
+            multiple
+            exclude={files.filter((f): f is string => typeof f === "string")}
+            onSelect={addFromLibrary}
+          />
+        </>
+      )}
+
       {files?.length > 0 && (
         <div className="grid grid-cols-3 sm:grid-cols-4 gap-3 mt-4">
           <input
@@ -160,7 +190,7 @@ export function FileUpload<T extends FieldValues>({
                 }}
               />
               <div className="absolute bottom-0 left-0 right-0 text-[10px] p-1 bg-black/50 text-white truncate text-center">
-                {file instanceof File ? file.name : "External URL"}
+                {file instanceof File ? file.name : "Saved image"}
               </div>
             </div>
           ))}
