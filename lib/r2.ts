@@ -121,3 +121,47 @@ export async function r2PresignPut(
   const signed = await signer.sign()
   return { uploadUrl: signed.url.toString(), headers, publicUrl: r2PublicUrl(config.publicUrl, key) }
 }
+
+export type R2Object = { key: string; size: number; lastModified: string }
+
+function xmlText(value: string): string {
+  return value
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&apos;/g, "'")
+    .replace(/&amp;/g, "&")
+}
+
+/**
+ * Every object under `prefix` (ListObjectsV2, 1000 per page), stopping at
+ * `limit`. The media library is small, so it lists everything and sorts in
+ * memory rather than paging through S3's key order.
+ */
+export async function r2List(prefix = "", limit = 10_000): Promise<{ objects: R2Object[]; truncated: boolean }> {
+  const config = await requireConfig()
+  const objects: R2Object[] = []
+  let token: string | undefined
+  do {
+    const params = new URLSearchParams({ "list-type": "2", "max-keys": "1000" })
+    if (prefix) params.set("prefix", prefix)
+    if (token) params.set("continuation-token", token)
+    const url = `https://${config.accountId}.r2.cloudflarestorage.com/${encodeURIComponent(config.bucket)}?${params}`
+    const res = await signedFetch(config, url, { method: "GET" })
+    if (!res.ok) throw await failure(res, "list")
+    const xml = await res.text()
+    for (const block of xml.match(/<Contents>[\s\S]*?<\/Contents>/g) ?? []) {
+      const key = block.match(/<Key>([\s\S]*?)<\/Key>/)?.[1]
+      if (!key) continue
+      objects.push({
+        key: xmlText(key),
+        size: Number(block.match(/<Size>(\d+)<\/Size>/)?.[1] ?? 0),
+        lastModified: block.match(/<LastModified>([^<]+)<\/LastModified>/)?.[1] ?? "",
+      })
+    }
+    token = /<IsTruncated>true<\/IsTruncated>/.test(xml)
+      ? xmlText(xml.match(/<NextContinuationToken>([^<]+)<\/NextContinuationToken>/)?.[1] ?? "") || undefined
+      : undefined
+  } while (token && objects.length < limit)
+  return { objects: objects.slice(0, limit), truncated: Boolean(token) }
+}

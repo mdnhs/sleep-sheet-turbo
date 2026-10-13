@@ -25,6 +25,7 @@ const OLD_SIDEBAR: { url: string; module: ModuleKey }[] = [
   { url: "/dashboard/settings", module: "settings" },
   // Added after the sections refactor.
   { url: "/dashboard/promotions", module: "promotions" },
+  { url: "/dashboard/media", module: "products" },
 ];
 
 const SECTIONS = Object.keys(dashboardSections) as SectionKey[];

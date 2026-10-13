@@ -24,6 +24,7 @@ import {
   IconPackage,
   IconSettings,
   IconDiscount,
+  IconPhoto,
   IconShoppingCart,
   IconChartBar,
   IconUsers,
@@ -71,6 +72,9 @@ export function buildItems(
     // A page of its own, right after Catalog whether or not Catalog shows.
     if (key === "catalog" && canAccessTab(user, "promotions")) {
       items.push({ title: "Promotion", url: "/dashboard/promotions", icon: <IconDiscount /> })
+    }
+    if (key === "catalog" && canAccessTab(user, "media")) {
+      items.push({ title: "Media", url: "/dashboard/media", icon: <IconPhoto /> })
     }
   }
   // Settings holds pages gated by other modules too (Roles: "roles"), so it

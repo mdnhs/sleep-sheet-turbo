@@ -57,7 +57,11 @@ async function optimizeImage(input: Buffer): Promise<{ data: Buffer; ext: string
 
 export async function uploadImage(file: File | Buffer, folder = "categories"): Promise<string> {
   if ((await getMediaProvider()) !== "r2") return cloudinary.uploadImage(file, folder)
+  return uploadImageToR2(file, folder)
+}
 
+/** R2 regardless of media_provider — the media library manages R2 only. */
+export async function uploadImageToR2(file: File | Buffer, folder: string): Promise<string> {
   const buffer = file instanceof File ? Buffer.from(await file.arrayBuffer()) : file
   const { data, ext, type } = await optimizeImage(buffer)
   return r2Put(`${folder}/${newObjectName()}.${ext}`, data, type)
@@ -88,6 +92,13 @@ export async function signVideoUpload(
     return { ok: true, ticket: { provider: "cloudinary", ...signed } }
   }
 
+  return signR2VideoUpload(file)
+}
+
+/** A presigned R2 PUT for one product video, regardless of media_provider. */
+export async function signR2VideoUpload(
+  file: { type: string; size: number },
+): Promise<{ ok: true; ticket: VideoUploadTicket } | { ok: false; error: string }> {
   if (!r2Configured(await getR2Config())) {
     return { ok: false, error: "R2 is not configured. Add it under Settings → CDN." }
   }

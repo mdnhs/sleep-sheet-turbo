@@ -105,6 +105,12 @@ export const NAV_MENUS: NavMenu[] = [
     tabs: [{ id: "promotions", title: "Promotions", href: "/dashboard/promotions", module: "promotions" }],
   },
   {
+    key: "media",
+    title: "Media",
+    // The R2 media library; managed by whoever manages product images.
+    tabs: [{ id: "media", title: "Media", href: "/dashboard/media", module: "products" }],
+  },
+  {
     key: "reports",
     title: "Reports",
     tabs: [
