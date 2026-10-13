@@ -14,6 +14,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CheckCircle2, Eye, EyeOff, Loader2, PlugZap, XCircle } from "lucide-react";
 import { CdnFormSkeleton } from "./settings-skeletons";
 
@@ -56,6 +57,9 @@ const cdnSchema = z
 
 type CdnFormValues = z.infer<typeof cdnSchema>;
 type TextField = Exclude<keyof CdnFormValues, "media_provider">;
+type Provider = CdnFormValues["media_provider"];
+
+const PROVIDER_LABELS: Record<Provider, string> = { r2: "Cloudflare R2", cloudinary: "Cloudinary" };
 
 export function CdnForm() {
   const { data: settings, isLoading: isLoadingSettings } = useSettings();
@@ -65,6 +69,8 @@ export function CdnForm() {
   const { mutate, isPending } = useUpdateSettings();
   const test = useTestMediaStorage();
   const [shown, setShown] = useState<Partial<Record<TextField, boolean>>>({});
+  // null = follow the selected provider until the user picks a tab.
+  const [tab, setTab] = useState<Provider | null>(null);
 
   const form = useForm<CdnFormValues>({
     resolver: zodResolver(cdnSchema),
@@ -84,6 +90,13 @@ export function CdnForm() {
   function onSubmit(values: CdnFormValues) {
     test.reset();
     mutate({ ...values, r2_public_url: values.r2_public_url.replace(/\/+$/, "") });
+  }
+
+  // Errors can sit on the tab that isn't open; jump there so they're visible.
+  function onInvalid(errors: Partial<Record<keyof CdnFormValues, unknown>>) {
+    const first = Object.keys(errors)[0];
+    if (first?.startsWith("r2_")) setTab("r2");
+    else if (first?.startsWith("cloudinary_")) setTab("cloudinary");
   }
 
   if (isLoading) {
@@ -133,22 +146,28 @@ export function CdnForm() {
         </p>
       </div>
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        <form onSubmit={form.handleSubmit(onSubmit, onInvalid)} className="space-y-6">
           <FormField
             control={form.control}
             name="media_provider"
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Upload new files to</FormLabel>
-                <Select value={field.value} onValueChange={field.onChange}>
+                <Select
+                  value={field.value}
+                  onValueChange={(v) => {
+                    field.onChange(v);
+                    setTab(v as Provider);
+                  }}
+                >
                   <FormControl>
                     <SelectTrigger className="max-w-xs">
-                      <SelectValue />
+                      <SelectValue>{PROVIDER_LABELS[field.value]}</SelectValue>
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    <SelectItem value="cloudinary">Cloudinary</SelectItem>
-                    <SelectItem value="r2">Cloudflare R2</SelectItem>
+                    <SelectItem value="cloudinary">{PROVIDER_LABELS.cloudinary}</SelectItem>
+                    <SelectItem value="r2">{PROVIDER_LABELS.r2}</SelectItem>
                   </SelectContent>
                 </Select>
                 <FormMessage />
@@ -156,26 +175,42 @@ export function CdnForm() {
             )}
           />
 
-          <section className="space-y-4">
-            <h3 className="text-sm font-semibold">Cloudflare R2{provider === "r2" && <Active />}</h3>
-            {field("r2_account_id", "Account ID", "32-character Cloudflare account ID", "Cloudflare dashboard → R2 → Account details.", true)}
-            {field("r2_bucket", "Bucket", "e.g. sleepsheet-media")}
-            {field(
-              "r2_public_url",
-              "Public URL",
-              "https://media.example.com",
-              "The bucket's custom domain (or r2.dev URL) that serves uploaded files.",
-            )}
-            {field("r2_access_key_id", "Access key ID", "R2 API token access key ID", "An R2 API token with Object Read & Write on this bucket.", true)}
-            {field("r2_secret_access_key", "Secret access key", "R2 API token secret", undefined, true)}
-          </section>
+          <Tabs value={tab ?? provider} onValueChange={(v) => setTab(v as Provider)}>
+            <TabsList className="flex flex-nowrap items-center h-9 w-fit gap-1 bg-slate-100 dark:bg-muted/40 p-1 rounded-full mb-2">
+              {(["r2", "cloudinary"] as const).map((p) => (
+                <TabsTrigger
+                  key={p}
+                  value={p}
+                  className="shrink-0 rounded-full px-4 h-7 text-xs font-semibold cursor-pointer transition-colors data-active:bg-slate-900 data-active:text-white data-active:hover:text-white dark:data-active:bg-slate-100 dark:data-active:text-slate-900 dark:data-active:hover:text-slate-900"
+                >
+                  {PROVIDER_LABELS[p]}
+                  {provider === p && <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" aria-label="Receives uploads" />}
+                </TabsTrigger>
+              ))}
+            </TabsList>
 
-          <section className="space-y-4">
-            <h3 className="text-sm font-semibold">Cloudinary{provider === "cloudinary" && <Active />}</h3>
-            {field("cloudinary_cloud_name", "Cloud name", "e.g. dhz1oeq0z")}
-            {field("cloudinary_api_key", "API key", "Enter API key", "Needs a role that can create and delete assets.", true)}
-            {field("cloudinary_api_secret", "API secret", "Enter API secret", undefined, true)}
-          </section>
+            {/* keepMounted so validation messages survive a tab switch */}
+            <TabsContent value="r2" keepMounted className="space-y-4">
+              <TabHeading provider="r2" active={provider === "r2"} />
+              {field("r2_account_id", "Account ID", "32-character Cloudflare account ID", "Cloudflare dashboard → R2 → Account details.", true)}
+              {field("r2_bucket", "Bucket", "e.g. sleepsheet-media")}
+              {field(
+                "r2_public_url",
+                "Public URL",
+                "https://media.example.com",
+                "The bucket's custom domain (or r2.dev URL) that serves uploaded files.",
+              )}
+              {field("r2_access_key_id", "Access key ID", "R2 API token access key ID", "An R2 API token with Object Read & Write on this bucket.", true)}
+              {field("r2_secret_access_key", "Secret access key", "R2 API token secret", undefined, true)}
+            </TabsContent>
+
+            <TabsContent value="cloudinary" keepMounted className="space-y-4">
+              <TabHeading provider="cloudinary" active={provider === "cloudinary"} />
+              {field("cloudinary_cloud_name", "Cloud name", "e.g. dhz1oeq0z")}
+              {field("cloudinary_api_key", "API key", "Enter API key", "Needs a role that can create and delete assets.", true)}
+              {field("cloudinary_api_secret", "API secret", "Enter API secret", undefined, true)}
+            </TabsContent>
+          </Tabs>
 
           <div className="flex flex-wrap items-center gap-2">
             <Button type="submit" disabled={isPending} className="rounded-full text-xs font-semibold">
@@ -218,10 +253,14 @@ export function CdnForm() {
   );
 }
 
-function Active() {
+function TabHeading({ provider, active }: { provider: Provider; active: boolean }) {
   return (
-    <span className="ml-2 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary align-middle">
-      Receives uploads
-    </span>
+    <p className="text-xs text-muted-foreground">
+      {active ? (
+        <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary">Receives uploads</span>
+      ) : (
+        <>Not receiving uploads. Credentials kept so existing {PROVIDER_LABELS[provider]} files can still be deleted.</>
+      )}
+    </p>
   );
 }
