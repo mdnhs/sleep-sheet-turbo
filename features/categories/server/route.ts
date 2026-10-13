@@ -7,7 +7,7 @@ import { sessionMiddleware } from '@/lib/session-middleware';
 import { zValidator } from '@hono/zod-validator';
 import { z } from 'zod';
 import cuid from 'cuid';
-import { uploadImage, deleteImage } from '@/lib/cloudinary';
+import { uploadImage, deleteImage } from '@/lib/media';
 import { validateImageFile } from '@/lib/validate-image-upload';
 import { can } from "@/lib/permissions";
 import { setActivityMeta, summarizeNames, type ActivityChange } from "@/features/activity/server/log-activity";

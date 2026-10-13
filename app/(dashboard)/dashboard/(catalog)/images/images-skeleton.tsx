@@ -112,7 +112,7 @@ export function ImagesDataTableSkeleton() {
 export function ImagesPageSkeleton() {
   return (
     <div className="flex-1 space-y-6 p-4 md:p-8 pt-4 md:pt-6">
-      <PageTitle title="Images" description="All product images with their Cloudinary URLs, by category." />
+      <PageTitle title="Images" description="All product images with their URLs, by category." />
       <ImagesDataTableSkeleton />
     </div>
   )

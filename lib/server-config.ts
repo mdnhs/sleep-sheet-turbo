@@ -8,6 +8,22 @@ export async function getCloudinaryConfig() {
   return { cloudName: s.cloudinary_cloud_name, apiKey: s.cloudinary_api_key, apiSecret: s.cloudinary_api_secret };
 }
 
+export async function getR2Config() {
+  const s = await getSettingsGroup("integrations");
+  return {
+    accountId: s.r2_account_id,
+    bucket: s.r2_bucket,
+    publicUrl: s.r2_public_url,
+    accessKeyId: s.r2_access_key_id,
+    secretAccessKey: s.r2_secret_access_key,
+  };
+}
+
+export async function getMediaProvider() {
+  const s = await getSettingsGroup("integrations");
+  return s.media_provider;
+}
+
 export async function getSteadfastConfig() {
   const s = await getSettingsGroup("integrations");
   return { apiKey: s.steadfast_api_key, secretKey: s.steadfast_secret_key };

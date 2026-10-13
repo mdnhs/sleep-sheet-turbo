@@ -1,5 +1,7 @@
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
+import { cfImageUrl, unwrapCfImageUrl } from "./media-url"
+
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
@@ -143,8 +145,28 @@ export function getOptimizedImageUrl(url: string | null | undefined, width?: num
       const transform = `f_auto,q_auto:good,c_limit,w_${targetWidth}/`;
       return `${start}${transform}${rest}`;
     }
+    return url;
+  }
+  if (url.startsWith("https://") && !url.includes("images.unsplash.com")) {
+    return cfImageUrl(url, `width=${targetWidth},quality=85,format=auto,fit=scale-down`);
   }
   return url;
+}
+
+/**
+ * The stable identity of a stored image for duplicate detection: the
+ * Cloudinary public id, or the path of an R2 object. Null for anything else.
+ */
+export function getImageIdentity(url: string | null | undefined): string | null {
+  if (!url) return null;
+  if (url.startsWith("https://res.cloudinary.com/")) return getCloudinaryPublicId(url);
+  const source = unwrapCfImageUrl(url);
+  if (!source.startsWith("https://")) return null;
+  try {
+    return new URL(source).pathname.replace(/^\/+/, "").replace(/\.[a-zA-Z0-9]+$/, "") || null;
+  } catch {
+    return null;
+  }
 }
 
 /**

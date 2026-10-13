@@ -6,7 +6,7 @@ import { Product } from '@/lib/types';
 import { getProductById } from './get-product';
 import { sessionMiddleware } from '@/lib/session-middleware';
 import { can, isAllowed } from '@/lib/permissions';
-import { getCloudinaryPublicId } from '@/lib/utils';
+import { getImageIdentity } from '@/lib/utils';
 import { zValidator } from '@hono/zod-validator';
 import { z } from 'zod';
 import { rateLimit } from '@/lib/rate-limit';
@@ -145,7 +145,7 @@ const app = new Hono()
     for (const row of rows) {
       const seenInThisProduct = new Set<string>();
       for (const image of row.images) {
-        const publicId = getCloudinaryPublicId(image);
+        const publicId = getImageIdentity(image);
         if (!publicId || seenInThisProduct.has(publicId)) continue;
         seenInThisProduct.add(publicId);
 

@@ -203,7 +203,7 @@ export function WebsiteSettingsSkeleton() {
 export function CdnSettingsSkeleton() {
   return (
     <div className="space-y-6">
-      <PageTitle title="CDN Settings" description="Manage Cloudinary API credentials for image uploads and storage" />
+      <PageTitle title="CDN Settings" description="Where uploaded images and videos are stored: Cloudinary or Cloudflare R2" />
       <CdnFormSkeleton />
     </div>
   );

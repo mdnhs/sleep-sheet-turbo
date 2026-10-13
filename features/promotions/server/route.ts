@@ -4,7 +4,7 @@ import { z } from "zod";
 import { sessionMiddleware } from "@/lib/session-middleware";
 import { isAllowed } from "@/lib/permissions";
 import { invalidatePromotions } from "@/lib/content-cache";
-import { uploadImage } from "@/lib/cloudinary";
+import { uploadImage } from "@/lib/media";
 import { validateImageFile } from "@/lib/validate-image-upload";
 import { setActivityMeta } from "@/features/activity/server/log-activity";
 import {

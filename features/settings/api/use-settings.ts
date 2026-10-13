@@ -58,3 +58,15 @@ export function useUpdateSettings() {
     },
   });
 }
+
+// Admin-only: uploads, reads back and deletes a test file with the saved
+// credentials of the selected media provider (Settings → CDN).
+export function useTestMediaStorage() {
+  return useMutation({
+    mutationFn: async () => {
+      const res = await client.api.settings.media.test.$post();
+      if (!res.ok) throw new Error("Could not run the test");
+      return res.json();
+    },
+  });
+}

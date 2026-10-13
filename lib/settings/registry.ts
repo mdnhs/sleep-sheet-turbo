@@ -91,11 +91,17 @@ const flag = z.enum(["true", "false"]).transform((value) => value === "true");
 const amount = z.coerce.number().min(0);
 const count = z.coerce.number().int().min(0).max(1_000_000);
 const httpUrl = z.string().trim().refine(isValidSocialManagerUrl, "Must be an http(s) URL");
+const httpsBaseUrl = z
+  .string()
+  .trim()
+  .transform((value) => value.replace(/\/+$/, ""))
+  .refine((value) => value === "" || /^https:\/\/[^/?#\s]+(\/[^?#\s]*)?$/.test(value), "Must be an https URL with no query");
 const timeZone = z.string().trim().refine(isTimeZone, "Unknown time zone");
 const year = z.string().trim().regex(/^(\d{4})?$/, "A four-digit year");
 const prefix = z.string().trim().regex(/^[A-Z0-9]{2,6}$/, "2–6 capital letters or digits");
 
 const adminOnly = { public: false, write: "admin" } as const;
+const adminWrite = { public: true, write: "admin" } as const;
 
 export const SETTINGS = {
   // ── store: the store profile (brief §4, SP-1 "Store profile store.*").
@@ -160,6 +166,17 @@ export const SETTINGS = {
   cloudinary_cloud_name: plain("integrations", text, ""),
   cloudinary_api_key: secret("integrations"),
   cloudinary_api_secret: secret("integrations"),
+  // Where new uploads go. Existing URLs keep working either way: deletes and
+  // delivery go by the URL's host, not by this switch.
+  // Public like cloudinary_cloud_name (the public URL is in every R2 image
+  // URL), but only an admin may change them.
+  media_provider: plain("integrations", z.enum(["cloudinary", "r2"]), "cloudinary", adminWrite),
+  r2_bucket: plain("integrations", text, "", adminWrite),
+  // The bucket's public base URL (custom domain or r2.dev), no trailing slash.
+  r2_public_url: plain("integrations", httpsBaseUrl, "", adminWrite),
+  r2_account_id: secret("integrations", { trim: true }),
+  r2_access_key_id: secret("integrations", { trim: true }),
+  r2_secret_access_key: secret("integrations", { trim: true }),
   steadfast_api_key: secret("integrations"),
   steadfast_secret_key: secret("integrations"),
   bdcourier_api_key: secret("integrations"),

@@ -5,7 +5,7 @@ import { eq, desc, ilike, or, sql, and, inArray, type SQL } from 'drizzle-orm';
 import { z } from 'zod';
 import { zValidator } from '@hono/zod-validator';
 import { sessionMiddleware } from '@/lib/session-middleware';
-import { uploadImage } from '@/lib/cloudinary';
+import { uploadImage } from '@/lib/media';
 import { validateImageFile } from '@/lib/validate-image-upload';
 import { can } from "@/lib/permissions";
 import { zRichText } from '@/lib/sanitize';

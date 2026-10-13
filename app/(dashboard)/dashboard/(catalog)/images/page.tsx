@@ -5,7 +5,7 @@ import { ImagesPageSkeleton } from "./images-skeleton";
 
 export const metadata: Metadata = {
   title: "Images - Dashboard",
-  description: "Product images and Cloudinary URLs by category",
+  description: "Product images and their URLs by category",
 };
 
 export default function ImagesPage() {

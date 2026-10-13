@@ -15,18 +15,16 @@ import { setActivityMeta, summarizeNames, type ActivityChange } from "@/features
 import { productFormSchema, productFormDataToObject } from "./product-form-schema";
 import { validateImageFiles } from "@/lib/validate-image-upload";
 import { buildProductSlug } from "@/lib/slug";
-import { deleteVideo, signProductVideoUpload } from "@/lib/cloudinary";
-import { isCloudinaryVideoUrl } from "@/lib/product-video";
-import { getCloudinaryConfig } from "@/lib/server-config";
+import { deleteVideo, isOwnVideoUrl, signVideoUpload } from "@/lib/media";
 
 const app = new Hono();
 
 // A product video URL comes from a form field, so it is only accepted when it
-// is a video in this store's own Cloudinary account (or empty = no video).
+// is a video in this store's own Cloudinary account or R2 bucket (or empty =
+// no video).
 async function resolveVideoUrl(raw: string | null): Promise<{ ok: true; url: string | null } | { ok: false }> {
   if (!raw) return { ok: true, url: null };
-  const { cloudName } = await getCloudinaryConfig();
-  return isCloudinaryVideoUrl(raw, cloudName) ? { ok: true, url: raw } : { ok: false };
+  return (await isOwnVideoUrl(raw)) ? { ok: true, url: raw } : { ok: false };
 }
 
 async function deleteVideoQuietly(url: string | null | undefined) {
@@ -38,19 +36,25 @@ async function deleteVideoQuietly(url: string | null | undefined) {
   }
 }
 
-// Step 1 of a video upload: the browser asks for a signature, then uploads the
-// file straight to Cloudinary and stores the returned URL via create/update.
-app.post('/video-signature', sessionMiddleware, async (c) => {
-  const user = c.get("user");
-  if (!user || !can(user, "products", "write")) {
-    return c.json({ success: false, error: 'Unauthorized' }, 403);
-  }
-  const signed = await signProductVideoUpload();
-  if (!signed) {
-    return c.json({ success: false, error: 'Cloudinary is not configured. Add it under Settings → CDN.' }, 400);
-  }
-  return c.json({ success: true, ...signed });
-});
+// Step 1 of a video upload: the browser asks for an upload ticket (a
+// Cloudinary signature or a presigned R2 PUT for this exact file), then
+// uploads the file straight to storage and stores the URL via create/update.
+app.post(
+  '/video-signature',
+  sessionMiddleware,
+  zValidator('json', z.object({ type: z.string().max(100), size: z.number().int().positive() })),
+  async (c) => {
+    const user = c.get("user");
+    if (!user || !can(user, "products", "write")) {
+      return c.json({ success: false, error: 'Unauthorized' }, 403);
+    }
+    const result = await signVideoUpload(c.req.valid('json'));
+    if (!result.ok) {
+      return c.json({ success: false, error: result.error }, 400);
+    }
+    return c.json({ success: true, ticket: result.ticket });
+  },
+);
 
 app.post('/upload',sessionMiddleware, async (c) => {
   const user = c.get("user");
@@ -279,12 +283,12 @@ app.post('/upload',sessionMiddleware, async (c) => {
         .where(eq(products.id, productId))
         .returning();
 
-      // Cloudinary images are only deleted once the DB row that stops
+      // Stored images are only deleted once the DB row that stops
       // referencing them has actually committed — deleting them first meant
       // a failed write below (or even just this request racing a concurrent
       // one) could permanently lose an image the product row still pointed
       // at. Deferred via after() (same pattern as lib/n8n-notify) so Vercel
-      // keeps the function alive to finish the Cloudinary calls instead of
+      // keeps the function alive to finish the storage calls instead of
       // freezing the instance the moment the response goes out; run in
       // parallel since each is an independent external call and a failure
       // in one must not block the others.
@@ -301,7 +305,7 @@ app.post('/upload',sessionMiddleware, async (c) => {
         });
       }
 
-      // Same rule for the video: the old Cloudinary asset goes only once the
+      // Same rule for the video: the old stored video goes only once the
       // row has stopped pointing at it (replaced or removed).
       if (existingProduct.video && existingProduct.video !== videoCheck.url) {
         const oldVideo = existingProduct.video;
@@ -410,7 +414,7 @@ app.post(
       tx.delete(products).where(inArray(products.id, foundIds)),
     ]);
 
-    // Cloudinary images deleted only after the DB batch commits (same
+    // Stored images deleted only after the DB batch commits (same
     // BAD-14 reasoning as the single-product delete above), deferred via
     // after() and run in parallel.
     const allVideos = found.flatMap((product) => (product.video ? [product.video] : []));
@@ -524,7 +528,7 @@ app.delete('/:id', sessionMiddleware, async (c) => {
       tx.delete(products).where(eq(products.id, productId)),
     ]);
 
-    // Cloudinary images are only deleted once the DB delete has actually
+    // Stored images are only deleted once the DB delete has actually
     // committed — deleting them first meant a failed batch above left a
     // still-live product pointing at images that no longer exist (BAD-14's
     // same reasoning, applied to delete rather than update). Deferred via

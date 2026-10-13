@@ -19,6 +19,7 @@ import { publicSettingsMap } from "@/lib/settings/public";
 import { invalidateStoredSettings } from "@/lib/settings/read";
 import { isSettingKey } from "@/lib/settings/registry";
 import { planSettingsWrite } from "@/lib/settings/write";
+import { testMediaStorage } from "@/lib/media";
 
 /**
  * The public settings map (lib/settings/public.ts), wrapped in the Next data
@@ -70,6 +71,16 @@ const app = new Hono()
     });
     const decrypted = decryptStoredMap(Object.fromEntries(rows.map((r) => [r.key, r.value])), getSettingsKey());
     return c.json(Object.fromEntries(SECRET_SETTING_KEYS.map((key) => [key, decrypted[key] ?? ""])));
+  })
+
+  // ADMIN-only: Settings → CDN "Test connection". Writes, reads back and
+  // deletes a test file with the saved credentials of the selected provider.
+  .post("/media/test", sessionMiddleware, async (c) => {
+    const user = c.get("user");
+    if (!user || user.role !== "ADMIN") {
+      return c.json({ error: "Unauthorized" }, 401);
+    }
+    return c.json(await testMediaStorage());
   })
 
   // Validated against lib/settings/registry.ts by planSettingsWrite: unknown

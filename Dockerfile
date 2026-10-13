@@ -19,6 +19,10 @@ ARG DEPLOYMENT_VERSION
 ENV DEPLOYMENT_VERSION=$DEPLOYMENT_VERSION
 ARG NEXT_PUBLIC_APP_URL=https://sleepsheetbd.com
 ENV NEXT_PUBLIC_APP_URL=$NEXT_PUBLIC_APP_URL
+# Zone whose Cloudflare Image/Media Transformations resize R2 media
+# (lib/media-url.ts). Inlined into the client bundle at build time.
+ARG NEXT_PUBLIC_MEDIA_TRANSFORM_ORIGIN=https://sleepsheetbd.com
+ENV NEXT_PUBLIC_MEDIA_TRANSFORM_ORIGIN=$NEXT_PUBLIC_MEDIA_TRANSFORM_ORIGIN
 ENV SKIP_BUILD_TYPECHECK=1
 RUN pnpm build
 # The build has no database, so every unstable_cache entry it wrote is an empty

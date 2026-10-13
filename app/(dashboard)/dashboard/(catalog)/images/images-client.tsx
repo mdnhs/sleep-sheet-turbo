@@ -254,7 +254,7 @@ export default function ImagesClientPage() {
     },
     {
       accessorKey: "imageUrl",
-      header: "Cloudinary URL",
+      header: "Image URL",
       cell: ({ row }) => (
         <div className="flex items-center gap-2 max-w-[380px]">
           <span className="truncate text-xs text-muted-foreground">
@@ -277,7 +277,7 @@ export default function ImagesClientPage() {
 
   return (
     <div className="flex-1 space-y-6 p-4 md:p-8 pt-4 md:pt-6">
-      <PageTitle title="Images" description="All product images with their Cloudinary URLs, by category." />
+      <PageTitle title="Images" description="All product images with their URLs, by category." />
 
       {isLoading ? (
         <ImagesDataTableSkeleton />

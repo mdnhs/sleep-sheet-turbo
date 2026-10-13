@@ -5,7 +5,7 @@ import { testimonials } from '@/db/schema'
 import { desc, eq, ilike, inArray, or, sql, and, type SQL } from 'drizzle-orm'
 import { z } from 'zod'
 import { zValidator } from '@hono/zod-validator'
-import { uploadImage } from '@/lib/cloudinary'
+import { uploadImage } from '@/lib/media'
 import { sessionMiddleware } from '@/lib/session-middleware'
 import { isAllowed } from '@/lib/permissions'
 import { setActivityMeta, summarizeNames, type ActivityChange } from "@/features/activity/server/log-activity";

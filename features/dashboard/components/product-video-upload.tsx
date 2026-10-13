@@ -10,31 +10,29 @@ import {
   productVideoPoster,
   productVideoUrl,
 } from "@/lib/product-video";
+import type { VideoUploadTicket } from "@/lib/media";
 
 interface ProductVideoUploadProps {
-  /** Stored Cloudinary video URL, or "" for no video. */
+  /** Stored video URL (Cloudinary or R2), or "" for no video. */
   value: string;
   onChange: (url: string) => void;
 }
 
-interface Signature {
+interface TicketResponse {
   success: boolean;
   error?: string;
-  cloudName: string;
-  apiKey: string;
-  signature: string;
-  params: Record<string, string | number>;
+  ticket?: VideoUploadTicket;
 }
 
 const MAX_MB = PRODUCT_VIDEO_MAX_BYTES / (1024 * 1024);
 const ALLOWED_MIME = ["video/mp4", "video/quicktime", "video/webm"];
 
 /**
- * Uploads one product video straight to Cloudinary (a video is too big for the
- * app's own request body). The server only signs the upload; the form stores
- * the returned URL and saves it with the rest of the product. Removing it just
- * clears the field — the old file is deleted from Cloudinary when the product
- * is saved.
+ * Uploads one product video straight to storage — Cloudinary or R2, whichever
+ * Settings → CDN selects (a video is too big for the app's own request body).
+ * The server only signs the upload; the form stores the resulting URL and
+ * saves it with the rest of the product. Removing it just clears the field —
+ * the old file is deleted from storage when the product is saved.
  */
 export function ProductVideoUpload({ value, onChange }: ProductVideoUploadProps) {
   const inputRef = useRef<HTMLInputElement>(null);
@@ -55,23 +53,42 @@ export function ProductVideoUpload({ value, onChange }: ProductVideoUploadProps)
 
     setProgress(0);
     try {
-      const res = await fetch("/api/product/video-signature", { method: "POST" });
-      const signed = (await res.json()) as Signature;
-      if (!res.ok || !signed.success) throw new Error(signed.error || "Could not start the upload");
-
-      const body = new FormData();
-      body.append("file", file);
-      body.append("api_key", signed.apiKey);
-      body.append("signature", signed.signature);
-      for (const [key, val] of Object.entries(signed.params)) body.append(key, String(val));
+      const res = await fetch("/api/product/video-signature", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: file.type, size: file.size }),
+      });
+      const signed = (await res.json()) as TicketResponse;
+      if (!res.ok || !signed.success || !signed.ticket) throw new Error(signed.error || "Could not start the upload");
+      const ticket = signed.ticket;
 
       const url = await new Promise<string>((resolve, reject) => {
         const xhr = new XMLHttpRequest();
         xhrRef.current = xhr;
-        xhr.open("POST", `https://api.cloudinary.com/v1_1/${signed.cloudName}/video/upload`);
         xhr.upload.onprogress = (e) => {
           if (e.lengthComputable) setProgress(Math.round((e.loaded / e.total) * 100));
         };
+        xhr.onerror = () => reject(new Error("Network error during upload"));
+        xhr.onabort = () => reject(new Error("cancelled"));
+
+        if (ticket.provider === "r2") {
+          // Presigned PUT: type, size and these headers are part of the signature.
+          xhr.open("PUT", ticket.uploadUrl);
+          for (const [key, val] of Object.entries(ticket.headers)) xhr.setRequestHeader(key, val);
+          xhr.onload = () => {
+            if (xhr.status >= 200 && xhr.status < 300) resolve(ticket.publicUrl);
+            else reject(new Error(`Upload failed (${xhr.status})`));
+          };
+          xhr.send(file);
+          return;
+        }
+
+        const body = new FormData();
+        body.append("file", file);
+        body.append("api_key", ticket.apiKey);
+        body.append("signature", ticket.signature);
+        for (const [key, val] of Object.entries(ticket.params)) body.append(key, String(val));
+        xhr.open("POST", `https://api.cloudinary.com/v1_1/${ticket.cloudName}/video/upload`);
         xhr.onload = () => {
           try {
             const data = JSON.parse(xhr.responseText) as { secure_url?: string; error?: { message?: string } };
@@ -81,8 +98,6 @@ export function ProductVideoUpload({ value, onChange }: ProductVideoUploadProps)
             reject(new Error("Upload failed"));
           }
         };
-        xhr.onerror = () => reject(new Error("Network error during upload"));
-        xhr.onabort = () => reject(new Error("cancelled"));
         xhr.send(body);
       });
 

@@ -1,5 +1,7 @@
 "use client"
 
+import { cfImageUrl } from "@/lib/media-url"
+
 export default function imageLoader({
   src,
   width,
@@ -27,6 +29,12 @@ export default function imageLoader({
       const transform = `f_auto,${q},c_limit,w_${width}/`
       return `${start}${transform}${rest}`
     }
+  }
+
+  // R2 images (and anything already wrapped in /cdn-cgi/image/) via
+  // Cloudflare Image Transformations on the storefront's zone.
+  if (src.startsWith("https://") && !src.includes("images.unsplash.com")) {
+    return cfImageUrl(src, `width=${width},quality=${quality || 85},format=auto,fit=scale-down`)
   }
 
   // Optimize Unsplash images via their native URL query parameters

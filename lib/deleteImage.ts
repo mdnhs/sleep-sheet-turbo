@@ -1,4 +1,4 @@
-import { deleteImage } from "@/lib/cloudinary"
+import { deleteImage } from "@/lib/media"
 
 export const deleteImageFromStorage = async (imageUrl: string) => {
   if (!imageUrl || (!imageUrl.startsWith("http://") && !imageUrl.startsWith("https://"))) return

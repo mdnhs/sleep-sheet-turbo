@@ -1,4 +1,4 @@
-import { uploadImage } from "@/lib/cloudinary"
+import { uploadImage } from "@/lib/media"
 
 interface SavedImage {
   filename: string;

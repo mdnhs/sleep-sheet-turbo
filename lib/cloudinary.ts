@@ -105,3 +105,41 @@ export async function deleteVideo(url: string): Promise<void> {
   await ensureConfigured()
   await cloudinary.uploader.destroy(publicId, { resource_type: "video", invalidate: true })
 }
+
+const PROBE_PNG =
+  "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=="
+
+/**
+ * Uploads and deletes a 1px image with the saved credentials. A plain signed
+ * fetch rather than the SDK: on a refusal Cloudinary puts the reason (e.g. a
+ * key whose role lacks "create") in the x-cld-error header, which the SDK
+ * reduces to "Server returned unexpected status code - 403".
+ */
+export async function testCloudinaryUpload(): Promise<{ ok: boolean; detail: string }> {
+  const config = await getCloudinaryConfig()
+  if (!config.cloudName || !config.apiKey || !config.apiSecret) {
+    return { ok: false, detail: "Cloud name, API key and API secret are required." }
+  }
+  const params = { folder: "_healthcheck", timestamp: Math.round(Date.now() / 1000) }
+  const body = new FormData()
+  body.set("file", PROBE_PNG)
+  body.set("api_key", config.apiKey)
+  body.set("signature", cloudinary.utils.api_sign_request(params, config.apiSecret))
+  for (const [key, value] of Object.entries(params)) body.set(key, String(value))
+
+  const res = await fetch(`https://api.cloudinary.com/v1_1/${encodeURIComponent(config.cloudName)}/image/upload`, {
+    method: "POST",
+    body,
+  })
+  if (!res.ok) {
+    return { ok: false, detail: `Upload refused (${res.status}): ${res.headers.get("x-cld-error") || res.statusText}` }
+  }
+  const { public_id } = (await res.json()) as { public_id: string }
+  try {
+    await ensureConfigured()
+    await cloudinary.uploader.destroy(public_id)
+  } catch (error) {
+    return { ok: false, detail: `Uploaded, but deleting the test image failed: ${(error as Error).message}` }
+  }
+  return { ok: true, detail: "Uploaded and deleted a test image." }
+}

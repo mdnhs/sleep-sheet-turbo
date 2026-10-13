@@ -21,7 +21,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { Input } from "@/components/ui/input"
-import { cn } from "@/lib/utils"
+import { cn, getOptimizedImageUrl } from "@/lib/utils"
 import { Copy, MoreVertical, Plus, Play, Search, Trash2, Loader2, LayoutGrid, Table2, Layers } from "lucide-react"
 import BrandedVideoPlayer from "@/components/product/branded-video-player"
 import { productVideoPoster, productVideoUrl } from "@/lib/product-video"
@@ -87,12 +87,11 @@ const SORT_OPTIONS = [
   { value: "bestselling", label: "Best selling" },
 ]
 
-// Serve Cloudinary images resized + in a modern format — originals can be
+// Serve stored images resized + in a modern format — originals can be
 // multi-MB PNGs, which is slow to fetch inside the dialog.
 function optimizedImage(src: string | undefined, width: number) {
   if (!src) return "/placeholder.jpg"
-  if (!src.includes("res.cloudinary.com") || !src.includes("/upload/")) return src
-  return src.replace("/upload/", `/upload/f_auto,q_auto,w_${width}/`)
+  return getOptimizedImageUrl(src, width)
 }
 
 export default function ProductsClientPage() {

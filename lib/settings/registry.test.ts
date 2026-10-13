@@ -35,7 +35,7 @@ const CREDENTIALS: string[] = [
   "steadfast_api_key", "steadfast_secret_key", "bdcourier_api_key", "cloudinary_api_key",
   "cloudinary_api_secret", "google_sheets_client_email", "google_sheets_private_key",
   "google_sheets_spreadsheet_id", "bkash_app_key", "bkash_app_secret", "bkash_username",
-  "bkash_password", "ai_api_key",
+  "bkash_password", "ai_api_key", "r2_account_id", "r2_access_key_id", "r2_secret_access_key",
 ];
 
 describe("settings registry", () => {
@@ -96,6 +96,15 @@ describe("settings registry", () => {
     expect(SETTINGS.order_number_prefix.schema.safeParse("WEB").success).toBe(true);
     expect(SETTINGS.low_stock_threshold.schema.safeParse("-1").success).toBe(false);
     expect(SETTINGS.invoice_language.schema.safeParse("fr").success).toBe(false);
+  });
+
+  it("normalises the R2 public URL and refuses anything but a plain https base", () => {
+    expect(SETTINGS.r2_public_url.schema.parse(" https://media.example.com/ ")).toBe("https://media.example.com");
+    expect(SETTINGS.r2_public_url.schema.parse("")).toBe("");
+    expect(SETTINGS.r2_public_url.schema.safeParse("http://media.example.com").success).toBe(false);
+    expect(SETTINGS.r2_public_url.schema.safeParse("https://media.example.com/?x=1").success).toBe(false);
+    expect(SETTINGS.media_provider.schema.safeParse("s3").success).toBe(false);
+    expect(SETTINGS.media_provider.write).toBe("admin");
   });
 
   it("rejects an unknown time zone", () => {

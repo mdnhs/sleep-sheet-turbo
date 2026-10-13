@@ -13,7 +13,7 @@ import { eq } from "drizzle-orm";
 const API_VERSION = "v1.2.0-beta";
 const SANDBOX_BASE =
   process.env.BKASH_SANDBOX_URL?.trim().replace(/\/+$/, "") ||
-  "https://bkash-proxy.mdnhs-cse.workers.dev";
+  "https://bkash-proxy.sleepsheetbd.com";
 const LIVE_BASE =
   process.env.BKASH_LIVE_URL?.trim().replace(/\/+$/, "") ||
   "https://tokenized.pay.bka.sh";
