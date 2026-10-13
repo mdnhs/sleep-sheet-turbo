@@ -34,6 +34,21 @@ function client(config: R2Config): AwsClient {
   })
 }
 
+/**
+ * Signs with aws4fetch but sends the original bytes ourselves. AwsClient.fetch
+ * hands fetch a Request object, whose body is a stream; inside the Next.js
+ * server that goes out chunked with no Content-Length, which R2 rejects
+ * (411 MissingContentLength). A plain byte body keeps its length.
+ */
+async function signedFetch(
+  config: R2Config,
+  url: string,
+  init: { method: string; body?: Uint8Array<ArrayBuffer>; headers?: Record<string, string> },
+): Promise<Response> {
+  const signed = await client(config).sign(url, { method: init.method, headers: init.headers, body: init.body })
+  return fetch(signed.url, { method: init.method, headers: signed.headers, body: init.body, cache: "no-store" })
+}
+
 async function failure(res: Response, action: string): Promise<Error> {
   const body = await res.text().catch(() => "")
   const code = body.match(/<Code>([^<]+)<\/Code>/)?.[1]
@@ -61,9 +76,9 @@ export async function r2Put(
   contentType: string,
 ): Promise<string> {
   const config = await requireConfig()
-  const res = await client(config).fetch(objectEndpoint(config, key), {
+  const res = await signedFetch(config, objectEndpoint(config, key), {
     method: "PUT",
-    body: typeof body === "string" ? body : new Uint8Array(body),
+    body: typeof body === "string" ? new TextEncoder().encode(body) : new Uint8Array(body),
     headers: { "Content-Type": contentType, "Cache-Control": R2_IMMUTABLE },
   })
   if (!res.ok) throw await failure(res, "upload")
@@ -72,7 +87,7 @@ export async function r2Put(
 
 export async function r2Delete(key: string): Promise<void> {
   const config = await requireConfig()
-  const res = await client(config).fetch(objectEndpoint(config, key), { method: "DELETE" })
+  const res = await signedFetch(config, objectEndpoint(config, key), { method: "DELETE" })
   // S3 DELETE is idempotent: a missing object is 204 too.
   if (!res.ok && res.status !== 404) throw await failure(res, "delete")
 }
