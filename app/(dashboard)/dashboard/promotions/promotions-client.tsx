@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Loader2, Plus, TicketPercent } from "lucide-react";
 import { PageTitle } from "@/components/dashboard-page-title";
-import { PromotionsTableSkeleton } from "./promotions-skeleton";
+import { PromotionsActionsSkeleton, PromotionsTableSkeleton } from "./promotions-skeleton";
 import { useRememberRows } from "@/hooks/use-skeleton-rows";
 import {
   AlertDialog,
@@ -27,11 +27,15 @@ import { PromotionsTable } from "@/features/promotions/components/promotions-tab
 import { ProductAdSettings } from "@/features/promotions/components/product-ad-settings";
 import type { Promotion } from "@/features/promotions/types";
 import { toPayload } from "@/features/promotions/utils";
+import { useHasMounted } from "@/hooks/use-has-mounted";
 import { isAllowed } from "@/lib/permissions";
 
 export default function PromotionsClientPage() {
+  // The user and list can already be cached by the time this suspended boundary hydrates,
+  // so the first client render has to match the server's (no user, loading).
+  const mounted = useHasMounted();
   const { data: user } = useCurrent();
-  const canWrite = isAllowed(user ?? null, "promotions", "write", ["MODERATOR"]);
+  const canWrite = mounted && isAllowed(user ?? null, "promotions", "write", ["MODERATOR"]);
 
   const { data: promotions, isLoading, isError, error, refetch } = usePromotions();
   const updateMutation = useUpdatePromotion();
@@ -71,6 +75,7 @@ export default function PromotionsClientPage() {
         description="Free delivery offers by payment method — shown on /offer and applied at checkout"
       />
 
+      {!mounted && <PromotionsActionsSkeleton />}
       {canWrite && (
         <div className="flex items-center justify-end gap-4">
           <Button
@@ -84,7 +89,7 @@ export default function PromotionsClientPage() {
       )}
 
       <div className="rounded-3xl bg-white dark:bg-card p-4 sm:p-6 border-none shadow-none">
-        {isLoading ? (
+        {!mounted || isLoading ? (
           <PromotionsTableSkeleton />
         ) : isError ? (
           <div className="flex flex-col items-center gap-3 py-12 text-center">

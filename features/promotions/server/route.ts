@@ -4,6 +4,8 @@ import { z } from "zod";
 import { sessionMiddleware } from "@/lib/session-middleware";
 import { isAllowed } from "@/lib/permissions";
 import { invalidatePromotions } from "@/lib/content-cache";
+import { uploadImage } from "@/lib/cloudinary";
+import { validateImageFile } from "@/lib/validate-image-upload";
 import { setActivityMeta } from "@/features/activity/server/log-activity";
 import {
   createPromotion,
@@ -55,6 +57,20 @@ const app = new Hono()
     } catch (err) {
       console.error("Promotion create failed:", err);
       return c.json({ error: "Failed to create promotion" }, 500);
+    }
+  })
+  // Images for the product page ad. Admin only, like the ad code itself.
+  .post("/upload-image", sessionMiddleware, async (c) => {
+    if (c.get("user")?.role !== "ADMIN") return c.json(unauthorized, 403);
+    try {
+      const file = (await c.req.formData()).get("image");
+      if (!(file instanceof File)) return c.json({ error: "No image file provided" }, 400);
+      const check = validateImageFile(file);
+      if (!check.ok) return c.json({ error: check.error }, 400);
+      return c.json({ url: await uploadImage(file, "ads") });
+    } catch (err) {
+      console.error("Ad image upload failed:", err);
+      return c.json({ error: "Failed to upload image" }, 500);
     }
   })
   .patch("/:id", sessionMiddleware, zValidator("json", promotionInputSchema), async (c) => {

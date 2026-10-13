@@ -62,14 +62,14 @@ export function LiveBadgeSkeleton() {
   );
 }
 
-/** The funnel tab: live badge, then FunnelCard beside IncompleteCheckouts. */
+/** The funnel tab: live badge, then IncompleteCheckouts beside FunnelCard. */
 export function FunnelTabSkeleton() {
   return (
     <div className="flex flex-col gap-4">
       <LiveBadgeSkeleton />
       <div className="grid items-start gap-4 lg:grid-cols-2">
-        <FunnelCardSkeleton />
         <IncompleteCheckoutsSkeleton />
+        <FunnelCardSkeleton />
       </div>
     </div>
   );

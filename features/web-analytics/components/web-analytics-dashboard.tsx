@@ -121,8 +121,8 @@ export function WebAnalyticsDashboard() {
           <LiveBadge />
         </div>
         <div className="grid items-start gap-4 lg:grid-cols-2">
-          <FunnelCard q={q} />
           <IncompleteCheckouts q={q} />
+          <FunnelCard q={q} />
         </div>
       </TabsContent>
       <TabsContent value="overview" className="flex flex-col gap-4">

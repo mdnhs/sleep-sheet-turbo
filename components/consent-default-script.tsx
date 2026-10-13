@@ -1,11 +1,12 @@
-import Script from "next/script";
 import { COOKIE_CONSENT_NAME } from "@/lib/consent";
 
 /**
  * Google Consent Mode v2 default — must run before gtag/GTM's own script
- * (hence `beforeInteractive`, the one strategy Next.js only allows in the
- * root layout) so Google's tags never fire even once without a consent
- * signal attached. Reads the same cookie cookie-consent-banner.tsx writes,
+ * so Google's tags never fire even once without a consent signal attached.
+ * A plain inline script in the root layout's body: it is in the server HTML,
+ * so it runs while parsing, before any deferred or async tag. next/script's
+ * `beforeInteractive` renders a script element on the client in dev, which
+ * React 19 reports as an error. Reads the same cookie cookie-consent-banner.tsx writes,
  * so a returning visitor who already answered doesn't see tags denied for
  * an instant before the banner's own update call catches up.
  *
@@ -15,9 +16,10 @@ import { COOKIE_CONSENT_NAME } from "@/lib/consent";
  */
 export default function ConsentDefaultScript() {
   return (
-    // eslint-disable-next-line @next/next/no-before-interactive-script-outside-document -- this rule predates App Router support; Next's own docs (node_modules/next/dist/docs/01-app/03-api-reference/02-components/script.md) say beforeInteractive scripts belong in the root layout for App Router, which is exactly where this is.
-    <Script id="consent-default" strategy="beforeInteractive">
-      {`
+    <script
+      id="consent-default"
+      dangerouslySetInnerHTML={{
+        __html: `
 (function() {
   window.dataLayer = window.dataLayer || [];
   window.gtag = window.gtag || function() { window.dataLayer.push(arguments); };
@@ -44,7 +46,8 @@ export default function ConsentDefaultScript() {
   defaults.wait_for_update = 500;
   window.gtag('consent', 'default', defaults);
 })();
-      `}
-    </Script>
+      `,
+      }}
+    />
   );
 }

@@ -1,14 +1,21 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import dynamic from "next/dynamic";
 import { Megaphone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Textarea } from "@/components/ui/textarea";
 import { useSettings, useUpdateSettings } from "@/features/settings/api/use-settings";
 import { AdFrame } from "@/features/product/components/product-ad-slot";
+import { cn } from "@/lib/utils";
 import { SAMPLE_AD } from "../sample-ad";
+import { composeAdCode, splitAdCode, type AdFiles } from "../ad-files";
+
+const AdCodeEditor = dynamic(() => import("./code-editor").then((module) => module.AdCodeEditor), {
+  ssr: false,
+  loading: () => <div className="h-96 animate-pulse rounded-xl bg-neutral-900" />,
+});
 
 
 
@@ -20,13 +27,22 @@ export function ProductAdSettings() {
   const { data: settings } = useSettings();
   const { mutate, isPending } = useUpdateSettings();
   // What this admin typed / saved; the public settings GET can lag behind a save.
-  const [draft, setDraft] = useState<string | null>(null);
+  const [draft, setDraft] = useState<AdFiles | null>(null);
+  const [fullscreen, setFullscreen] = useState(false);
   const [enabledEdit, setEnabledEdit] = useState<boolean | null>(null);
 
   const savedCode = settings?.product_ad_code ?? "";
-  const code = draft ?? savedCode;
+  const files = draft ?? splitAdCode(savedCode);
+  const code = composeAdCode(files);
   const enabled = enabledEdit ?? settings?.product_ad_enabled === "true";
-  const dirty = (draft !== null && draft !== savedCode) || (enabledEdit !== null && enabledEdit !== (settings?.product_ad_enabled === "true"));
+  const dirty = (draft !== null && code !== composeAdCode(splitAdCode(savedCode))) || (enabledEdit !== null && enabledEdit !== (settings?.product_ad_enabled === "true"));
+
+  useEffect(() => {
+    if (!fullscreen) return;
+    const onKeyDown = (event: KeyboardEvent) => event.key === "Escape" && setFullscreen(false);
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [fullscreen]);
 
   const save = () =>
     mutate({ product_ad_enabled: enabled ? "true" : "false", product_ad_code: code });
@@ -53,22 +69,24 @@ export function ProductAdSettings() {
         <Switch aria-label="Show product page ad" checked={enabled} onCheckedChange={(checked) => setEnabledEdit(checked)} />
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-[1fr_auto]">
-        <div className="space-y-2">
+      <div
+        className={cn(
+          "grid gap-4 lg:grid-cols-[1fr_auto]",
+          fullscreen && "fixed inset-0 z-50 grid-rows-[minmax(0,1fr)] overflow-auto bg-background p-4",
+        )}
+      >
+        <div className={cn("min-w-0 space-y-2", fullscreen && "flex min-h-0 flex-col")}>
           <div className="flex items-center justify-between">
-            <Label htmlFor="product-ad-code">Ad code</Label>
-            <Button type="button" variant="ghost" size="sm" className="h-7 text-xs" onClick={() => setDraft(SAMPLE_AD)}>
+            <Label>Ad code</Label>
+            <Button type="button" variant="ghost" size="sm" className="h-7 text-xs" onClick={() => setDraft(splitAdCode(SAMPLE_AD))}>
               Insert sample
             </Button>
           </div>
-          <Textarea
-            id="product-ad-code"
-            value={code}
-            onChange={(event) => setDraft(event.target.value)}
-            spellCheck={false}
-            rows={14}
-            placeholder={'<style>…</style>\n<div>…</div>\n<script>…</script>'}
-            className="font-mono text-xs"
+          <AdCodeEditor
+            files={files}
+            onChange={setDraft}
+            fullscreen={fullscreen}
+            onToggleFullscreen={() => setFullscreen((value) => !value)}
           />
         </div>
 

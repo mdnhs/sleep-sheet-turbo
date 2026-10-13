@@ -312,7 +312,7 @@ function MobileBottomNav({
       </button>
 
       {/* Profile */}
-      {!user ? (
+      {!hasMounted || !user ? (
         <Link href="/signin" aria-label="Sign in" className={`flex flex-col items-center justify-center w-12 h-12 rounded-full ${pathname === '/signin' ? 'text-primary' : 'text-muted-foreground'}`}>
           <User className="h-5 w-5" />
         </Link>

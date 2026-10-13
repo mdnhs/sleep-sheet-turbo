@@ -82,3 +82,16 @@ export const useDeletePromotion = () => {
     onError: (error) => toast.error(error.message || "Failed to delete promotion"),
   });
 };
+
+/** Uploads one image for the product page ad; resolves to its Cloudinary URL. */
+export const useUploadAdImage = () =>
+  useMutation({
+    mutationFn: async (file: File) => {
+      const body = new FormData();
+      body.append("image", file);
+      const res = await fetch("/api/promotions/upload-image", { method: "POST", body });
+      if (!res.ok) throw new Error(await errorMessage(res, "Failed to upload image"));
+      return ((await res.json()) as { url: string }).url;
+    },
+    onError: (error: Error) => toast.error(error.message),
+  });

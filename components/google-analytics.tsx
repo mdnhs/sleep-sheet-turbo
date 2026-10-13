@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { useSettings } from "@/features/settings/api/use-settings";
+import { useHasMounted } from "@/hooks/use-has-mounted";
 import { gtmContainer } from "@/lib/gtm/container";
 
 declare global {
@@ -15,6 +16,8 @@ declare global {
 export default function GoogleAnalytics() {
   const pathname = usePathname();
   const { data: settings } = useSettings();
+  // Settings can already be cached when this hydrates; the server render has none, so render nothing until mounted.
+  const mounted = useHasMounted();
 
   // Prevent GTM container from loading on dashboard and its subroutes
   const isDashboard = pathname?.startsWith("/dashboard");
@@ -112,7 +115,7 @@ export default function GoogleAnalytics() {
     };
   }, [isDashboard, isOrderSuccess, src]);
 
-  if (isDashboard || !container) return null;
+  if (!mounted || isDashboard || !container) return null;
 
   return (
     <>
