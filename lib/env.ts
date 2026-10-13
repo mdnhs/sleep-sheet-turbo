@@ -39,6 +39,11 @@ const envSchema = z.object({
   // no-op when unset. See lib/cdn-purge.ts.
   CLOUDFLARE_ZONE_ID: z.string().optional(),
   CLOUDFLARE_PURGE_TOKEN: z.string().optional(),
+  // "1" on an environment that shares its media storage with production
+  // (the preview app): stored files are never deleted from there, because
+  // "unused" is only judged against this environment's own database.
+  // See lib/media.ts.
+  MEDIA_STORAGE_READONLY: z.enum(["0", "1"]).optional(),
   // n8n webhook for realtime order alerts (e.g. to Telegram) — optional,
   // feature no-ops when unset. See lib/n8n-notify.
   N8N_ORDER_WEBHOOK_URL: z.string().url().optional(),

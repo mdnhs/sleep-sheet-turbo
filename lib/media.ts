@@ -67,8 +67,20 @@ export async function uploadImageToR2(file: File | Buffer, folder: string): Prom
   return r2Put(`${folder}/${newObjectName()}.${ext}`, data, type)
 }
 
+/**
+ * True where MEDIA_STORAGE_READONLY=1 — the preview app, whose database is a
+ * copy of production's while the R2 bucket and Cloudinary cloud are the same
+ * ones. Whether a file is still in use is judged against this environment's
+ * database only, so a delete here could remove a file production still
+ * shows. Deletes then become no-ops; uploads still work.
+ */
+export function mediaDeletesDisabled(): boolean {
+  return process.env.MEDIA_STORAGE_READONLY === "1"
+}
+
 export async function deleteImage(url: string): Promise<void> {
   if (!url.startsWith("https://")) return
+  if (mediaDeletesDisabled()) return
   if (isCloudinaryUrl(url)) return cloudinary.deleteImage(url)
 
   const key = r2KeyFromUrl(url, (await getR2Config()).publicUrl)
@@ -119,6 +131,7 @@ export async function isOwnVideoUrl(url: string): Promise<boolean> {
 }
 
 export async function deleteVideo(url: string): Promise<void> {
+  if (mediaDeletesDisabled()) return
   if (isCloudinaryUrl(url)) return cloudinary.deleteVideo(url)
 
   const key = r2KeyFromUrl(url, (await getR2Config()).publicUrl)

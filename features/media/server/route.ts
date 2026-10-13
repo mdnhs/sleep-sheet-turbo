@@ -3,7 +3,7 @@ import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
 import { sessionMiddleware } from "@/lib/session-middleware";
 import { can } from "@/lib/permissions";
-import { signR2VideoUpload, uploadImageToR2 } from "@/lib/media";
+import { mediaDeletesDisabled, signR2VideoUpload, uploadImageToR2 } from "@/lib/media";
 import { r2Configured, r2Delete, r2KeyFromUrl, r2List, r2PublicUrl } from "@/lib/r2";
 import { getMediaProvider, getR2Config } from "@/lib/server-config";
 import { validateImageFile } from "@/lib/validate-image-upload";
@@ -100,6 +100,9 @@ const app = new Hono()
     async (c) => {
       const user = c.get("user");
       if (!can(user, "products", "write")) return c.json(unauthorized, 403);
+      if (mediaDeletesDisabled()) {
+        return c.json({ error: "Deleting files is turned off here: this environment shares its storage with the live site." }, 403);
+      }
       const { urls, force } = c.req.valid("json");
       const { publicUrl } = await getR2Config();
 
