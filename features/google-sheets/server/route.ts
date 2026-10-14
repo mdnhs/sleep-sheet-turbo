@@ -191,7 +191,8 @@ const app = new Hono()
             : [];
 
           rows = productsList.flatMap((product) =>
-            (product.images || []).map((imageUrl) => ({
+            // A product with no images still gets one row, with no image URL.
+            (product.images?.length ? product.images : [""]).map((imageUrl) => ({
               name: product.name,
               category: product.category?.label ?? "Uncategorized",
               price: product.price,

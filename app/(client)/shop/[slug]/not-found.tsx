@@ -64,16 +64,14 @@ export default async function ProductNotFound() {
                     href={`/shop/${product.slug || product.id}`}
                     className="block overflow-hidden rounded-2xl bg-white dark:bg-slate-900 hover:shadow-md transition-shadow"
                   >
-                    {product.images[0] && (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={getOptimizedImageUrl(product.images[0], 400)}
-                        alt={product.name}
-                        loading="lazy"
-                        decoding="async"
-                        className="aspect-square w-full object-cover"
-                      />
-                    )}
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={product.images[0] ? getOptimizedImageUrl(product.images[0], 400) : "/placeholder.jpg"}
+                      alt={product.name}
+                      loading="lazy"
+                      decoding="async"
+                      className="aspect-square w-full object-cover"
+                    />
                     <span className="block p-3 text-sm font-medium text-foreground line-clamp-2">
                       {product.name}
                     </span>

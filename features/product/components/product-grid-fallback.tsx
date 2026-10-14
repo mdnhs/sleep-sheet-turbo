@@ -42,17 +42,15 @@ export default function ProductGridFallback({ products, storeName }: { products?
               className="flex h-full w-full flex-col overflow-hidden rounded-2xl bg-white p-1.5 sm:rounded-3xl sm:p-3 dark:bg-slate-900"
             >
               <div className="relative mb-2 aspect-[4/3] w-full shrink-0 overflow-hidden rounded-xl bg-[#f4f4f5] sm:mb-4 sm:rounded-[20px] dark:bg-slate-800">
-                {image && (
-                  <Image
-                    src={getOptimizedImageUrl(image, 400)}
-                    alt={`${product.name} – ${storeName} Bangladesh`}
-                    fill
-                    sizes="(max-width: 1200px) 50vw, 25vw"
-                    quality={55}
-                    priority={index < 4}
-                    className="object-cover"
-                  />
-                )}
+                <Image
+                  src={image ? getOptimizedImageUrl(image, 400) : "/placeholder.jpg"}
+                  alt={`${product.name} – ${storeName} Bangladesh`}
+                  fill
+                  sizes="(max-width: 1200px) 50vw, 25vw"
+                  quality={55}
+                  priority={index < 4}
+                  className="object-cover"
+                />
               </div>
               <div className="flex flex-1 flex-col px-0.5 sm:px-1">
                 <h3 className="mb-1 truncate flex-1 text-sm font-medium leading-snug text-slate-800 sm:mb-3 sm:text-[15px] dark:text-slate-200">

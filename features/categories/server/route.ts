@@ -356,8 +356,8 @@ const app = new Hono()
         // Products live on the leaf categories, so a parent's productCount must
         // roll up its children's totals (one level of nesting is enforced by
         // the create/patch guards). Its representative image is picked from the
-        // same pool, otherwise parents with no direct products fall back to
-        // null and get dropped entirely.
+        // same pool, otherwise parents with no direct products would show the
+        // placeholder.
         const allProducts = [
           ...category.products,
           ...category.children.flatMap((child) => child.products),
@@ -378,8 +378,8 @@ const app = new Hono()
           productImage = bestProduct?.images?.[0] ?? null;
         }
 
-        const image = category.image || productImage;
-        if (!image) return null;
+        // No image anywhere still lists the category, on the placeholder.
+        const image = category.image || productImage || "/placeholder.jpg";
 
         return {
           label: category.label,

@@ -23,7 +23,7 @@ import React, { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ProductSchema } from "@/features/dashboard/schema";
+import { ProductUpdateSchema } from "@/features/dashboard/schema";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { ChipsInput } from "@/components/chip-input";
@@ -49,12 +49,12 @@ function UpdateProductClient() {
 
   const { data: categories, isLoading: categoryLoading } = useGetCategories();
 
-  const form = useForm<z.infer<typeof ProductSchema>>({
+  const form = useForm<z.infer<typeof ProductUpdateSchema>>({
     // zodResolver's inferred input type (pre z.coerce) vs react-hook-form's
     // output type (post z.coerce) don't line up here — a known friction point
     // between @hookform/resolvers and zod v4's coerce schemas, not a careless any.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    resolver: zodResolver(ProductSchema) as any,
+    resolver: zodResolver(ProductUpdateSchema) as any,
     defaultValues: {
       productName: "",
       productDescription: "",
@@ -106,7 +106,7 @@ function UpdateProductClient() {
     }
   }, [product, form]);
 
-  type ProductFormValues = z.infer<typeof ProductSchema>;
+  type ProductFormValues = z.infer<typeof ProductUpdateSchema>;
 
   const onSubmit = async (values: ProductFormValues) => {
     const formData = new FormData();

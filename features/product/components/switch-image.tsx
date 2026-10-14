@@ -144,7 +144,7 @@ function SwitchImage({ product }: SwitchImageProps) {
             thumbnails and the ad. At ~120px wide the glow costs a few KB. */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src={getOptimizedImageUrl(product.images[selectedImage], 120)}
+          src={getOptimizedImageUrl(product.images[selectedImage] || "/placeholder.jpg", 120)}
           alt=""
           aria-hidden="true"
           fetchPriority="high"

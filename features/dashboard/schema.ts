@@ -28,4 +28,11 @@ export const ProductSchema = z.object({
   defaultVariantName: z.string().optional(),
 });
 
+// Editing may leave a product with no images (it then shows the
+// placeholder); creating one still needs at least one.
+export const ProductUpdateSchema = ProductSchema.extend({
+  productImages: z.array(z.union([z.string(), z.instanceof(File)])),
+});
+
+
 export type ProductFormValues = z.infer<typeof ProductSchema>;
