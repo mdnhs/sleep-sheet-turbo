@@ -67,7 +67,7 @@ export function mapProduct(product: RawProduct, categoryLabel: string): MapResul
   // content_id matching), and must never move once an ad has learned them.
   const link = buildProductLink(product.slug || product.id)
 
-  const mainImage = product.images[0] || ""
+  const mainImage = product.images[0] || "/placeholder.jpg"
   const additionalImages = product.images.slice(1)
 
   const spec = product.specifications || []
@@ -109,7 +109,7 @@ export function mapProduct(product: RawProduct, categoryLabel: string): MapResul
 
 export function mapVariants(product: RawProduct): CatalogVariant[] {
   const variants: CatalogVariant[] = []
-  const mainImage = product.images[0] || ""
+  const mainImage = product.images[0] || "/placeholder.jpg"
   const additionalImages = product.images.slice(1)
   const basePrice = product.price
   const baseAvailability = mapAvailability(product.stock)

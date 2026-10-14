@@ -153,7 +153,7 @@ export function productSchema(product: ProductSeoData) {
     name: product.name,
     description: product.description,
     url: product.url,
-    image: product.images || [seoConfig.defaultImage],
+    image: product.images?.length ? product.images : [seoConfig.defaultImage],
     sku: product.sku || product.id,
     offers,
   }

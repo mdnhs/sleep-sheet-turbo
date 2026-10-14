@@ -738,7 +738,7 @@ export default function PosClientPage() {
                   <div className="aspect-square overflow-hidden rounded-2xl bg-slate-50 dark:bg-muted/30">
                     <img
                       key={detailsProduct.images[activeImage]}
-                      src={getOptimizedImageUrl(detailsProduct.images[activeImage] || detailsProduct.images[0], 800)}
+                      src={getOptimizedImageUrl(detailsProduct.images[activeImage] || detailsProduct.images[0], 800) || "/placeholder.jpg"}
                       alt={detailsProduct.name}
                       className="h-full w-full object-cover"
                       onError={(e) => {
