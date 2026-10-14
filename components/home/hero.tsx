@@ -103,6 +103,10 @@ function Hero() {
   const SWIPE_THRESHOLD = 50;
 
   const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    // If the click/touch was on an interactive element (button, link, etc.), don't capture or drag
+    if ((e.target as HTMLElement).closest("a, button")) {
+      return;
+    }
     dragStartX.current = e.clientX;
     setIsDragging(true);
     e.currentTarget.setPointerCapture(e.pointerId);
@@ -113,6 +117,13 @@ function Hero() {
     const delta = e.clientX - dragStartX.current;
     dragStartX.current = null;
     setIsDragging(false);
+    try {
+      if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+        e.currentTarget.releasePointerCapture(e.pointerId);
+      }
+    } catch {
+      // Ignore if pointer capture already released
+    }
     if (Math.abs(delta) < SWIPE_THRESHOLD || slideCount < 2) return;
     if (delta < 0) {
       nextSlide();
@@ -121,9 +132,16 @@ function Hero() {
     }
   };
 
-  const handlePointerCancel = () => {
+  const handlePointerCancel = (e: React.PointerEvent<HTMLDivElement>) => {
     dragStartX.current = null;
     setIsDragging(false);
+    try {
+      if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+        e.currentTarget.releasePointerCapture(e.pointerId);
+      }
+    } catch {
+      // Ignore
+    }
   };
 
   const hasSettings = Boolean(
@@ -147,15 +165,14 @@ function Hero() {
   const banners = promoBanners || [];
 
   const slideData = heroSlides.map((slide, index) => {
-    if (index === 0) {
-      return {
-        ...slide,
-        title: heroTitle || slide.title,
-        heading: heroSubtitle || slide.heading,
-        link: heroCtaLink || slide.link,
-      };
-    }
-    return slide;
+    const rawLink = index === 0 ? (heroCtaLink || slide.link) : (slide.link || heroCtaLink);
+    const resolvedLink = rawLink && rawLink !== "#" ? rawLink : "/shop";
+    return {
+      ...slide,
+      title: index === 0 ? (heroTitle || slide.title) : slide.title,
+      heading: index === 0 ? (heroSubtitle || slide.heading) : slide.heading,
+      link: resolvedLink,
+    };
   });
 
   return (
@@ -210,14 +227,16 @@ function Hero() {
             {/* Premium Navigation Arrows */}
             <button
               onClick={prevSlide}
-              className="absolute left-6 top-1/2 -translate-y-1/2 z-20 flex items-center justify-center h-12 w-12 rounded-full bg-white/10 text-white backdrop-blur-md opacity-0 group-hover:opacity-100 hover:bg-white hover:text-foreground transition-all duration-300 focus:outline-none hidden sm:flex -translate-x-4 group-hover:translate-x-0 shadow-lg cursor-pointer"
+              onPointerDown={(e) => e.stopPropagation()}
+              className="absolute left-6 top-1/2 -translate-y-1/2 z-30 flex items-center justify-center h-12 w-12 rounded-full bg-white/10 text-white backdrop-blur-md opacity-0 group-hover:opacity-100 hover:bg-white hover:text-foreground transition-all duration-300 focus:outline-none hidden sm:flex -translate-x-4 group-hover:translate-x-0 shadow-lg cursor-pointer"
               aria-label="Previous slide"
             >
               <ChevronLeft className="h-6 w-6 stroke-[2]" />
             </button>
             <button
               onClick={nextSlide}
-              className="absolute right-6 top-1/2 -translate-y-1/2 z-20 flex items-center justify-center h-12 w-12 rounded-full bg-white/10 text-white backdrop-blur-md opacity-0 group-hover:opacity-100 hover:bg-white hover:text-foreground transition-all duration-300 focus:outline-none hidden sm:flex translate-x-4 group-hover:translate-x-0 shadow-lg cursor-pointer"
+              onPointerDown={(e) => e.stopPropagation()}
+              className="absolute right-6 top-1/2 -translate-y-1/2 z-30 flex items-center justify-center h-12 w-12 rounded-full bg-white/10 text-white backdrop-blur-md opacity-0 group-hover:opacity-100 hover:bg-white hover:text-foreground transition-all duration-300 focus:outline-none hidden sm:flex translate-x-4 group-hover:translate-x-0 shadow-lg cursor-pointer"
               aria-label="Next slide"
             >
               <ChevronRight className="h-6 w-6 stroke-[2]" />
@@ -232,15 +251,20 @@ function Hero() {
                 current slide's own link, falling back to the site-wide
                 hero_cta_link/hero_cta_text settings. */}
             <Link
-              href={slideData[currentSlide]?.link || heroCtaLink}
-              className="absolute bottom-14 left-1/2 -translate-x-1/2 z-20 inline-flex items-center gap-1.5 rounded-full bg-white/15 text-white px-4 py-2 text-xs font-semibold backdrop-blur-2xl backdrop-saturate-150 shadow-[inset_0_1px_1px_rgba(255,255,255,0.65),inset_0_-1px_1px_rgba(0,0,0,0.08),0_8px_20px_rgba(0,0,0,0.16)] transition-all duration-300 hover:bg-white/25 hover:scale-105 hover:shadow-[inset_0_1px_1px_rgba(255,255,255,0.8),inset_0_-1px_1px_rgba(0,0,0,0.1),0_10px_24px_rgba(0,0,0,0.2)] active:scale-95 cursor-pointer"
+              href={slideData[currentSlide]?.link || heroCtaLink || "/shop"}
+              onPointerDown={(e) => e.stopPropagation()}
+              onClick={(e) => e.stopPropagation()}
+              className="absolute bottom-14 left-1/2 -translate-x-1/2 z-30 inline-flex items-center gap-1.5 rounded-full bg-white/15 text-white px-4 py-2 text-xs font-semibold backdrop-blur-2xl backdrop-saturate-150 shadow-[inset_0_1px_1px_rgba(255,255,255,0.65),inset_0_-1px_1px_rgba(0,0,0,0.08),0_8px_20px_rgba(0,0,0,0.16)] transition-all duration-300 hover:bg-white/25 hover:scale-105 hover:shadow-[inset_0_1px_1px_rgba(255,255,255,0.8),inset_0_-1px_1px_rgba(0,0,0,0.1),0_10px_24px_rgba(0,0,0,0.2)] active:scale-95 cursor-pointer"
             >
               {heroCtaText}
               <ArrowRight className="h-3.5 w-3.5" />
             </Link>
 
             {slideData.length > 1 && (
-              <div className="absolute bottom-4 left-1/2 z-20 flex -translate-x-1/2 items-center gap-0.5 rounded-full bg-white px-1.5 py-1 drop-shadow-[0px_1px_7.5px_rgba(0,0,0,0.1)] sm:bottom-5">
+              <div
+                onPointerDown={(e) => e.stopPropagation()}
+                className="absolute bottom-4 left-1/2 z-30 flex -translate-x-1/2 items-center gap-0.5 rounded-full bg-white px-1.5 py-1 drop-shadow-[0px_1px_7.5px_rgba(0,0,0,0.1)] sm:bottom-5"
+              >
                 {slideData.map((_, index) => (
                   <button
                     key={index}
