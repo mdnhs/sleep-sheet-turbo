@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type { Order } from "@/features/order/types";
 import { Loader2, X, Pencil } from "lucide-react";
-import { calculateItemAddOnCost, colorHasAddOn } from "@/lib/utils";
+import { calculateItemAddOnCost, colorHasAddOn, getOptimizedImageUrl } from "@/lib/utils";
 
 type ShippingOrder = Order & {
   shippingMethod?: { name: string; duration: string } | null;
@@ -165,7 +165,7 @@ export function BulkBookCourierDialog({
                     <div key={item.id} className="flex items-center gap-3">
                       <div className="h-10 w-10 shrink-0 bg-muted rounded-md overflow-hidden">
                         {item.product?.images?.[0] ? (
-                          <img src={item.product.images[0]} alt="" className="h-full w-full object-cover" />
+                          <img src={getOptimizedImageUrl(item.product.images[0], 96)} alt="" className="h-full w-full object-cover" />
                         ) : (
                           <div className="h-full w-full bg-slate-100 dark:bg-slate-800" />
                         )}

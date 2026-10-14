@@ -942,7 +942,7 @@ function ProductCard({
       >
         {product.images?.[0] ? (
           <img
-            src={product.images[0]}
+            src={getOptimizedImageUrl(product.images[0], 400)}
             alt={product.name}
             className={`h-full w-full object-cover transition-all duration-700 ${isDrawerOpen ? 'blur-md scale-110 opacity-40' : 'group-hover:scale-105'}`}
           />

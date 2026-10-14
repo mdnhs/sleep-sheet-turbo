@@ -25,7 +25,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { DateRangePicker } from "@/components/ui/date-range-picker";
 import { type DateRange } from "react-day-picker";
-import { cn } from "@/lib/utils";
+import { cn, getOptimizedImageUrl } from "@/lib/utils";
 import {
   useSalesOverview,
   useCustomerLifetimeValue,
@@ -382,7 +382,7 @@ export default function DashBoardClientPage() {
                         <TableCell className="px-3 py-3 font-medium text-xs truncate max-w-[180px]">
                           <Link href={`/dashboard/products/${product.id}/edit`} className="hover:underline flex items-center gap-2">
                             {product.images && product.images[0] ? (
-                              <img src={product.images[0]} alt="" className="w-7 h-7 rounded-lg object-cover flex-shrink-0" />
+                              <img src={getOptimizedImageUrl(product.images[0], 64)} alt="" className="w-7 h-7 rounded-lg object-cover flex-shrink-0" />
                             ) : (
                               <div className="w-7 h-7 rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
                                 <IconBox className="h-3.5 w-3.5 text-muted-foreground" />

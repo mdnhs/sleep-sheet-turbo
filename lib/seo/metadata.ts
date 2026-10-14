@@ -1,4 +1,5 @@
 import { seoConfig } from "./config"
+import { cfImageUrl } from "@/lib/media-url"
 import type { Metadata } from "next"
 import type { SeoMetadata } from "./types"
 
@@ -97,7 +98,12 @@ export function generateProductMetadata(
       openGraph: {
         title: product.name,
         description: product.description?.slice(0, 200),
-        image: product.images?.[0] || store.defaultImage,
+        // A 900px JPEG, not the stored original: share crawlers don't read
+        // AVIF, and WhatsApp drops a preview image over ~300KB, which the
+        // detailed fabric photos exceed even at 1080px (≤250KB at this size).
+        image: product.images?.[0]
+          ? cfImageUrl(product.images[0], "width=900,quality=70,format=jpeg,fit=scale-down")
+          : store.defaultImage,
         imageAlt: product.name,
         // Next's Metadata OG `type` union has no "product"; product
         // richness for Meta comes from the catalog feed + Pixel.

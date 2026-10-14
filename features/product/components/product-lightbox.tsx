@@ -14,7 +14,7 @@ import "yet-another-react-lightbox/plugins/thumbnails.css";
 
 interface ProductLightboxProps {
   index: number;
-  slides: { src: string; title: string; description: string }[];
+  slides: { src: string; thumbnail?: string; title: string; description: string }[];
   open: boolean;
   close: () => void;
 }

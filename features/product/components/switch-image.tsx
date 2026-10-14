@@ -9,6 +9,7 @@ import { autoplayAllowed, productVideoPoster, productVideoSources } from "@/lib/
 import { afterLoadIdle } from "@/lib/after-load-idle";
 import { useWebsiteSettings } from "@/hooks/use-website-settings";
 import { getOptimizedImageUrl } from "@/lib/utils";
+import { cfImageUrl } from "@/lib/media-url";
 import { ProductAdSlot, useProductAd } from "./product-ad-slot";
 
 // The lightbox library (plus 6 plugins and their CSS) is only needed once the
@@ -238,7 +239,12 @@ function SwitchImage({ product }: SwitchImageProps) {
           slides={
             product.images.length > 0
               ? product.images.map((src, idx) => ({
-                  src,
+                  // AVIF at the stored size (≤1600px) instead of the original
+                  // JPEG — about 45% smaller for these detailed fabric
+                  // photos at quality 60 — and a small thumbnail for the
+                  // strip rather than every full image.
+                  src: cfImageUrl(src, "width=1600,quality=60,format=auto,fit=scale-down"),
+                  thumbnail: cfImageUrl(src, "width=240,quality=60,format=auto,fit=scale-down"),
                   title: product.name,
                   description: `Photo ${idx + 1} of ${product.images.length}`,
                 }))
