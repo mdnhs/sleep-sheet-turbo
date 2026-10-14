@@ -12,7 +12,7 @@ import { useWebsiteSettings } from "@/hooks/use-website-settings";
 import { floorToNearest50 } from "@/lib/utils";
 import {
   productVideoPoster,
-  productVideoUrl,
+  productVideoSources,
   saveDataEnabled,
   videoShareUrl,
 } from "@/lib/product-video";
@@ -467,10 +467,7 @@ export default function ReelsViewer({
                   label={`${item.name} – video`}
                   className="max-w-full"
                   onDoubleTap={(point) => likeByDoubleTap(item, point)}
-                  sources={[
-                    { src: productVideoUrl(item.video), type: "video/mp4" },
-                    { src: item.video },
-                  ]}
+                  sources={productVideoSources(item.video)}
                 />
               ) : (
                 // eslint-disable-next-line @next/next/no-img-element

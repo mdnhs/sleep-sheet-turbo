@@ -8,6 +8,10 @@ import {
   productVideoPoster,
   productVideoPublicId,
   productVideoUrl,
+  productVideoFramePoster,
+  productVideoSources,
+  videoDerivativeKey,
+  videoDerivativeUrl,
 } from "./product-video";
 
 const url = "https://res.cloudinary.com/demo/video/upload/v1712345678/products-video/abc123xyz.mov";
@@ -113,21 +117,42 @@ describe("R2 videos", () => {
     expect(isProductVideoKey("products-video/sub/clip.mp4")).toBe(false);
   });
 
-  it("goes through Cloudflare Media Transformations when a transform origin is set", () => {
+  it("delivers the stored derivatives, posters resized through /cdn-cgi/image", () => {
     vi.stubEnv("NEXT_PUBLIC_MEDIA_TRANSFORM_ORIGIN", "https://shop.example.com/");
-    expect(productVideoUrl(r2)).toBe(`https://shop.example.com/cdn-cgi/media/mode=video,width=960,fit=scale-down/${r2}`);
+    const derived = "https://media.example.com/_derived/v1/products-video/AbC_123-xyz";
+    expect(productVideoUrl(r2)).toBe(`${derived}/720.mp4`);
+    expect(productVideoUrl(r2, "sd")).toBe(`${derived}/480.mp4`);
     expect(productVideoPoster(r2, 320)).toBe(
-      `https://shop.example.com/cdn-cgi/media/mode=frame,time=0s,width=320,fit=scale-down,format=jpg/${r2}`,
+      `https://shop.example.com/cdn-cgi/image/width=320,quality=60,format=auto,fit=scale-down/${derived}/poster.jpg`,
     );
     expect(productVideoOgImage(r2)).toBe(
-      `https://shop.example.com/cdn-cgi/media/mode=frame,time=0s,width=1200,height=630,fit=cover,format=jpg/${r2}`,
+      `https://shop.example.com/cdn-cgi/image/width=1200,height=630,fit=cover,format=jpeg/${derived}/poster.jpg`,
+    );
+    expect(productVideoFramePoster(r2, 320)).toBe(
+      `https://shop.example.com/cdn-cgi/media/mode=frame,time=0s,width=320,fit=scale-down,format=jpg/${r2}`,
     );
     expect(productVideoPublicId(r2)).toBeNull();
   });
 
-  it("plays the original and shows a placeholder poster without one (local dev)", () => {
+  it("lists the stored rendition, then the live transform, then the original", () => {
+    vi.stubEnv("NEXT_PUBLIC_MEDIA_TRANSFORM_ORIGIN", "https://shop.example.com");
+    expect(productVideoSources(r2, "sd")).toEqual([
+      { src: "https://media.example.com/_derived/v1/products-video/AbC_123-xyz/480.mp4", type: "video/mp4" },
+      { src: `https://shop.example.com/cdn-cgi/media/mode=video,width=960,fit=scale-down/${r2}`, type: "video/mp4" },
+      { src: r2 },
+    ]);
+  });
+
+  it("still uses the stored files without a transform origin (local dev)", () => {
     vi.stubEnv("NEXT_PUBLIC_MEDIA_TRANSFORM_ORIGIN", "");
-    expect(productVideoUrl(r2)).toBe(r2);
-    expect(productVideoPoster(r2)).toBe("/placeholder.jpg");
+    const derived = "https://media.example.com/_derived/v1/products-video/AbC_123-xyz";
+    expect(productVideoPoster(r2)).toBe(`${derived}/poster.jpg`);
+    expect(productVideoSources(r2)).toEqual([{ src: `${derived}/720.mp4`, type: "video/mp4" }, { src: r2 }]);
+  });
+
+  it("derives keys only for product video keys", () => {
+    expect(videoDerivativeKey("products-video/a.mov", "poster")).toBe("_derived/v1/products-video/a/poster.jpg");
+    expect(videoDerivativeKey("products/a.jpg", "poster")).toBeNull();
+    expect(videoDerivativeUrl("https://media.example.com/products/a.jpg", "hd")).toBeNull();
   });
 });

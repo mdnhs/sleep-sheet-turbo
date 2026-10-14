@@ -12,6 +12,7 @@ import {
 } from "@/lib/product-video"
 import { r2Configured, r2Delete, r2KeyFromUrl, r2PresignPut, r2Put, r2PublicUrl } from "@/lib/r2"
 import { getCloudinaryConfig, getMediaProvider, getR2Config } from "@/lib/server-config"
+import { deleteVideoDerivatives } from "@/lib/video-derivatives"
 
 // Server-side media storage. New uploads go to the provider chosen in
 // Settings → CDN (media_provider); deleting and validating go by the stored
@@ -135,7 +136,9 @@ export async function deleteVideo(url: string): Promise<void> {
   if (isCloudinaryUrl(url)) return cloudinary.deleteVideo(url)
 
   const key = r2KeyFromUrl(url, (await getR2Config()).publicUrl)
-  if (key) await r2Delete(key)
+  if (!key) return
+  await r2Delete(key)
+  await deleteVideoDerivatives(key)
 }
 
 export type MediaTestStep = { label: string; ok: boolean; detail: string }

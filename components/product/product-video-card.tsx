@@ -6,7 +6,7 @@ import { Play, Volume2, VolumeX, Zap } from "lucide-react";
 import { useCurrency } from "@/hooks/use-currency";
 import { useLanguage } from "@/hooks/use-language";
 import { floorToNearest50 } from "@/lib/utils";
-import { autoplayAllowed, productVideoPoster, productVideoUrl } from "@/lib/product-video";
+import { autoplayAllowed, productVideoFramePoster, productVideoPoster, productVideoSources } from "@/lib/product-video";
 import type { ProductVideoItem } from "@/lib/types";
 import { afterLoadIdle } from "@/lib/after-load-idle";
 import { useAfterLoadIdle } from "@/hooks/use-after-load-idle";
@@ -47,6 +47,9 @@ const ProductVideoCard = memo(function ProductVideoCard({
   const videoRef = useRef<HTMLVideoElement>(null);
   const [muted, setMuted] = useState(true);
   const [playing, setPlaying] = useState(false);
+  // The stored still failed (not generated yet): take it live from the video.
+  const [posterFailed, setPosterFailed] = useState(false);
+  const poster = posterFailed ? productVideoFramePoster : productVideoPoster;
   // Non-priority posters wait for load + idle. `loading="lazy"` didn't hold
   // them back: Chrome's lazy-load margin is 1250px+ on mobile, so a whole
   // carousel of ~40 KB stills downloaded alongside the page's LCP image.
@@ -116,22 +119,23 @@ const ProductVideoCard = memo(function ProductVideoCard({
       className="group relative aspect-[9/16] w-full overflow-hidden rounded-2xl bg-black"
     >
       {!playing && posterReady && (
-        // A plain <img> with a hand-built srcset: the poster is a Cloudinary
-        // video-frame transform, which the custom next/image loader can't
-        // resize (it only handles /image/upload/ URLs), so next/image either
-        // repeated one URL at 11 widths or, unoptimized, sent the 540w still
-        // to a 157px-wide phone card (~70KB each, ~45KB wasted per card).
+        // A plain <img> with a hand-built srcset: the poster URL carries its
+        // own width (an R2 still through /cdn-cgi/image, or a Cloudinary
+        // video-frame transform), which next/image's loader doesn't build —
+        // it either repeated one URL at 11 widths or, unoptimized, sent the
+        // 540w still to a 157px-wide phone card.
         // `priority` is deprecated in Next 16 and set no fetchpriority; the
         // above-the-fold cards ask for it directly.
         // eslint-disable-next-line @next/next/no-img-element
         <img
-          src={productVideoPoster(item.video, 540)}
-          srcSet={POSTER_WIDTHS.map((w) => `${productVideoPoster(item.video, w)} ${w}w`).join(", ")}
+          src={poster(item.video, 540)}
+          srcSet={POSTER_WIDTHS.map((w) => `${poster(item.video, w)} ${w}w`).join(", ")}
           sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
           alt={item.name}
           loading={priority ? "eager" : "lazy"}
           fetchPriority={priority ? "high" : "auto"}
           decoding="async"
+          onError={() => setPosterFailed(true)}
           className="absolute inset-0 h-full w-full object-cover pointer-events-none"
         />
       )}
@@ -154,9 +158,10 @@ const ProductVideoCard = memo(function ProductVideoCard({
         aria-label={`${item.name} – video`}
         className="absolute inset-0 h-full w-full cursor-pointer object-cover"
       >
-        {/* The compressed rendition first; the original upload as a fallback. */}
-        <source src={productVideoUrl(item.video)} type="video/mp4" />
-        <source src={item.video} />
+        {/* The small grid rendition first, then fallbacks (productVideoSources). */}
+        {productVideoSources(item.video, "sd").map((s) => (
+          <source key={s.src} src={s.src} type={s.type} />
+        ))}
       </video>
 
       {/* Tap target for videos that aren't playing (data saver / reduced motion). */}

@@ -246,9 +246,8 @@ const BrandedVideoPlayer = forwardRef<HTMLVideoElement, BrandedVideoPlayerProps>
           onVolumeChange={(e) => setMuted(e.currentTarget.muted || e.currentTarget.volume === 0)}
           className="h-full w-full cursor-pointer touch-manipulation bg-transparent object-contain"
         >
-          {/* Callers pass the transformed rendition plus the original as a
-              fallback; for R2 videos productVideoUrl returns the original
-              itself, so drop the repeat (duplicate keys, and a pointless
+          {/* Callers pass productVideoSources(): best rendition first, then
+              fallbacks. Drop any repeat (duplicate keys, and a pointless
               second fetch on error). */}
           {sources.filter((s, i) => sources.findIndex((o) => o.src === s.src) === i).map((s) => (
             <source key={s.src} src={s.src} type={s.type} />

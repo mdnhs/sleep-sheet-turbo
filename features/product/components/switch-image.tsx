@@ -5,7 +5,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { Play } from "lucide-react";
 import BrandedVideoPlayer from "@/components/product/branded-video-player";
 import OptimizedImage from "@/components/ui/optimized-image";
-import { autoplayAllowed, productVideoPoster, productVideoUrl } from "@/lib/product-video";
+import { autoplayAllowed, productVideoPoster, productVideoSources } from "@/lib/product-video";
 import { afterLoadIdle } from "@/lib/after-load-idle";
 import { useWebsiteSettings } from "@/hooks/use-website-settings";
 import { getOptimizedImageUrl } from "@/lib/utils";
@@ -120,10 +120,7 @@ function SwitchImage({ product }: SwitchImageProps) {
             barClassName={
               ad?.slot === "compact" ? "pl-20 pr-[calc(50%-3.09375rem)]" : "pl-20 sm:pl-28 md:pl-32"
             }
-            sources={[
-              { src: productVideoUrl(video), type: "video/mp4" },
-              { src: video },
-            ]}
+            sources={productVideoSources(video)}
           />
           {ad && <ProductAdSlot ad={ad} price={product.price} />}
         </div>

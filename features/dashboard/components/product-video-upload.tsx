@@ -10,7 +10,7 @@ import {
   PRODUCT_VIDEO_FORMATS,
   PRODUCT_VIDEO_MAX_BYTES,
   productVideoPoster,
-  productVideoUrl,
+  productVideoSources,
 } from "@/lib/product-video";
 import type { VideoUploadTicket } from "@/lib/media";
 
@@ -40,9 +40,10 @@ export function ProductVideoUpload({ value, onChange }: ProductVideoUploadProps)
   const inputRef = useRef<HTMLInputElement>(null);
   const xhrRef = useRef<XMLHttpRequest | null>(null);
   const [progress, setProgress] = useState<number | null>(null);
+  const [processing, setProcessing] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
 
-  const uploading = progress !== null;
+  const uploading = progress !== null || processing;
 
   async function upload(file: File) {
     if (!ALLOWED_MIME.includes(file.type)) {
@@ -104,6 +105,20 @@ export function ProductVideoUpload({ value, onChange }: ProductVideoUploadProps)
         xhr.send(body);
       });
 
+      // R2: make the stored poster and renditions now, so the saved product
+      // never points at files that don't exist yet. Not fatal — saving the
+      // product retries it.
+      if (ticket.provider === "r2") {
+        setProgress(null);
+        setProcessing(true);
+        const processed = await fetch("/api/product/video-derivatives", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ url }),
+        }).catch(() => null);
+        if (!processed?.ok) toast.warning("Video uploaded, but its preview isn't ready yet — it will be finished when you save.");
+      }
+
       onChange(url);
       toast.success("Video uploaded — save the product to keep it.");
     } catch (error) {
@@ -112,6 +127,7 @@ export function ProductVideoUpload({ value, onChange }: ProductVideoUploadProps)
     } finally {
       xhrRef.current = null;
       setProgress(null);
+      setProcessing(false);
       if (inputRef.current) inputRef.current.value = "";
     }
   }
@@ -138,9 +154,9 @@ export function ProductVideoUpload({ value, onChange }: ProductVideoUploadProps)
             poster={productVideoPoster(value)}
             className="w-full max-w-sm rounded-lg border bg-black aspect-video"
           >
-            {/* The compressed rendition first; the original upload if it isn't ready yet. */}
-            <source src={productVideoUrl(value)} type="video/mp4" />
-            <source src={value} />
+            {productVideoSources(value).map((s) => (
+              <source key={s.src} src={s.src} type={s.type} />
+            ))}
           </video>
           <div className="flex flex-wrap gap-2">
             <Button
@@ -196,7 +212,12 @@ export function ProductVideoUpload({ value, onChange }: ProductVideoUploadProps)
         onSelect={([url]) => url && onChange(url)}
       />
 
-      {uploading && (
+      {processing && (
+        <p className="flex items-center gap-1.5 text-xs text-muted-foreground" role="status" aria-live="polite">
+          <Loader2 className="h-3.5 w-3.5 animate-spin" /> Processing video for mobile…
+        </p>
+      )}
+      {progress !== null && (
         <div className="space-y-1.5" role="status" aria-live="polite">
           <div className="flex items-center justify-between text-xs text-muted-foreground">
             <span className="flex items-center gap-1.5">

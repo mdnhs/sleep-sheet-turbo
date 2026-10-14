@@ -24,7 +24,7 @@ import { Input } from "@/components/ui/input"
 import { cn, getOptimizedImageUrl } from "@/lib/utils"
 import { Copy, MoreVertical, Plus, Play, Search, Trash2, Loader2, LayoutGrid, Table2, Layers } from "lucide-react"
 import BrandedVideoPlayer from "@/components/product/branded-video-player"
-import { productVideoPoster, productVideoUrl } from "@/lib/product-video"
+import { productVideoPoster, productVideoSources } from "@/lib/product-video"
 import { Badge } from "@/components/ui/badge"
 import {
   Dialog,
@@ -776,10 +776,7 @@ export default function ProductsClientPage() {
                           key={detailsProduct.video}
                           label={`${detailsProduct.name} – video`}
                           poster={productVideoPoster(detailsProduct.video)}
-                          sources={[
-                            { src: productVideoUrl(detailsProduct.video), type: "video/mp4" },
-                            { src: detailsProduct.video },
-                          ]}
+                          sources={productVideoSources(detailsProduct.video)}
                         />
                       </div>
                     ) : (

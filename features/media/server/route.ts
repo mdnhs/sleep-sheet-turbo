@@ -7,6 +7,7 @@ import { mediaDeletesDisabled, signR2VideoUpload, uploadImageToR2 } from "@/lib/
 import { r2Configured, r2Delete, r2KeyFromUrl, r2List, r2PublicUrl } from "@/lib/r2";
 import { getMediaProvider, getR2Config } from "@/lib/server-config";
 import { cfImageUrl } from "@/lib/media-url";
+import { deleteVideoDerivatives } from "@/lib/video-derivatives";
 import { validateImageFile } from "@/lib/validate-image-upload";
 import { setActivityMeta } from "@/features/activity/server/log-activity";
 import { MEDIA_UPLOAD_FOLDERS, type MediaItem } from "@/features/media/types";
@@ -15,8 +16,10 @@ import { mediaUsage } from "./usage";
 // The R2 media library (Dashboard → Media). Read needs products:read; upload
 // and delete need products:write — the same people who manage product images.
 
-// Never shown or deletable from the library.
-const HIDDEN_PREFIXES = ["_healthcheck/", "_e2e/"];
+// Never shown or deletable from the library. `_derived/` holds the posters
+// and renditions generated from videos (VIDEO_DERIVED_ROOT); they come and go
+// with their video.
+const HIDDEN_PREFIXES = ["_healthcheck/", "_e2e/", "_derived/"];
 
 function kindOf(key: string): MediaItem["kind"] {
   if (/\.(jpe?g|png|webp|avif|gif|svg)$/i.test(key)) return "image";
@@ -142,7 +145,13 @@ const app = new Hono()
         const inUse = urls.filter((url) => (usage.get(url) ?? []).length > 0).map((url) => ({ url, usedBy: usage.get(url)! }));
         if (inUse.length > 0) return c.json({ error: "Some files are still in use", inUse }, 409);
       }
-      const results = await Promise.allSettled(keys.map((key) => r2Delete(key!)));
+      // A video's generated poster and renditions go with it.
+      const results = await Promise.allSettled(
+        keys.map(async (key) => {
+          await r2Delete(key!);
+          await deleteVideoDerivatives(key!);
+        }),
+      );
       const failed = urls.filter((_, i) => results[i].status === "rejected");
       setActivityMeta(c, { name: urls.length === 1 ? keys[0]! : `${urls.length} files` });
       if (failed.length) return c.json({ error: `${failed.length} file(s) could not be deleted`, failed }, 500);

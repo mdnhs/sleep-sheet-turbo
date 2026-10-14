@@ -32,7 +32,14 @@ describe("media deletes", () => {
     await deleteVideo(r2Video);
     await deleteImage(cldImage);
     await deleteVideo(cldVideo);
-    expect(r2Delete.mock.calls).toEqual([["products/a.jpg"], ["products-video/a.mp4"]]);
+    expect(r2Delete.mock.calls).toEqual([
+      ["products/a.jpg"],
+      ["products-video/a.mp4"],
+      // …and the video's generated poster and renditions with it.
+      ["_derived/v1/products-video/a/poster.jpg"],
+      ["_derived/v1/products-video/a/720.mp4"],
+      ["_derived/v1/products-video/a/480.mp4"],
+    ]);
     expect(cloudinaryDeleteImage).toHaveBeenCalledWith(cldImage);
     expect(cloudinaryDeleteVideo).toHaveBeenCalledWith(cldVideo);
   });

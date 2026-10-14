@@ -85,6 +85,19 @@ export async function r2Put(
   return r2PublicUrl(config.publicUrl, key)
 }
 
+/**
+ * Whether an object exists, asked over the S3 API rather than the public URL:
+ * a 404 from the public domain can be edge-cached for minutes and would then
+ * outlive the upload that follows.
+ */
+export async function r2Exists(key: string): Promise<boolean> {
+  const config = await requireConfig()
+  const res = await signedFetch(config, objectEndpoint(config, key), { method: "HEAD" })
+  if (res.status === 404) return false
+  if (!res.ok) throw await failure(res, "head")
+  return true
+}
+
 export async function r2Delete(key: string): Promise<void> {
   const config = await requireConfig()
   const res = await signedFetch(config, objectEndpoint(config, key), { method: "DELETE" })

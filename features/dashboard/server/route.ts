@@ -16,6 +16,8 @@ import { productFormSchema, productFormDataToObject } from "./product-form-schem
 import { validateImageFiles } from "@/lib/validate-image-upload";
 import { buildProductSlug } from "@/lib/slug";
 import { deleteVideo, isOwnVideoUrl, signVideoUpload } from "@/lib/media";
+import { ensureVideoDerivatives, ensureVideoDerivativesQuietly } from "@/lib/video-derivatives";
+import { isCloudinaryUrl } from "@/lib/media-url";
 import { unusedMedia } from "@/features/media/server/usage";
 
 const app = new Hono();
@@ -56,6 +58,28 @@ app.post(
       return c.json({ success: false, error: result.error }, 400);
     }
     return c.json({ success: true, ticket: result.ticket });
+  },
+);
+
+// Step 3 for an R2 video: generate its stored poster and renditions
+// (lib/video-derivatives.ts) before the form is saved, so the product never
+// goes live pointing at files that don't exist yet.
+app.post(
+  '/video-derivatives',
+  sessionMiddleware,
+  zValidator('json', z.object({ url: z.string().url() })),
+  async (c) => {
+    const user = c.get("user");
+    if (!user || !can(user, "products", "write")) {
+      return c.json({ success: false, error: 'Unauthorized' }, 403);
+    }
+    const { url } = c.req.valid('json');
+    if (isCloudinaryUrl(url) || !(await isOwnVideoUrl(url))) {
+      return c.json({ success: false, error: 'Not a video in this store\'s R2 bucket' }, 400);
+    }
+    const result = await ensureVideoDerivatives(url);
+    if (!result.ok) return c.json({ success: false, error: result.error }, 502);
+    return c.json({ success: true, made: result.made });
   },
 );
 
@@ -141,6 +165,11 @@ app.post('/upload',sessionMiddleware, async (c) => {
       }
 
       invalidateFeed();
+
+      // Normally done right after the upload; this covers a video picked
+      // from the library or one whose processing failed then.
+      const savedVideo = videoCheck.url;
+      if (savedVideo && !isCloudinaryUrl(savedVideo)) after(() => ensureVideoDerivativesQuietly(savedVideo));
 
       const product = {
         ...newProduct,
@@ -329,6 +358,10 @@ app.post('/upload',sessionMiddleware, async (c) => {
       }
 
       invalidateFeed();
+
+      // Same safety net as on create.
+      const savedVideo = videoCheck.url;
+      if (savedVideo && !isCloudinaryUrl(savedVideo)) after(() => ensureVideoDerivativesQuietly(savedVideo));
 
       const updatedProduct = {
         ...newProduct,
