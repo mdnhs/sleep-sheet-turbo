@@ -14,6 +14,7 @@ import { useLanguage } from "@/hooks/use-language";
 import ProductVideoCard from "@/components/product/product-video-card";
 import ReelsViewer, { useWarmReelsViewer } from "@/components/product/lazy-reels-viewer";
 import type { ProductVideoItem } from "@/lib/types";
+import { afterNextPaint } from "@/lib/after-next-paint";
 
 interface ProductVideosProps {
   items: ProductVideoItem[];
@@ -76,9 +77,12 @@ export default function ProductVideos({ items, embedded = false }: ProductVideos
               >
                 <ProductVideoCard
                   item={item}
-                  // A transition: the tap paints right away, and mounting the
-                  // full-screen viewer renders after it instead of inside it.
-                  onOpen={() => startTransition(() => setOpenIndex(index))}
+                  // After the tap has painted, and as a transition: a
+                  // transition alone only splits the render — mounting the
+                  // full-screen viewer (portal, scroll position, focus, body
+                  // overflow) still committed in one block before that paint,
+                  // a 544 ms P75 tap on phones.
+                  onOpen={() => afterNextPaint(() => startTransition(() => setOpenIndex(index)))}
                   paused={openIndex !== null}
                 />
               </CarouselItem>

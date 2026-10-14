@@ -76,6 +76,37 @@ function SwitchImage({ product }: SwitchImageProps) {
       events.forEach((e) => document.removeEventListener(e, unmute));
     };
   }, [showVideo, videoSound, video]);
+
+  // Paused while scrolled out of view, resumed on the way back. Otherwise the
+  // gallery video kept decoding under the description and reviews, and on a
+  // low-end phone that background work slowed every tap further down the page.
+  useEffect(() => {
+    const el = videoRef.current;
+    if (!showVideo || !el || typeof IntersectionObserver === "undefined") return;
+    let visible = true;
+    let pausedOffscreen = false;
+    const pauseOffscreen = () => {
+      if (visible || el.paused) return;
+      el.pause();
+      pausedOffscreen = true;
+    };
+    const observer = new IntersectionObserver(([entry]) => {
+      visible = entry.isIntersecting;
+      if (!visible) pauseOffscreen();
+      else if (pausedOffscreen) {
+        pausedOffscreen = false;
+        void el.play().catch(() => {});
+      }
+    });
+    observer.observe(el);
+    // The automatic start waits for load + idle, by which time the visitor
+    // may already have scrolled past it.
+    el.addEventListener("play", pauseOffscreen);
+    return () => {
+      observer.disconnect();
+      el.removeEventListener("play", pauseOffscreen);
+    };
+  }, [showVideo, videoSound, video]);
   // -1 = closed. Opens at the currently selected image.
   const [lightboxIndex, setLightboxIndex] = useState(-1);
   // Mount the lightbox only after the first open, then keep it mounted so

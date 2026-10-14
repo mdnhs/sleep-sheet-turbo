@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { useSettings } from "@/features/settings/api/use-settings";
 import { useHasMounted } from "@/hooks/use-has-mounted";
+import { afterNextPaint } from "@/lib/after-next-paint";
 import { gtmContainer } from "@/lib/gtm/container";
 
 declare global {
@@ -85,9 +86,13 @@ export default function GoogleAnalytics() {
       return;
     }
 
+    // After the tap has painted: a cached gtm.js (~1 MB of GA/Ads/Meta) could
+    // otherwise compile and run before the frame that answers the first tap,
+    // and RUM showed that first tap — on a product video, or anywhere on the
+    // page — as the slowest interaction (INP P75 400–600 ms on /shop/*).
     const loadOnInteraction = () => {
-      loadContainer();
       removeInteractionListeners();
+      afterNextPaint(loadContainer);
     };
     const interactionEvents: (keyof WindowEventMap)[] = [
       "pointerdown",

@@ -73,7 +73,6 @@ const BrandedVideoPlayer = forwardRef<HTMLVideoElement, BrandedVideoPlayerProps>
   ) {
     const wrapperRef = useRef<HTMLDivElement>(null);
     const videoRef = useRef<HTMLVideoElement>(null);
-    const trackRef = useRef<HTMLDivElement>(null);
     const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const [playing, setPlaying] = useState(false);
@@ -158,13 +157,6 @@ const BrandedVideoPlayer = forwardRef<HTMLVideoElement, BrandedVideoPlayerProps>
       wake();
     };
 
-    const ratioFromClientX = (clientX: number) => {
-      const track = trackRef.current;
-      if (!track) return 0;
-      const rect = track.getBoundingClientRect();
-      return Math.min(Math.max((clientX - rect.left) / rect.width, 0), 1);
-    };
-
     const seekTo = (ratio: number) => {
       const video = videoRef.current;
       if (!video || !duration) return;
@@ -176,24 +168,42 @@ const BrandedVideoPlayer = forwardRef<HTMLVideoElement, BrandedVideoPlayerProps>
     // bar: once the finger leaves the thin bar (it always does while dragging)
     // the bar stops receiving events, and pointer capture isn't reliable
     // across touch browsers.
+    //
+    // The bar's position is read once, at the start: reading it on every move
+    // forced a layout each time. Moves are applied at most once a frame —
+    // a phone fires several per frame, and each was a render plus a seek
+    // (RUM: dragging this bar was a 416 ms P75 interaction).
     const startScrub = (e: React.PointerEvent<HTMLDivElement>) => {
       if (!duration) return;
       e.preventDefault();
+      const rect = e.currentTarget.getBoundingClientRect();
+      const ratioAt = (clientX: number) =>
+        rect.width ? Math.min(Math.max((clientX - rect.left) / rect.width, 0), 1) : 0;
       scrubbingRef.current = true;
       setScrubbing(true);
-      const first = ratioFromClientX(e.clientX);
+      const first = ratioAt(e.clientX);
       setDragRatio(first);
       seekTo(first);
 
+      let frame = 0;
+      let pending: number | null = null;
+      const apply = () => {
+        frame = 0;
+        if (pending === null) return;
+        setDragRatio(pending);
+        seekTo(pending);
+        pending = null;
+      };
       const move = (ev: PointerEvent) => {
-        const ratio = ratioFromClientX(ev.clientX);
-        setDragRatio(ratio);
-        seekTo(ratio);
+        pending = ratioAt(ev.clientX);
+        if (!frame) frame = requestAnimationFrame(apply);
       };
       const end = () => {
         window.removeEventListener("pointermove", move);
         window.removeEventListener("pointerup", end);
         window.removeEventListener("pointercancel", end);
+        if (frame) cancelAnimationFrame(frame);
+        apply();
         scrubbingRef.current = false;
         setScrubbing(false);
         setDragRatio(null);
@@ -205,6 +215,10 @@ const BrandedVideoPlayer = forwardRef<HTMLVideoElement, BrandedVideoPlayerProps>
 
     const progress =
       dragRatio !== null ? dragRatio * 100 : duration ? Math.min((current / duration) * 100, 100) : 0;
+    // The fill and the thumb move by transform, not width/left: those re-ran
+    // layout on every progress tick while the video played, which slowed
+    // every tap on a low-end phone.
+    const fillStyle = { transform: `translateX(${progress - 100}%)` };
     const showControls = !playing || awake || scrubbing;
 
     return (
@@ -281,10 +295,10 @@ const BrandedVideoPlayer = forwardRef<HTMLVideoElement, BrandedVideoPlayerProps>
         )}
 
         {variant === "minimal" ? (
-          <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-[3px] bg-white/25">
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-[3px] overflow-hidden bg-white/25">
             <div
-              className={cn("h-full transition-[width] duration-200 ease-linear", BRAND_GRADIENT_H)}
-              style={{ width: `${progress}%` }}
+              className={cn("h-full w-full transition-transform duration-200 ease-linear", BRAND_GRADIENT_H)}
+              style={fillStyle}
             />
           </div>
         ) : (
@@ -297,7 +311,6 @@ const BrandedVideoPlayer = forwardRef<HTMLVideoElement, BrandedVideoPlayerProps>
           >
             {/* Progress: click or drag to seek, arrow keys to step. */}
             <div
-              ref={trackRef}
               role="slider"
               tabIndex={0}
               aria-label="Seek"
@@ -320,15 +333,23 @@ const BrandedVideoPlayer = forwardRef<HTMLVideoElement, BrandedVideoPlayerProps>
             >
               <div className="h-1 w-full overflow-hidden rounded-full bg-white/30 transition-all group-hover/track:h-1.5">
                 <div
-                  className={cn("h-full rounded-full transition-[width] duration-200 ease-linear", BRAND_GRADIENT_H)}
-                  style={{ width: `${progress}%` }}
+                  className={cn("h-full w-full rounded-full transition-transform duration-200 ease-linear", BRAND_GRADIENT_H)}
+                  style={fillStyle}
                 />
               </div>
-              <span
-                aria-hidden="true"
-                className="absolute top-1/2 h-3.5 w-3.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-[#B8245A] bg-white shadow"
-                style={{ left: `${progress}%` }}
-              />
+              {/* A track-wide layer slid along by the progress, with the thumb
+                  at its left edge: translateX(%) is relative to the layer's
+                  own width, i.e. the track's. The outer span clips the layer
+                  just past the track's ends (room for half a thumb), so the
+                  slid-out part never widens the page. */}
+              <span aria-hidden="true" className="pointer-events-none absolute -inset-x-3 inset-y-0 overflow-hidden">
+                <span
+                  className="absolute inset-x-3 top-1/2"
+                  style={{ transform: `translateX(${progress}%)` }}
+                >
+                  <span className="absolute left-0 top-0 h-3.5 w-3.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-[#B8245A] bg-white shadow" />
+                </span>
+              </span>
             </div>
 
             <div className="mt-1 flex items-center gap-1">
