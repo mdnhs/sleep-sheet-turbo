@@ -45,11 +45,11 @@ describe.skipIf(!RUN)("checkout draft alerts", () => {
     await db.delete(checkoutDrafts).where(inArray(checkoutDrafts.sessionId, SESSIONS));
   });
 
-  it("claims only open drafts idle 20+ minutes inside the lookback, and only once", async () => {
-    await seed("alert-test-idle", "01700000011", minutesAgo(25));
-    await seed("alert-test-fresh", "01700000012", minutesAgo(5));
+  it("claims only open drafts idle 5+ minutes inside the lookback, and only once", async () => {
+    await seed("alert-test-idle", "01700000011", minutesAgo(10));
+    await seed("alert-test-fresh", "01700000012", minutesAgo(2));
     await seed("alert-test-old", "01700000013", minutesAgo(7 * 60));
-    await seed("alert-test-converted", "01700000014", minutesAgo(25));
+    await seed("alert-test-converted", "01700000014", minutesAgo(10));
     await markDraftConverted({ orderId: "ord-alert", phone: "01700000014" });
 
     const claimed = (await claimIdleDrafts(NOW)).filter((d) => d.phone.startsWith("0170000001"));
@@ -68,7 +68,7 @@ describe.skipIf(!RUN)("checkout draft alerts", () => {
   });
 
   it("puts a draft back in line when the webhook fails", async () => {
-    await seed("alert-test-idle", "01700000011", minutesAgo(25));
+    await seed("alert-test-idle", "01700000011", minutesAgo(10));
     vi.stubGlobal("fetch", vi.fn(async () => new Response(null, { status: 500 })));
     vi.spyOn(console, "error").mockImplementation(() => {});
 
