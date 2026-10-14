@@ -1,29 +1,26 @@
 "use client";
 
-import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import React, {
+  forwardRef,
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { createPortal } from "react-dom";
-import Image from "next/image";
-import Link from "next/link";
-import { ChevronDown, ChevronUp, Heart, Share2, Volume2, VolumeX, X, Zap } from "lucide-react";
+import { ChevronDown, ChevronUp, Heart, Volume2, VolumeX, X } from "lucide-react";
 import { toast } from "sonner";
-import { useCurrency } from "@/hooks/use-currency";
 import { useLanguage } from "@/hooks/use-language";
-import { useWebsiteSettings } from "@/hooks/use-website-settings";
-import { floorToNearest50 } from "@/lib/utils";
-import {
-  productVideoPoster,
-  productVideoSources,
-  saveDataEnabled,
-  videoShareUrl,
-} from "@/lib/product-video";
+import { saveDataEnabled, videoShareUrl } from "@/lib/product-video";
 import { sendVideoStats } from "@/lib/video-stats";
 import { useVideoLikes } from "@/features/product/api/use-video-likes";
-import BrandedVideoPlayer from "@/components/product/branded-video-player";
+import ReelSlide from "@/components/product/reel-slide";
 import type { ProductVideoItem } from "@/lib/types";
 
 const HINT_KEY = "ss_reels_hint_seen";
-
-const compactCount = new Intl.NumberFormat("en", { notation: "compact" });
 
 // A watch shorter than this isn't counted as a view (a swipe straight past).
 const MIN_VIEW_SECONDS = 1;
@@ -43,6 +40,41 @@ function markHintSeen() {
     /* storage unavailable — the hint just shows again next time */
   }
 }
+
+interface HeartBurstsHandle {
+  add: (point: { x: number; y: number }) => void;
+}
+
+/**
+ * Hearts popping up where the visitor double-tapped. Its own state, so a
+ * burst re-renders only this, not the viewer and its slides.
+ */
+const HeartBursts = forwardRef<HeartBurstsHandle>(function HeartBursts(_props, ref) {
+  const [bursts, setBursts] = useState<{ id: number; x: number; y: number }[]>([]);
+  useImperativeHandle(
+    ref,
+    () => ({
+      add(point) {
+        const id = Date.now() + Math.random();
+        setBursts((prev) => [...prev, { id, ...point }]);
+        setTimeout(() => setBursts((prev) => prev.filter((b) => b.id !== id)), 900);
+      },
+    }),
+    [],
+  );
+  return (
+    <>
+      {bursts.map((burst) => (
+        <Heart
+          key={burst.id}
+          aria-hidden="true"
+          className="animate-reels-heart-burst pointer-events-none absolute z-30 h-24 w-24 fill-[#FF3B7F] text-[#FF3B7F] drop-shadow-[0_4px_12px_rgba(0,0,0,0.35)]"
+          style={{ left: burst.x, top: burst.y }}
+        />
+      ))}
+    </>
+  );
+});
 
 interface ReelsViewerProps {
   items: ProductVideoItem[];
@@ -87,8 +119,6 @@ export default function ReelsViewer({
   onActiveChange,
   manageHistory = true,
 }: ReelsViewerProps) {
-  const { siteName } = useWebsiteSettings();
-  const { formatAmount } = useCurrency();
   const { t } = useLanguage();
   // Frozen at mount: the host may move its own index along as the visitor
   // swipes, which must never scroll the list underneath them.
@@ -120,9 +150,8 @@ export default function ReelsViewer({
   // until the first swipe (or a few seconds).
   const [hint, setHint] = useState(() => n > 1 && !hintSeenThisSession());
   const realIndex = loop ? (active - 1 + n) % n : active;
-  const { counts, liked, toggle } = useVideoLikes(items, t("likeFailed"));
-  // Hearts popping up where the visitor double-tapped.
-  const [bursts, setBursts] = useState<{ id: number; x: number; y: number }[]>([]);
+  const { counts, liked, toggle, like } = useVideoLikes(items, t("likeFailed"));
+  const burstsRef = useRef<HeartBurstsHandle>(null);
   // Data Saver: only the video on screen is buffered.
   const [saveData] = useState(saveDataEnabled);
 
@@ -149,7 +178,7 @@ export default function ReelsViewer({
   }, [activeItemId, flushWatch]);
   useEffect(() => flushWatch, [flushWatch]);
 
-  const share = async (item: ProductVideoItem) => {
+  const share = useCallback(async (item: ProductVideoItem) => {
     const url = videoShareUrl(window.location.origin, item.slug);
     try {
       if (navigator.share) {
@@ -168,7 +197,24 @@ export default function ReelsViewer({
     } catch {
       toast(url);
     }
-  };
+  }, [t]);
+
+  // Stable callbacks for the memoized slides (see ReelSlide): with these, a
+  // like, a mute or a swipe re-renders only the slides whose own props changed
+  // — not every slide, which is 100+ once the full list has been fetched.
+  const onVideoRef = useCallback((index: number, video: HTMLVideoElement | null) => {
+    if (video) videoRefs.current.set(index, video);
+    else videoRefs.current.delete(index);
+  }, []);
+  const onDoubleTap = useCallback(
+    (item: ProductVideoItem, point: { x: number; y: number }) => {
+      burstsRef.current?.add(point);
+      like(item.id);
+    },
+    [like],
+  );
+  const onToggleLike = useCallback((id: string) => void toggle(id), [toggle]);
+  const onShare = useCallback((item: ProductVideoItem) => void share(item), [share]);
 
   // Android/iOS back button closes the viewer instead of leaving the page:
   // opening pushes one history entry, and popping it (or closing by hand,
@@ -369,14 +415,6 @@ export default function ReelsViewer({
     });
   }, [active, muted]);
 
-  const likeByDoubleTap = (item: ProductVideoItem, point: { x: number; y: number }) => {
-    const id = Date.now() + Math.random();
-    setBursts((prev) => [...prev, { id, ...point }]);
-    setTimeout(() => setBursts((prev) => prev.filter((b) => b.id !== id)), 900);
-    // Like only — a double tap never takes a like back.
-    if (!liked.has(item.id)) void toggle(item.id);
-  };
-
   const go = useCallback((delta: number) => {
     const scroller = scrollerRef.current;
     if (!scroller) return;
@@ -419,10 +457,6 @@ export default function ReelsViewer({
         className="h-dvh snap-y snap-mandatory overflow-y-scroll overscroll-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
         {slides.map((item, index) => {
-          const price =
-            item.colors?.find((c) => c.name === item.defaultVariantName)?.price ?? item.price;
-          const original =
-            item.discount > 0 ? floorToNearest50(price / (1 - item.discount / 100)) : null;
           // Neighbours of the active slide stay mounted for instant swipes. So
           // does the real slide a padding copy mirrors, so the silent jump
           // lands on a slide that is already loaded.
@@ -436,136 +470,24 @@ export default function ReelsViewer({
               : "metadata";
 
           return (
-            <section
+            <ReelSlide
               key={`${item.id}-${index}`}
-              data-index={index}
-              aria-label={item.name}
-              className="relative flex h-dvh w-full snap-start snap-always items-center justify-center overflow-hidden"
-            >
-              {/* Ambient glow for screens wider than the 9:16 video — only near
-                  the screen, as a full-screen blur is costly to keep around. */}
-              {live && (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={productVideoPoster(item.video, 120)}
-                  alt=""
-                  aria-hidden="true"
-                  decoding="async"
-                  className="absolute inset-0 h-full w-full scale-125 object-cover opacity-60 blur-xl"
-                />
-              )}
-              {live ? (
-                <BrandedVideoPlayer
-                  ref={(el) => {
-                    if (el) videoRefs.current.set(index, el);
-                    else videoRefs.current.delete(index);
-                  }}
-                  variant="minimal"
-                  loop
-                  preload={preload}
-                  poster={productVideoPoster(item.video)}
-                  label={`${item.name} – video`}
-                  className="max-w-full"
-                  onDoubleTap={(point) => likeByDoubleTap(item, point)}
-                  sources={productVideoSources(item.video)}
-                />
-              ) : (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={productVideoPoster(item.video)}
-                  alt=""
-                  loading="lazy"
-                  decoding="async"
-                  className="relative h-full max-w-full object-contain"
-                />
-              )}
-
-              <div className="pointer-events-none absolute inset-x-0 bottom-0 mx-auto w-full max-w-[28rem] bg-gradient-to-t from-black/85 via-black/45 to-transparent px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-24">
-                <div className="flex items-end gap-3">
-                  <div className="min-w-0 flex-1">
-                    <p className="mb-1 line-clamp-1 text-sm font-medium text-white/90 drop-shadow">
-                      {item.name}
-                    </p>
-                    <p className="mb-3 flex items-baseline gap-2 text-white drop-shadow">
-                      <span className="text-xl font-bold">{formatAmount(price)}</span>
-                      {original && (
-                        <span className="text-sm font-medium text-white/70 line-through">
-                          {formatAmount(original)}
-                        </span>
-                      )}
-                    </p>
-                    <div className="flex items-center gap-3">
-                      {/* The brand mark as a round "profile picture", like the
-                          account avatar on a Reel, ringed with the same gradient
-                          as the Order Now button. The artwork has a wide margin,
-                          so it is scaled up inside the circle to fill it. */}
-                      <span className="shrink-0 rounded-full bg-[linear-gradient(135deg,#FF6FA5,#B8245A)] p-[2.5px] shadow-lg">
-                        <span className="relative block h-[43px] w-[43px] overflow-hidden rounded-full bg-[#F9E8E9]">
-                          <Image
-                            src="/sleep-sheet-logo.jpg"
-                            alt={siteName}
-                            fill
-                            sizes="48px"
-                            className="origin-[48%_48%] scale-[1.5] object-cover"
-                          />
-                        </span>
-                      </span>
-                      <Link
-                        href={`/shop/${item.slug}`}
-                        aria-label={`${t("buyNow")}: ${item.name}`}
-                        onClick={() => sendVideoStats(item.id, { orderClicks: 1 })}
-                        className="pointer-events-auto flex h-12 min-w-0 flex-1 items-center justify-center gap-2 rounded-full bg-[linear-gradient(135deg,#FF6FA5,#B8245A)] text-sm font-semibold text-white shadow-lg transition-all hover:brightness-110 active:scale-[0.98]"
-                      >
-                        <Zap className="h-4 w-4 fill-current" aria-hidden />
-                        {t("buyNow")}
-                      </Link>
-                    </div>
-                  </div>
-                  {/* Right column, as wide as the round buttons. Bottom to top:
-                      share, like, then the like total. */}
-                  <div className="pointer-events-auto mb-0.5 flex w-11 shrink-0 flex-col items-center gap-3 text-white">
-                    <span className="text-xs font-semibold tabular-nums drop-shadow">
-                      {compactCount.format(counts[item.id] ?? item.likes ?? 0)}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => void toggle(item.id)}
-                      aria-pressed={liked.has(item.id)}
-                      aria-label={liked.has(item.id) ? t("unlikeVideo") : t("likeVideo")}
-                      className="flex h-11 w-11 items-center justify-center rounded-full bg-black/50 transition-transform active:scale-90"
-                    >
-                      <Heart
-                        className={
-                          liked.has(item.id)
-                            ? "h-6 w-6 fill-[#FF3B7F] text-[#FF3B7F]"
-                            : "h-6 w-6"
-                        }
-                      />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => void share(item)}
-                      aria-label={t("shareVideo")}
-                      className="flex h-11 w-11 items-center justify-center rounded-full bg-black/50 transition-transform active:scale-90"
-                    >
-                      <Share2 className="h-6 w-6" />
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </section>
+              item={item}
+              index={index}
+              live={live}
+              preload={preload}
+              likes={counts[item.id] ?? item.likes ?? 0}
+              liked={liked.has(item.id)}
+              onVideoRef={onVideoRef}
+              onDoubleTap={onDoubleTap}
+              onToggleLike={onToggleLike}
+              onShare={onShare}
+            />
           );
         })}
       </div>
 
-      {bursts.map((burst) => (
-        <Heart
-          key={burst.id}
-          aria-hidden="true"
-          className="animate-reels-heart-burst pointer-events-none absolute z-30 h-24 w-24 fill-[#FF3B7F] text-[#FF3B7F] drop-shadow-[0_4px_12px_rgba(0,0,0,0.35)]"
-          style={{ left: burst.x, top: burst.y }}
-        />
-      ))}
+      <HeartBursts ref={burstsRef} />
 
       {hint && (
         <div

@@ -1,7 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+import { afterNextPaint } from "@/lib/after-next-paint";
 import { getVisitorId } from "@/lib/visitor-id";
 import type { ProductVideoItem } from "@/lib/types";
 
@@ -55,20 +56,25 @@ export function useVideoLikes(items: ProductVideoItem[], failureMessage: string)
     };
   }, []);
 
+  // `toggle` and `like` read the liked set through this ref, so they keep one
+  // identity for the viewer's lifetime: the memoized slides take them as props,
+  // and a new function on every like would re-render every slide.
+  const likedRef = useRef(liked);
+
   const toggle = useCallback(
     async (id: string) => {
-      const next = !liked.has(id);
+      const next = !likedRef.current.has(id);
 
       // Optimistic: flip the heart and the number now, reconcile with the server after.
       const apply = (value: boolean, delta: number) => {
-        setLiked((prev) => {
-          const copy = new Set(prev);
-          if (value) copy.add(id);
-          else copy.delete(id);
-          writeLiked(copy);
-          return copy;
-        });
+        const copy = new Set(likedRef.current);
+        if (value) copy.add(id);
+        else copy.delete(id);
+        likedRef.current = copy;
+        setLiked(copy);
         setCounts((prev) => ({ ...prev, [id]: Math.max(0, (prev[id] ?? 0) + delta) }));
+        // Not inside the tap: localStorage is synchronous I/O.
+        afterNextPaint(() => writeLiked(copy));
       };
       apply(next, next ? 1 : -1);
 
@@ -86,8 +92,16 @@ export function useVideoLikes(items: ProductVideoItem[], failureMessage: string)
         toast.error(failureMessage);
       }
     },
-    [liked, failureMessage],
+    [failureMessage],
   );
 
-  return { counts, liked, toggle };
+  /** Like only — what a double tap does; it never takes a like back. */
+  const like = useCallback(
+    (id: string) => {
+      if (!likedRef.current.has(id)) void toggle(id);
+    },
+    [toggle],
+  );
+
+  return { counts, liked, toggle, like };
 }
