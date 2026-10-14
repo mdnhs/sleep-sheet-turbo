@@ -13,5 +13,10 @@ export async function register() {
       const { scheduleStartupRevalidation } = await import("@/lib/startup-revalidate");
       scheduleStartupRevalidation();
     }
+    // Telegram alerts for abandoned checkouts; a no-op unless its webhook is set.
+    if (process.env.NEXT_PHASE !== "phase-production-build") {
+      const { scheduleDraftAlerts } = await import("@/features/web-analytics/server/draft-alerts");
+      scheduleDraftAlerts();
+    }
   }
 }

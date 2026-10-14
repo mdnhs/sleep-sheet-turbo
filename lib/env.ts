@@ -47,6 +47,10 @@ const envSchema = z.object({
   // n8n webhook for realtime order alerts (e.g. to Telegram) — optional,
   // feature no-ops when unset. See lib/n8n-notify.
   N8N_ORDER_WEBHOOK_URL: z.string().url().optional(),
+  // n8n webhook for abandoned-checkout alerts (drafts idle 20 min) — optional,
+  // set it only where staff should be paged (production). See
+  // features/web-analytics/server/draft-alerts.ts.
+  N8N_CHECKOUT_DRAFT_WEBHOOK_URL: z.string().url().optional(),
   // n8n webhook that forwards unexpected API errors to Telegram (optional).
   N8N_ERROR_WEBHOOK_URL: z.string().url().optional(),
   // n8n webhook for direct product cache sync from /dashboard/images
