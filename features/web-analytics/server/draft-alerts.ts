@@ -1,5 +1,5 @@
-// Telegram alert for checkout drafts the customer walked away from. Every few
-// minutes the server claims the open drafts nobody has touched for
+// Telegram alert for checkout drafts the customer walked away from. Every
+// minute the server claims the open drafts nobody has touched for
 // DRAFT_IDLE_MINUTES and posts each one to an n8n webhook, which formats it
 // and sends it to the same Telegram chats as new orders. A draft that turns
 // into an order first is marked converted (drafts.ts) and never announced.
@@ -11,12 +11,12 @@ import { db } from "@/db";
 import { checkoutDrafts } from "@/db/schema";
 
 /** An open draft untouched this long is announced, once. */
-export const DRAFT_IDLE_MINUTES = 20;
+export const DRAFT_IDLE_MINUTES = 5;
 // Drafts that went idle longer ago than this (server down, alerts switched
 // off) are left to the dashboard instead of arriving as a burst.
 const LOOKBACK_HOURS = 6;
 const BATCH_SIZE = 20;
-const CHECK_EVERY_MS = 5 * 60 * 1000;
+const CHECK_EVERY_MS = 60 * 1000;
 
 const claimedColumns = {
   id: checkoutDrafts.id,
