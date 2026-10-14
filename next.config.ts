@@ -106,6 +106,14 @@ const nextConfig: NextConfig = {
   images: {
     loader: "custom",
     loaderFile: "./lib/image-loader.ts",
+    // Every width in these lists is a separate Cloudflare transformation of
+    // each photo, and the free plan allows 5,000 unique ones a month (images
+    // and videos together; new ones fail with error 9422 past that). Next's
+    // defaults are 15 widths up to 3840px; 94% of visitors are on phones, so
+    // keep 8: full-width on a 2–3x phone needs 828/1080, desktop tops out at
+    // 1920, and the small ones cover thumbnails and cards.
+    deviceSizes: [640, 828, 1080, 1920],
+    imageSizes: [64, 128, 256, 384],
     remotePatterns: [
       {
         protocol: "https",
