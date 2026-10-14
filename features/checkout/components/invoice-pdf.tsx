@@ -4,7 +4,7 @@ import { PlacedOrder, ShippingInfo } from "../types";
 import { translations } from "@/hooks/use-language";
 import { seoConfig } from "@/lib/seo";
 import { STORE_DEFAULTS } from "@/lib/settings/defaults";
-import { cfImageUrl, isCloudinaryUrl } from "@/lib/media-url";
+import { isCloudinaryUrl, unwrapCfImageUrl } from "@/lib/media-url";
 
 // Register Hind Siliguri font from Google Fonts GitHub via jsDelivr to support Bangla characters
 Font.register({
@@ -227,12 +227,16 @@ const getPdfFriendlyImageUrl = (url: string, isLogo = false) => {
         : "w_80,h_80,c_fill,q_auto";
       friendlyUrl = friendlyUrl.replace("image/upload/", `image/upload/${transform}/`);
     }
-  } else if (friendlyUrl.startsWith("https://") && !isCloudinaryUrl(friendlyUrl)) {
-    // R2: the PDF renderer reads PNG/JPEG only, so ask for one explicitly.
-    friendlyUrl = cfImageUrl(
-      friendlyUrl,
-      isLogo ? "width=120,height=120,fit=scale-down,format=png" : "width=80,height=80,fit=cover,format=jpeg",
-    );
+  } else if (
+    friendlyUrl.startsWith("https://") &&
+    !isCloudinaryUrl(friendlyUrl) &&
+    typeof window !== "undefined" &&
+    !friendlyUrl.startsWith(window.location.origin)
+  ) {
+    // R2: the renderer fetch()es images, and neither R2 nor /cdn-cgi/image
+    // sends CORS headers, so go through our own origin. The route resizes to
+    // PNG/JPEG, the only formats the PDF renderer reads.
+    friendlyUrl = `${window.location.origin}/api/media/pdf-image?kind=${isLogo ? "logo" : "item"}&src=${encodeURIComponent(unwrapCfImageUrl(friendlyUrl))}`;
   }
 
   if (friendlyUrl.startsWith('//')) {

@@ -6,6 +6,7 @@ import { can } from "@/lib/permissions";
 import { mediaDeletesDisabled, signR2VideoUpload, uploadImageToR2 } from "@/lib/media";
 import { r2Configured, r2Delete, r2KeyFromUrl, r2List, r2PublicUrl } from "@/lib/r2";
 import { getMediaProvider, getR2Config } from "@/lib/server-config";
+import { cfImageUrl } from "@/lib/media-url";
 import { validateImageFile } from "@/lib/validate-image-upload";
 import { setActivityMeta } from "@/features/activity/server/log-activity";
 import { MEDIA_UPLOAD_FOLDERS, type MediaItem } from "@/features/media/types";
@@ -53,6 +54,32 @@ const app = new Hono()
     c.header("Cache-Control", "private, no-store");
     return c.json({ configured: true as const, provider, items, truncated });
   })
+
+  // The invoice PDF is rendered in the browser, and @react-pdf fetches its
+  // images with fetch(), so they need CORS — which neither the R2 public
+  // domain nor /cdn-cgi/image sends. This hands the browser a same-origin
+  // copy. Public (the storefront invoice uses it too), so it only serves
+  // objects of our own bucket, at fixed PNG/JPEG sizes.
+  .get(
+    "/pdf-image",
+    zValidator("query", z.object({ src: z.string().url(), kind: z.enum(["logo", "item"]).default("item") })),
+    async (c) => {
+      const { src, kind } = c.req.valid("query");
+      const { publicUrl } = await getR2Config();
+      if (!publicUrl || !r2KeyFromUrl(src, publicUrl)) return c.json({ error: "Not a media URL" }, 400);
+
+      const upstream = await fetch(
+        cfImageUrl(src, kind === "logo" ? "width=120,height=120,fit=scale-down,format=png" : "width=80,height=80,fit=cover,format=jpeg"),
+        { cache: "no-store" },
+      );
+      const type = upstream.headers.get("content-type") ?? "";
+      if (!upstream.ok || !type.startsWith("image/")) return c.json({ error: "Image unavailable" }, 502);
+
+      return new Response(upstream.body, {
+        headers: { "Content-Type": type, "Cache-Control": "public, max-age=86400" },
+      });
+    },
+  )
 
   .post("/upload", sessionMiddleware, async (c) => {
     const user = c.get("user");
