@@ -991,6 +991,9 @@ export const checkoutDrafts = pgTable("checkout_drafts", {
   utmSource: text("utm_source"),
   status: text("status").$type<"open" | "converted" | "recovered" | "dismissed">().default("open").notNull(),
   orderId: text("order_id"),
+  // When the idle-draft Telegram alert went out (draft-alerts.ts). Set once,
+  // so a draft is announced at most one time.
+  notifiedAt: timestamp("notified_at", { withTimezone: true, precision: 3 }),
   createdAt: timestamp("created_at", { withTimezone: true, precision: 3 }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true, precision: 3 }).defaultNow().notNull(),
 }, (table) => [
