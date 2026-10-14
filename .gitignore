@@ -61,3 +61,6 @@ next-env.d.ts
 
 # local DB dumps (scripts/sync-prod-to-preview.sh)
 /.db-backups
+
+# local script output (scripts/generate-blog-covers.ts dry runs)
+/tmp/
