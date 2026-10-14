@@ -148,6 +148,7 @@ import {
   PlayCircle,
 } from "lucide-react";
 import Image from "next/image";
+import FallbackImage from "@/components/ui/fallback-image";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
@@ -329,7 +330,12 @@ interface ComboboxProduct {
   price: number;
   stock: number;
   images?: string[];
+  category?: string;
+  categoryLabel?: string;
 }
+
+// The category the product picker opens on — most orders are comforter sets.
+const DEFAULT_PICKER_CATEGORY = "comforter-set";
 
 interface ProductComboboxProps {
   products: ComboboxProduct[];
@@ -360,6 +366,17 @@ function ProductCombobox({
 }: ProductComboboxProps) {
   const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [category, setCategory] = useState(DEFAULT_PICKER_CATEGORY);
+
+  const categoryOptions = React.useMemo(() => {
+    const seen = new Map<string, string>();
+    for (const p of products) {
+      if (p.category && !seen.has(p.category)) seen.set(p.category, p.categoryLabel || p.category);
+    }
+    return [...seen].map(([value, label]) => ({ value, label }));
+  }, [products]);
+  // Falls back to "all" when the chosen category has no products here.
+  const activeCategory = categoryOptions.some((c) => c.value === category) ? category : "all";
 
   const selectedProduct =
     products.find((p) => p.id === selectedProductId) ||
@@ -384,14 +401,20 @@ function ProductCombobox({
       });
     }
 
-    if (!searchQuery.trim()) return list;
+    // The current pick stays listed whatever the category.
+    const inCategory =
+      activeCategory === "all"
+        ? list
+        : list.filter((p) => p.category === activeCategory || p.id === selectedProductId);
+
+    if (!searchQuery.trim()) return inCategory;
     const q = searchQuery.toLowerCase().trim();
-    return list.filter((p) => {
+    return inCategory.filter((p) => {
       const nameMatch = p.name?.toLowerCase().includes(q);
       const skuMatch = p.sku ? p.sku.toLowerCase().includes(q) : false;
       return Boolean(nameMatch || skuMatch);
     });
-  }, [products, fallbackProduct, searchQuery]);
+  }, [products, fallbackProduct, searchQuery, activeCategory, selectedProductId]);
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -410,7 +433,7 @@ function ProductCombobox({
         <div className="flex items-center gap-2 min-w-0 flex-1">
           {selectedProduct?.images?.[0] ? (
             <div className="w-5 h-5 rounded overflow-hidden relative shrink-0 border bg-muted">
-              <Image
+              <FallbackImage
                 src={selectedProduct.images[0]}
                 alt={selectedProduct.name}
                 fill
@@ -472,6 +495,27 @@ function ProductCombobox({
           )}
         </div>
 
+        {/* Category filter */}
+        {categoryOptions.length > 1 && (
+          <div className="flex gap-1 overflow-x-auto py-1.5 px-1 border-b">
+            {[{ value: "all", label: "All" }, ...categoryOptions].map((c) => (
+              <button
+                key={c.value}
+                type="button"
+                onClick={() => setCategory(c.value)}
+                className={cn(
+                  "shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-medium transition-colors",
+                  activeCategory === c.value
+                    ? "bg-primary text-primary-foreground border-primary"
+                    : "text-muted-foreground hover:bg-muted"
+                )}
+              >
+                {c.label}
+              </button>
+            ))}
+          </div>
+        )}
+
         {/* Product list */}
         <div className="max-h-56 overflow-y-auto mt-1 space-y-0.5 divide-y divide-border/20">
           {displayList.length === 0 ? (
@@ -498,7 +542,7 @@ function ProductCombobox({
                   <div className="flex items-center gap-2 min-w-0 flex-1">
                     {prod.images?.[0] ? (
                       <div className="w-7 h-7 rounded overflow-hidden relative shrink-0 border bg-muted">
-                        <Image
+                        <FallbackImage
                           src={prod.images[0]}
                           alt={prod.name}
                           fill
@@ -644,6 +688,8 @@ function OrdersPageContent() {
     sizes?: string[];
     images?: string[];
     defaultVariantName?: string | null;
+    category?: string;
+    categoryLabel?: string;
   }>).map((p) => ({
     ...p,
     variants: p.variants || p.colors,
