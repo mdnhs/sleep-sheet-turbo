@@ -31,6 +31,7 @@ import { triggerHaptic } from "@/lib/haptics";
 import { afterNextPaint } from "@/lib/after-next-paint";
 import { TrustBadges } from "@/components/trust-badges";
 import { ORDER_NOW_EVENT } from "./product-ad-slot";
+import { DirectOrderForm } from "@/features/checkout/components/direct-order-form";
 
 interface ProductPickerProps {
   product: Product;
@@ -47,23 +48,22 @@ function ProductPicker({ product }: ProductPickerProps) {
   const router = useRouter();
   const { formatAmount } = useCurrency();
   // Same number as the floating WhatsApp button (footer_phone site setting).
-  const { footerPhone } = useWebsiteSettings();
+  const { footerPhone, shippingInsideDhaka, shippingOutsideDhaka } = useWebsiteSettings();
   // Prefill the WhatsApp chat with the product name and link so the seller
   // immediately knows which product the customer wants to order.
   const whatsappOrderHref = `https://wa.me/${footerPhone.replace(/\D/g, "")}?text=${encodeURIComponent(
     `${t("whatsappOrderMessage")}\n${product.name}\n${seoConfig.siteUrl}/shop/${product.slug}`,
   )}`;
 
-  const [selectedSize, setSelectedSize] = useState("");
+  const [selectedSize, setSelectedSize] = useState(product.sizes?.[0] || "");
   const [selectedColor, setSelectedColor] = useState(product.defaultVariantName || "");
   const [selectedAddOns, setSelectedAddOns] = useState<Record<string, number>>({});
   const [quantity, setQuantity] = useState(1);
-  const [showStickyBar, setShowStickyBar] = useState(true);
+  const [showStickyBar, setShowStickyBar] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [dialogAction, setDialogAction] = useState<"cart" | "buy" | null>(null);
   
   const mainCtaRef = React.useRef<HTMLDivElement>(null);
-  const [isMainCtaVisible, setIsMainCtaVisible] = useState(false);
   
   const hasVariants = isColorAvailable || isSizeAvailable || (product.addOns?.length ?? 0) > 0;
   
@@ -115,43 +115,92 @@ function ProductPicker({ product }: ProductPickerProps) {
   }, [router]);
 
   React.useEffect(() => {
-    const el = mainCtaRef.current;
-    if (!el) return;
+    let rafId: number | null = null;
 
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        setIsMainCtaVisible(entry.isIntersecting);
-      },
-      {
-        threshold: 0.1,
-      }
-    );
-
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, []);
-
-  React.useEffect(() => {
-    const updateStickyVisibility = () => {
+    const checkAnyOrderButtonVisible = () => {
       const isMobile = window.innerWidth < 1024;
       if (!isMobile) {
-        // Desktop uses sticky sidebar - never show bottom sticky bar on desktop
         setShowStickyBar(false);
         return;
       }
 
-      // On mobile: show sticky bar ONLY when main in-page button is not in view
-      setShowStickyBar(!isMainCtaVisible);
+      const windowHeight = window.innerHeight || document.documentElement.clientHeight;
+      const windowWidth = window.innerWidth || document.documentElement.clientWidth;
+
+      // Find all in-page order targets (main CTA, direct order form, order buttons)
+      const targets: Element[] = [];
+
+      if (mainCtaRef.current) {
+        targets.push(mainCtaRef.current);
+      }
+
+      const directForm = document.getElementById("direct-order-form");
+      if (directForm) {
+        targets.push(directForm);
+      }
+
+      const tagged = document.querySelectorAll("[data-order-cta]");
+      tagged.forEach((el) => {
+        if (!targets.includes(el)) targets.push(el);
+      });
+
+      // Also detect any in-page button with order text (ignoring fixed bottom bar)
+      const buttons = document.querySelectorAll("button, a");
+      buttons.forEach((btn) => {
+        if (btn.closest(".fixed")) return;
+        const text = btn.textContent || "";
+        if (
+          text.includes("অর্ডার") ||
+          text.includes("Buy Now") ||
+          text.includes("Order Now")
+        ) {
+          if (!targets.includes(btn)) targets.push(btn);
+        }
+      });
+
+      // Check if ANY order button/form is currently in viewport
+      const anyInView = targets.some((el) => {
+        const rect = el.getBoundingClientRect();
+        if (rect.width === 0 || rect.height === 0) return false;
+        // In viewport check with small buffer
+        return (
+          rect.top < windowHeight - 10 &&
+          rect.bottom > 10 &&
+          rect.left < windowWidth &&
+          rect.right > 0
+        );
+      });
+
+      setShowStickyBar(!anyInView);
     };
-    
-    updateStickyVisibility();
-    window.addEventListener("scroll", updateStickyVisibility, { passive: true });
-    window.addEventListener("resize", updateStickyVisibility, { passive: true });
+
+    const onScrollOrResize = () => {
+      if (rafId !== null) cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(checkAnyOrderButtonVisible);
+    };
+
+    checkAnyOrderButtonVisible();
+
+    const observer = new IntersectionObserver(() => {
+      onScrollOrResize();
+    }, {
+      threshold: [0, 0.1, 0.5, 1],
+    });
+
+    if (mainCtaRef.current) observer.observe(mainCtaRef.current);
+    const directForm = document.getElementById("direct-order-form");
+    if (directForm) observer.observe(directForm);
+
+    window.addEventListener("scroll", onScrollOrResize, { passive: true });
+    window.addEventListener("resize", onScrollOrResize, { passive: true });
+
     return () => {
-      window.removeEventListener("scroll", updateStickyVisibility);
-      window.removeEventListener("resize", updateStickyVisibility);
+      if (rafId !== null) cancelAnimationFrame(rafId);
+      observer.disconnect();
+      window.removeEventListener("scroll", onScrollOrResize);
+      window.removeEventListener("resize", onScrollOrResize);
     };
-  }, [isMainCtaVisible]);
+  }, []);
 
   // components/ProductCard.tsx
   const handleAddToCart = () => {
@@ -298,11 +347,25 @@ function ProductPicker({ product }: ProductPickerProps) {
     afterNextPaint(() => router.push("/checkout"));
   };
 
+  const scrollToOrderForm = () => {
+    triggerHaptic("medium");
+    const el = document.getElementById("direct-order-form");
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "start" });
+      const input = el.querySelector<HTMLInputElement>("input");
+      if (input) {
+        setTimeout(() => input.focus(), 350);
+      }
+    } else {
+      handleBuyNow();
+    }
+  };
+
   // The product page ad's "অর্ডার করুন" (product-ad-slot.tsx) is this same
   // Order Now, with whatever size / colour / quantity is selected here.
-  const buyNowRef = useRef(handleBuyNow);
+  const buyNowRef = useRef(scrollToOrderForm);
   useEffect(() => {
-    buyNowRef.current = handleBuyNow;
+    buyNowRef.current = scrollToOrderForm;
   });
   useEffect(() => {
     const onOrderNow = () => buyNowRef.current();
@@ -452,8 +515,8 @@ function ProductPicker({ product }: ProductPickerProps) {
                     toast.error("Please select options before proceeding to checkout");
                     return;
                   }
-                  handleBuyNow();
                   setIsDialogOpen(false);
+                  scrollToOrderForm();
                 }}
               >
                 <Zap className="h-4 w-4 mr-2" fill="currentColor" />
@@ -703,7 +766,7 @@ function ProductPicker({ product }: ProductPickerProps) {
         </div>
 
         {/* Main Actions: Add to Cart & Buy Now */}
-        <div ref={mainCtaRef} className="grid grid-cols-2 gap-2 lg:gap-3">
+        <div ref={mainCtaRef} data-order-cta="true" className="grid grid-cols-2 gap-2 lg:gap-3">
           <Button
             variant="outline"
             className="h-12 lg:h-14 rounded-full text-sm lg:text-base font-semibold tracking-wide border-2 border-foreground bg-white dark:bg-slate-900 text-foreground hover:bg-foreground hover:text-background transition-all"
@@ -735,7 +798,7 @@ function ProductPicker({ product }: ProductPickerProps) {
                 setDialogAction("buy");
                 setIsDialogOpen(true);
               } else {
-                handleBuyNow();
+                scrollToOrderForm();
               }
             }}
           >
@@ -744,7 +807,8 @@ function ProductPicker({ product }: ProductPickerProps) {
           </Button>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-1">
+        {/* Phone & WhatsApp Order Buttons (Hidden per request) */}
+        <div className="hidden grid-cols-1 sm:grid-cols-2 gap-3 mt-1">
           <a
             href={`tel:${footerPhone.replace(/[^0-9+]/g, "")}`}
             className="flex items-center justify-center h-12 rounded-full font-medium border border-border bg-background hover:bg-secondary/50 transition-colors text-sm"
@@ -764,6 +828,24 @@ function ProductPicker({ product }: ProductPickerProps) {
         </div>
 
         <TrustBadges className="mt-1" />
+
+        {/* In-Page 1-Click Cash on Delivery Order Form */}
+        {isInStock && (
+          <DirectOrderForm
+            product={product}
+            selectedColor={selectedColor}
+            selectedSize={selectedSize}
+            selectedAddOns={selectedAddOns}
+            quantity={quantity}
+            onQuantityChange={setQuantity}
+            baseDisplayPrice={baseDisplayPrice}
+            addOnsTotalPerUnit={addOnsTotalPerUnit}
+            shippingRates={{
+              insideDhaka: shippingInsideDhaka,
+              outsideDhaka: shippingOutsideDhaka,
+            }}
+          />
+        )}
       </div>
 
       {/* Smart Sticky Bottom Bar - Only visible on mobile when main in-page button is NOT in view */}
@@ -809,7 +891,7 @@ function ProductPicker({ product }: ProductPickerProps) {
                   setDialogAction("buy");
                   setIsDialogOpen(true);
                 } else {
-                  handleBuyNow();
+                  scrollToOrderForm();
                 }
               }}
             >
