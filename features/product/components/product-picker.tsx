@@ -520,7 +520,7 @@ function ProductPicker({ product }: ProductPickerProps) {
                 }}
               >
                 <Zap className="h-4 w-4 mr-2" fill="currentColor" />
-                {t("buyNow")}
+                {language === "bn" ? "অর্ডার করুন" : t("buyNow")}
               </Button>
             )}
           </div>
@@ -732,7 +732,9 @@ function ProductPicker({ product }: ProductPickerProps) {
           </div>
 
           <div className="flex-1 flex flex-col items-center justify-center leading-tight">
-            <span className="text-[10px] lg:text-xs font-semibold text-muted-foreground uppercase tracking-widest">Total Price</span>
+            <span className="text-[10px] lg:text-xs font-semibold text-muted-foreground tracking-wider">
+              {language === "bn" ? "সর্বমোট মূল্য" : "Total Price"}
+            </span>
             <div className="flex items-baseline gap-2">
               {product.discount > 0 && (
                 <span className="text-sm line-through text-muted-foreground font-medium">
@@ -765,11 +767,11 @@ function ProductPicker({ product }: ProductPickerProps) {
           </Button>
         </div>
 
-        {/* Main Actions: Add to Cart & Buy Now */}
-        <div ref={mainCtaRef} data-order-cta="true" className="grid grid-cols-2 gap-2 lg:gap-3">
+        {/* Main Actions: Add to Cart (35%) & Order Now (65% Primary CTA) */}
+        <div ref={mainCtaRef} data-order-cta="true" className="flex items-center gap-2 lg:gap-3">
           <Button
             variant="outline"
-            className="h-12 lg:h-14 rounded-full text-sm lg:text-base font-semibold tracking-wide border-2 border-foreground bg-white dark:bg-slate-900 text-foreground hover:bg-foreground hover:text-background transition-all"
+            className="h-12 lg:h-14 w-[36%] sm:w-[32%] shrink-0 rounded-full text-xs sm:text-sm font-bold tracking-tight border-2 border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:border-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all px-2 cursor-pointer"
             disabled={!isInStock}
             onClick={() => {
               if (
@@ -783,12 +785,12 @@ function ProductPicker({ product }: ProductPickerProps) {
               }
             }}
           >
-            <ShoppingCart className="h-4 w-4 mr-2" fill="currentColor" />
-            {isInStock ? t("addToCart") : t("outOfStock")}
+            <ShoppingCart className="h-4 w-4 mr-1.5 shrink-0" />
+            <span className="truncate">{isInStock ? t("addToCart") : t("outOfStock")}</span>
           </Button>
 
           <Button
-            className="animate-cta-wiggle h-12 lg:h-14 rounded-full text-sm lg:text-base font-semibold tracking-wide bg-[linear-gradient(135deg,#FF6FA5,#B8245A)] hover:brightness-110 text-white shadow-lg shadow-[#B8245A]/25 transition-all"
+            className="animate-cta-wiggle flex-1 h-12 lg:h-14 rounded-full text-sm sm:text-base font-extrabold tracking-wide bg-[linear-gradient(135deg,#FF6FA5,#B8245A)] hover:brightness-110 text-white shadow-lg shadow-[#B8245A]/25 transition-all cursor-pointer"
             disabled={!isInStock}
             onClick={() => {
               if (
@@ -802,8 +804,8 @@ function ProductPicker({ product }: ProductPickerProps) {
               }
             }}
           >
-            <Zap className="h-4 w-4 mr-2" fill="currentColor" />
-            {t("buyNow")}
+            <Zap className="h-4 w-4 mr-1.5 fill-current shrink-0" />
+            <span>{language === "bn" ? "অর্ডার করুন" : t("buyNow")}</span>
           </Button>
         </div>
 
