@@ -180,8 +180,7 @@ export function ProductAdSlot({ ad, price }: { ad: ProductAd; price?: number }) 
   return (
     <div
       className={cn(
-        "pointer-events-auto absolute top-0 right-0 z-10 overflow-hidden [--frame-h:17rem] sm:[--frame-h:25rem] lg:[--frame-h:34.375rem]",
-        compact ? "bottom-0 p-2" : "bottom-12 flex flex-col justify-center p-3",
+        "pointer-events-auto absolute top-2 right-2 sm:top-3 sm:right-3 bottom-14 z-10 flex flex-col justify-center p-1.5 sm:p-3 overflow-hidden [--frame-h:17rem] sm:[--frame-h:25rem] lg:[--frame-h:34.375rem]",
       )}
       style={{ width: "calc(50% - var(--frame-h) * 9 / 32)" }}
     >
@@ -189,8 +188,8 @@ export function ProductAdSlot({ ad, price }: { ad: ProductAd; price?: number }) 
           grows from 0 to that height like a banner being unrolled. The roll bar sits on
           that box's bottom edge, so it can never come apart from the ad. */}
       <div
-        className={cn("relative max-h-full overflow-hidden", rounded, compact && "h-full [container-type:size]")}
-        style={compact ? undefined : { height: frameHeight }}
+        className={cn("relative max-h-full overflow-hidden w-full", rounded)}
+        style={{ height: frameHeight || undefined }}
       >
         <div
           className={cn(
@@ -198,11 +197,11 @@ export function ProductAdSlot({ ad, price }: { ad: ProductAd; price?: number }) 
             revealed ? "h-full" : "h-0",
           )}
         >
-          <div className={cn("relative", compact && "h-[100cqh]")}>
+          <div className="relative">
             <AdFrame
               code={ad.code}
               slot={ad.slot}
-              fill={compact}
+              fill={false}
               price={price}
               visitor={ad.visitor}
               onReady={reveal}

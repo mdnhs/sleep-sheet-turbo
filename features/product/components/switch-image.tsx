@@ -143,12 +143,7 @@ function SwitchImage({ product }: SwitchImageProps) {
             // The portrait video fills a slice of this frame (~153px wide on a
             // phone at 17rem, ~310px at the lg:h-137.5 desktop height).
             poster={productVideoPoster(video, 640)}
-            // The thumbnails sit over the left of the frame; keep the bar clear
-            // of them. On phones the ad fills the right strip top to bottom, so
-            // the bar's buttons move into the video column.
-            barClassName={
-              ad?.slot === "compact" ? "pl-20 pr-[calc(50%-var(--frame-h)*9/32)]" : "pl-20 sm:pl-28 md:pl-32"
-            }
+            barClassName="px-3 sm:px-5"
             sources={productVideoSources(video)}
           />
           {ad && <ProductAdSlot ad={ad} price={product.price} />}
