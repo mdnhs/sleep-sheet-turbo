@@ -51,7 +51,7 @@ function toSheetRow(
     quantity,
     totalAmount: order.totalAmount,
     boughtCost,
-    shippingCost: order.shippingCost != null ? Number(order.shippingCost) : 200,
+    shippingCost: 200,
     channel: formatOrderChannel(order.saleType, order.reference, storeName),
   };
 }
