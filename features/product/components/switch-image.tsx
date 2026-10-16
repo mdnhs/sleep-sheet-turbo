@@ -114,7 +114,7 @@ function SwitchImage({ product }: SwitchImageProps) {
   const [lightboxMounted, setLightboxMounted] = useState(false);
 
   return (
-    <div className="relative w-full rounded-[1.75rem] sm:rounded-[2.5rem] bg-secondary/20 overflow-hidden shadow-sm h-44 sm:h-100 lg:h-137.5">
+    <div className="relative w-full rounded-[1.75rem] sm:rounded-[2.5rem] bg-secondary/20 overflow-hidden shadow-sm [--frame-h:17rem] sm:[--frame-h:25rem] lg:[--frame-h:34.375rem] h-[var(--frame-h)]">
       {video && showVideo ? (
         // A portrait video in this landscape frame leaves empty side bars.
         // Instead of flat black they get an ambient glow, as on YouTube: a
@@ -140,17 +140,14 @@ function SwitchImage({ product }: SwitchImageProps) {
             key={`${video}-${videoSound}`}
             label={`${product.name} – video`}
             loop={!videoSound}
-            // The portrait video only fills a slice of this landscape frame
-            // (~100px wide on a phone, ~310px at the lg:h-137.5 desktop
-            // height), so 640w covers desktop at 2x; the default 960w sent a
-            // 120KB still to a 99x176 box.
+            // The portrait video fills a slice of this frame (~153px wide on a
+            // phone at 17rem, ~310px at the lg:h-137.5 desktop height).
             poster={productVideoPoster(video, 640)}
             // The thumbnails sit over the left of the frame; keep the bar clear
             // of them. On phones the ad fills the right strip top to bottom, so
-            // the bar's buttons move into the video column (strip width: see
-            // product-ad-slot.tsx).
+            // the bar's buttons move into the video column.
             barClassName={
-              ad?.slot === "compact" ? "pl-20 pr-[calc(50%-3.09375rem)]" : "pl-20 sm:pl-28 md:pl-32"
+              ad?.slot === "compact" ? "pl-20 pr-[calc(50%-var(--frame-h)*9/32)]" : "pl-20 sm:pl-28 md:pl-32"
             }
             sources={productVideoSources(video)}
           />
@@ -194,8 +191,8 @@ function SwitchImage({ product }: SwitchImageProps) {
           loading="eager"
           fetchPriority="high"
           quality={70}
-          // The 9:16 column of the h-44 / sm:h-100 / lg:h-137.5 frame.
-          sizes="(max-width: 639px) 100px, (max-width: 1023px) 225px, 310px"
+          // The 9:16 column of the 17rem / sm:h-100 / lg:h-137.5 frame.
+          sizes="(max-width: 639px) 160px, (max-width: 1023px) 225px, 310px"
           className="object-cover transition-transform duration-700"
         />
         </span>
