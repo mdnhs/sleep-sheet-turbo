@@ -59,7 +59,6 @@ export function DirectOrderForm({
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
   const [shippingZone, setShippingZone] = useState<"outside_dhaka" | "inside_dhaka">("outside_dhaka");
-  const [selectedBundle, setSelectedBundle] = useState<1 | 2>(quantity === 2 ? 2 : 1);
   const [touched, setTouched] = useState({ name: false, phone: false, address: false });
 
   const { mutate, isPending } = UseCheckout();
@@ -67,18 +66,8 @@ export function DirectOrderForm({
   const addToCart = useCartStore((state) => state.addToCart);
   const clearGuestCart = useCartStore((state) => state.clearGuestCart);
 
-  // Keep selectedBundle in sync if quantity changes from outside (e.g. product-picker +/- buttons)
-  React.useEffect(() => {
-    if (quantity >= 2) {
-      setSelectedBundle(2);
-    } else {
-      setSelectedBundle(1);
-    }
-  }, [quantity]);
-
-  // Bundle calculation:
-  // 1 Set: unit price + delivery charge
-  // 2 Sets: 2 x unit price + FREE delivery charge!
+  // Derive bundle mode directly from quantity prop (single source of truth, no cascading renders)
+  const selectedBundle: 1 | 2 = quantity >= 2 ? 2 : 1;
   const isBundle = selectedBundle === 2;
   const currentQty = isBundle ? 2 : 1;
   const unitPrice = baseDisplayPrice + addOnsTotalPerUnit;
@@ -100,7 +89,6 @@ export function DirectOrderForm({
 
   const handleBundleChange = (bundle: 1 | 2) => {
     triggerHaptic("selection");
-    setSelectedBundle(bundle);
     if (onQuantityChange) {
       onQuantityChange(bundle);
     }
@@ -142,7 +130,7 @@ export function DirectOrderForm({
     clearGuestCart();
 
     const addOnsSummary = Object.entries(selectedAddOns)
-      .filter(([_, qty]) => qty > 0)
+      .filter(([, qty]) => qty > 0)
       .map(([name, qty]) => `${name} x${qty}`)
       .join(", ");
 
@@ -182,7 +170,7 @@ export function DirectOrderForm({
         email: "",
         address: address.trim(),
         shippingZone: shippingZone,
-        notes: isBundle ? "২ সেট স্পেশাল কম্বো অফার (ফ্রি ডেলিভারি)" : "",
+        notes: finalVariantLabel || (isBundle ? "২ সেট স্পেশাল কম্বো অফার (ফ্রি ডেলিভারি)" : ""),
       },
       paymentMethod: "cod",
       paymentInfo: { paymentMethod: "cod" },
