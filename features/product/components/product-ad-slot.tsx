@@ -180,7 +180,7 @@ export function ProductAdSlot({ ad, price }: { ad: ProductAd; price?: number }) 
   return (
     <div
       className={cn(
-        "pointer-events-auto absolute top-2 right-2 sm:top-3 sm:right-3 bottom-14 z-10 flex flex-col justify-center p-1.5 sm:p-3 overflow-hidden [--frame-h:17rem] sm:[--frame-h:25rem] lg:[--frame-h:34.375rem]",
+        "pointer-events-auto absolute top-2 right-2 sm:top-3 sm:right-3 bottom-11 sm:bottom-14 z-10 flex flex-col justify-center p-1 sm:p-3 overflow-hidden [--frame-h:17rem] sm:[--frame-h:25rem] lg:[--frame-h:34.375rem]",
       )}
       style={{ width: "calc(50% - var(--frame-h) * 9 / 32)" }}
     >

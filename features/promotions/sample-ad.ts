@@ -17,7 +17,7 @@
 // "অর্ডার করুন" is drawn here, but the page makes the whole ad its Order Now
 // button (product-ad-slot.tsx), so this code needs no click handling.
 // Respects reduced motion. No backticks or "${" below: this is a raw string.
-export const SAMPLE_AD = String.raw`<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+export const SAMPLE_AD = `<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@500;700&display=swap">
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -26,12 +26,12 @@ export const SAMPLE_AD = String.raw`<link rel="preconnect" href="https://fonts.g
   /* Phone strip: sleek floating badge, centered vertically. */
   html[data-slot="compact"], html[data-slot="compact"] body { height: auto; min-height: 0; }
   html[data-slot="compact"] .ad { display: flex; flex-direction: column; align-items: center; justify-content: center;
-                                   border-radius: 16px; padding: 8px 6px 10px; max-width: 130px; margin: 0 auto; }
+                                   border-radius: 16px; padding: 7px 5px 8px; width: 100%; max-width: 125px; margin: 0 auto; }
   .ad { position: relative; display: block; overflow: hidden; border-radius: 16px; padding: 10px 8px 11px;
         text-align: center; color: #fff; text-decoration: none;
-        border: 1px solid rgba(255, 255, 255, 0.35);
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35), 0 2px 8px rgba(184, 36, 90, 0.4);
-        background: linear-gradient(145deg, rgba(255, 111, 165, 0.95) 0%, rgba(184, 36, 90, 0.98) 100%);
+        border: 1px solid rgba(255, 255, 255, 0.4);
+        box-shadow: 0 4px 18px rgba(0, 0, 0, 0.35), 0 2px 8px rgba(184, 36, 90, 0.4);
+        background: linear-gradient(145deg, rgba(255, 111, 165, 0.96) 0%, rgba(184, 36, 90, 0.98) 100%);
         backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
   .ad::after { content: ""; position: absolute; top: -30%; bottom: -30%; left: -70%; width: 45%; transform: rotate(18deg);
                background: linear-gradient(90deg, transparent, rgba(255,255,255,.38), transparent);
@@ -49,9 +49,10 @@ export const SAMPLE_AD = String.raw`<link rel="preconnect" href="https://fonts.g
   @keyframes wiggle { 0%, 78%, 100% { transform: rotate(-3deg) scale(1); } 86% { transform: rotate(4deg) scale(1.14); } 93% { transform: rotate(-5deg) scale(1.06); } }
   .sub { margin-top: 3px; font-size: clamp(8.5px, 6.8vw, 11.5px); font-weight: 600; opacity: .95; white-space: nowrap; }
 
-  .cta { position: relative; z-index: 1; display: inline-flex; align-items: center; gap: 3px; margin-top: 6px; padding: 3px 9px;
-         border-radius: 999px; background: #fff; color: #b8245a; font-size: clamp(9px, 7.2vw, 12px);
-         font-weight: 700; line-height: 1.3; box-shadow: 0 2px 8px rgba(0,0,0,.25);
+  .cta { position: relative; z-index: 1; display: inline-flex; align-items: center; justify-content: center; gap: 3px; margin-top: 5px; padding: 3px 8px;
+         border-radius: 999px; background: #fff; color: #b8245a; font-size: clamp(9px, 6.8vw, 11.5px);
+         font-weight: 700; line-height: 1.25; box-shadow: 0 2px 6px rgba(0,0,0,.25);
+         white-space: nowrap; max-width: 95%;
          animation: beat 1.8s ease-in-out infinite; }
   .cta i { font-style: normal; display: inline-block; animation: nudge 1.2s ease-in-out infinite; }
   .cta i.n { animation-name: point; }

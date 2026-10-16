@@ -304,7 +304,7 @@ const BrandedVideoPlayer = forwardRef<HTMLVideoElement, BrandedVideoPlayerProps>
         ) : (
           <div
             className={cn(
-              "absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-black/75 via-black/30 to-transparent px-3 pb-2.5 pt-10 text-white transition-opacity duration-300",
+              "absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-black/80 via-black/40 to-transparent px-3 pb-1 sm:pb-2.5 pt-7 sm:pt-10 text-white transition-opacity duration-300",
               showControls ? "opacity-100" : "pointer-events-none opacity-0",
               barClassName,
             )}
@@ -318,7 +318,7 @@ const BrandedVideoPlayer = forwardRef<HTMLVideoElement, BrandedVideoPlayerProps>
               aria-valuemax={Math.round(duration) || 0}
               aria-valuenow={Math.round(current)}
               aria-valuetext={`${formatTime(current)} of ${formatTime(duration)}`}
-              className="group/track relative flex h-8 cursor-pointer touch-none items-center"
+              className="group/track relative flex h-6 sm:h-8 cursor-pointer touch-none items-center"
               style={{ touchAction: "none" }}
               onPointerDown={startScrub}
               onKeyDown={(e) => {
@@ -347,21 +347,21 @@ const BrandedVideoPlayer = forwardRef<HTMLVideoElement, BrandedVideoPlayerProps>
                   className="absolute inset-x-3 top-1/2"
                   style={{ transform: `translateX(${progress}%)` }}
                 >
-                  <span className="absolute left-0 top-0 h-3.5 w-3.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-[#B8245A] bg-white shadow" />
+                  <span className="absolute left-0 top-0 h-3 sm:h-3.5 w-3 sm:w-3.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-[#B8245A] bg-white shadow" />
                 </span>
               </span>
             </div>
 
-            <div className="mt-1 flex items-center gap-1">
+            <div className="mt-0.5 sm:mt-1 flex items-center gap-1">
               <button
                 type="button"
                 onClick={togglePlay}
                 aria-label={playing ? "Pause video" : "Play video"}
-                className="flex h-9 w-9 items-center justify-center rounded-full transition-colors hover:bg-white/15 active:bg-white/25"
+                className="flex h-7.5 w-7.5 sm:h-9 sm:w-9 items-center justify-center rounded-full transition-colors hover:bg-white/15 active:bg-white/25"
               >
-                {playing ? <Pause className="h-5 w-5 fill-current" /> : <Play className="h-5 w-5 fill-current" />}
+                {playing ? <Pause className="h-4.5 w-4.5 sm:h-5 sm:w-5 fill-current" /> : <Play className="h-4.5 w-4.5 sm:h-5 sm:w-5 fill-current" />}
               </button>
-              <span className="text-xs font-medium tabular-nums text-white/90">
+              <span className="text-[11px] sm:text-xs font-medium tabular-nums text-white/90">
                 {formatTime(current)} / {formatTime(duration)}
               </span>
               <span className="flex-1" />
@@ -369,17 +369,17 @@ const BrandedVideoPlayer = forwardRef<HTMLVideoElement, BrandedVideoPlayerProps>
                 type="button"
                 onClick={toggleMute}
                 aria-label={muted ? "Turn sound on" : "Turn sound off"}
-                className="flex h-9 w-9 items-center justify-center rounded-full transition-colors hover:bg-white/15 active:bg-white/25"
+                className="flex h-7.5 w-7.5 sm:h-9 sm:w-9 items-center justify-center rounded-full transition-colors hover:bg-white/15 active:bg-white/25"
               >
-                {muted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
+                {muted ? <VolumeX className="h-4.5 w-4.5 sm:h-5 sm:w-5" /> : <Volume2 className="h-4.5 w-4.5 sm:h-5 sm:w-5" />}
               </button>
               <button
                 type="button"
                 onClick={toggleFullscreen}
                 aria-label={fullscreen ? "Exit full screen" : "Full screen"}
-                className="flex h-9 w-9 items-center justify-center rounded-full transition-colors hover:bg-white/15 active:bg-white/25"
+                className="flex h-7.5 w-7.5 sm:h-9 sm:w-9 items-center justify-center rounded-full transition-colors hover:bg-white/15 active:bg-white/25"
               >
-                {fullscreen ? <Minimize className="h-5 w-5" /> : <Maximize className="h-5 w-5" />}
+                {fullscreen ? <Minimize className="h-4.5 w-4.5 sm:h-5 sm:w-5" /> : <Maximize className="h-4.5 w-4.5 sm:h-5 sm:w-5" />}
               </button>
             </div>
           </div>
