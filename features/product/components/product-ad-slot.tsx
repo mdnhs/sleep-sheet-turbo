@@ -180,9 +180,21 @@ export function ProductAdSlot({ ad, price }: { ad: ProductAd; price?: number }) 
   return (
     <div
       className={cn(
-        "pointer-events-auto absolute top-2 right-2 sm:top-3 sm:right-3 bottom-11 sm:bottom-14 z-10 flex flex-col justify-center p-1 sm:p-3 overflow-hidden [--frame-h:17rem] sm:[--frame-h:25rem] lg:[--frame-h:34.375rem]",
+        "pointer-events-auto absolute z-10 flex flex-col justify-center overflow-hidden [--frame-h:17rem] sm:[--frame-h:25rem] lg:[--frame-h:34.375rem]",
+        compact
+          ? "top-2 bottom-11 p-0.5"
+          : "top-0 right-0 bottom-12 p-3",
       )}
-      style={{ width: "calc(50% - var(--frame-h) * 9 / 32)" }}
+      style={
+        compact
+          ? {
+              left: "calc(50% + var(--frame-h) * 9 / 32 + 5px)",
+              right: "6px",
+            }
+          : {
+              width: "calc(50% - var(--frame-h) * 9 / 32)",
+            }
+      }
     >
       {/* The card keeps its final size (so the strip never re-centres it); inside, a box
           grows from 0 to that height like a banner being unrolled. The roll bar sits on

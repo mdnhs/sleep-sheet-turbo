@@ -26,7 +26,7 @@ export const SAMPLE_AD = `<link rel="preconnect" href="https://fonts.gstatic.com
   /* Phone strip: sleek floating badge, centered vertically. */
   html[data-slot="compact"], html[data-slot="compact"] body { height: auto; min-height: 0; }
   html[data-slot="compact"] .ad { display: flex; flex-direction: column; align-items: center; justify-content: center;
-                                   border-radius: 16px; padding: 7px 5px 8px; width: 100%; max-width: 125px; margin: 0 auto; }
+                                   border-radius: 15px; padding: 6px 4px 7px; width: 100%; box-sizing: border-box; }
   .ad { position: relative; display: block; overflow: hidden; border-radius: 16px; padding: 10px 8px 11px;
         text-align: center; color: #fff; text-decoration: none;
         border: 1px solid rgba(255, 255, 255, 0.4);
@@ -38,21 +38,21 @@ export const SAMPLE_AD = `<link rel="preconnect" href="https://fonts.gstatic.com
                animation: shine 3.4s ease-in-out infinite; pointer-events: none; }
   @keyframes shine { 0%, 60% { left: -70%; } 100% { left: 150%; } }
 
-  .tag { display: inline-flex; align-items: center; gap: 4px; padding: 2px 7px; border-radius: 999px;
-         background: rgba(0,0,0,.3); font-size: clamp(8px, 6.8vw, 11px); font-weight: 700; white-space: nowrap; }
+  .tag { display: inline-flex; align-items: center; gap: 4px; padding: 2px 6px; border-radius: 999px;
+         background: rgba(0,0,0,.3); font-size: clamp(7.5px, 6.2vw, 10.5px); font-weight: 700; white-space: nowrap; }
   .dot { width: 5px; height: 5px; border-radius: 50%; background: #3ef59a; flex: none; animation: ping 1.6s infinite; }
   @keyframes ping { 0% { box-shadow: 0 0 0 0 rgba(62,245,154,.85); } 70%, 100% { box-shadow: 0 0 0 6px rgba(62,245,154,0); } }
 
-  .head { margin-top: 4px; font-weight: 700; font-size: clamp(12px, 9.5vw, 18px); line-height: 1.2; text-shadow: 0 1px 2px rgba(0,0,0,.25); }
+  .head { margin-top: 4px; font-weight: 700; font-size: clamp(11.5px, 8.8vw, 17px); line-height: 1.18; text-shadow: 0 1px 2px rgba(0,0,0,.25); }
   .free { display: inline-block; margin-top: 2px; padding: 0 5px; border-radius: 5px; color: #12301f; background: #3ef59a;
           transform: rotate(-3deg); animation: wiggle 2.4s ease-in-out infinite; }
   @keyframes wiggle { 0%, 78%, 100% { transform: rotate(-3deg) scale(1); } 86% { transform: rotate(4deg) scale(1.14); } 93% { transform: rotate(-5deg) scale(1.06); } }
-  .sub { margin-top: 3px; font-size: clamp(8.5px, 6.8vw, 11.5px); font-weight: 600; opacity: .95; white-space: nowrap; }
+  .sub { margin-top: 3px; font-size: clamp(8px, 6.2vw, 11px); font-weight: 600; opacity: .95; white-space: nowrap; }
 
-  .cta { position: relative; z-index: 1; display: inline-flex; align-items: center; justify-content: center; gap: 3px; margin-top: 5px; padding: 3px 8px;
-         border-radius: 999px; background: #fff; color: #b8245a; font-size: clamp(9px, 6.8vw, 11.5px);
+  .cta { position: relative; z-index: 1; display: inline-flex; align-items: center; justify-content: center; gap: 2.5px; margin-top: 5px; padding: 3px 6px;
+         border-radius: 999px; background: #fff; color: #b8245a; font-size: clamp(8.5px, 6.2vw, 11px);
          font-weight: 700; line-height: 1.25; box-shadow: 0 2px 6px rgba(0,0,0,.25);
-         white-space: nowrap; max-width: 95%;
+         white-space: nowrap; max-width: 100%; box-sizing: border-box;
          animation: beat 1.8s ease-in-out infinite; }
   .cta i { font-style: normal; display: inline-block; animation: nudge 1.2s ease-in-out infinite; }
   .cta i.n { animation-name: point; }
