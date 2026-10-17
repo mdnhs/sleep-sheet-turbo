@@ -40,7 +40,6 @@ export function DirectOrderForm({
   selectedSize = "",
   selectedAddOns = {},
   quantity,
-  onQuantityChange,
   baseDisplayPrice,
   addOnsTotalPerUnit = 0,
   shippingRates: propShippingRates,
@@ -138,7 +137,7 @@ export function DirectOrderForm({
       color: selectedColor || undefined,
       isAuthenticated: !!user?.id,
       guestProduct: {
-        id: `guest-${product.id}-${Date.now()}`,
+        id: `guest-${product.id}-${selectedColor || "default"}-${selectedSize || "default"}`,
         productId: product.id,
         slug: product.slug,
         quantity: currentQty,
