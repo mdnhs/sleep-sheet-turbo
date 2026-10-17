@@ -16,7 +16,6 @@ import { toast } from "sonner";
 import {
   Truck,
   ShieldCheck,
-  Sparkles,
   Phone,
   User,
   MapPin,
@@ -66,33 +65,18 @@ export function DirectOrderForm({
   const addToCart = useCartStore((state) => state.addToCart);
   const clearGuestCart = useCartStore((state) => state.clearGuestCart);
 
-  // Derive bundle mode directly from quantity prop (single source of truth, no cascading renders)
-  const selectedBundle: 1 | 2 = quantity >= 2 ? 2 : 1;
-  const isBundle = selectedBundle === 2;
-  const currentQty = isBundle ? 2 : 1;
+  const currentQty = Math.max(1, quantity);
   const unitPrice = baseDisplayPrice + addOnsTotalPerUnit;
 
   const rawProductTotal = unitPrice * currentQty;
   const productTotal = rawProductTotal;
 
-  const normalDeliveryFee = shippingZone === "inside_dhaka" ? insideDhakaRate : outsideDhakaRate;
-  const deliveryFee = isBundle ? 0 : normalDeliveryFee;
+  const deliveryFee = shippingZone === "inside_dhaka" ? insideDhakaRate : outsideDhakaRate;
   const grandTotal = productTotal + deliveryFee;
-
-  // Fixed prices for display in combo option card:
-  const comboPrice = unitPrice * 2;
-  const comboOriginalWithDelivery = comboPrice + normalDeliveryFee;
 
   // Phone Validation
   const normalizedPhone = normalizeBdPhone(phone);
   const isPhoneValid = isValidBdMobile11(phone);
-
-  const handleBundleChange = (bundle: 1 | 2) => {
-    triggerHaptic("selection");
-    if (onQuantityChange) {
-      onQuantityChange(bundle);
-    }
-  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -138,7 +122,7 @@ export function DirectOrderForm({
       selectedColor,
       selectedSize,
       addOnsSummary ? `পর্দা: ${addOnsSummary}` : "",
-      isBundle ? "২ সেট স্পেশাল কম্বো" : "",
+      currentQty > 1 ? `পরিমাণ: ${currentQty}` : "",
     ]
       .filter(Boolean)
       .join(" / ");
@@ -170,7 +154,7 @@ export function DirectOrderForm({
         email: "",
         address: address.trim(),
         shippingZone: shippingZone,
-        notes: finalVariantLabel || (isBundle ? "২ সেট স্পেশাল কম্বো অফার (ফ্রি ডেলিভারি)" : ""),
+        notes: finalVariantLabel,
       },
       paymentMethod: "cod",
       paymentInfo: { paymentMethod: "cod" },
@@ -204,7 +188,7 @@ export function DirectOrderForm({
         </h2>
 
         {/* Selected Variant Chip Indicator */}
-        {(selectedColor || selectedSize) && (
+        {(selectedColor || selectedSize || currentQty > 1) && (
           <div className="mt-2 flex flex-wrap items-center gap-1.5 text-xs">
             <span className="text-slate-500 dark:text-slate-400 font-medium">নির্বাচিত:</span>
             {selectedColor && (
@@ -217,81 +201,13 @@ export function DirectOrderForm({
                 সাইজ: {selectedSize}
               </span>
             )}
+            {currentQty > 1 && (
+              <span className="inline-flex items-center rounded-md bg-slate-100 dark:bg-slate-800 px-2 py-0.5 font-semibold text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+                পরিমাণ: {currentQty}
+              </span>
+            )}
           </div>
         )}
-      </div>
-
-      {/* Special Bundle Offer Cards */}
-      <div className="mb-3.5">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-          {/* 1 Set Option */}
-          <button
-            type="button"
-            onClick={() => handleBundleChange(1)}
-            className={`relative flex items-center justify-between rounded-xl border-2 p-3 text-left transition-all cursor-pointer ${
-              selectedBundle === 1
-                ? "border-emerald-600 bg-emerald-50/70 dark:bg-emerald-950/40 shadow-xs"
-                : "border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-slate-300"
-            }`}
-          >
-            <div className="flex items-center gap-2.5">
-              <div
-                className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 ${
-                  selectedBundle === 1
-                    ? "border-emerald-600 bg-emerald-600 text-white"
-                    : "border-slate-300 dark:border-slate-600"
-                }`}
-              >
-                {selectedBundle === 1 && <span className="h-2 w-2 rounded-full bg-white" />}
-              </div>
-              <div>
-                <p className="text-xs font-bold text-slate-900 dark:text-slate-100">১ সেট (রেগুলার)</p>
-                <p className="text-[11px] text-slate-500 dark:text-slate-400">+ ডেলিভারি চার্জ</p>
-              </div>
-            </div>
-            <span className="text-xs font-bold text-slate-900 dark:text-slate-100">
-              {formatAmount(unitPrice)}
-            </span>
-          </button>
-
-          {/* 2 Sets Bundle Option - Free Delivery */}
-          <button
-            type="button"
-            onClick={() => handleBundleChange(2)}
-            className={`relative flex items-center justify-between rounded-xl border-2 p-3 text-left transition-all cursor-pointer ${
-              selectedBundle === 2
-                ? "border-orange-500 bg-orange-50/80 dark:bg-orange-950/40 shadow-xs"
-                : "border-orange-200 dark:border-orange-900/50 bg-orange-50/20 dark:bg-orange-950/10 hover:border-orange-300"
-            }`}
-          >
-            <span className="absolute -top-2.5 right-3 inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-orange-500 to-amber-500 px-2 py-0.5 text-[10px] font-extrabold text-white shadow-xs">
-              <Sparkles className="h-3 w-3" /> ফ্রি ডেলিভারি 🔥
-            </span>
-            <div className="flex items-center gap-2.5">
-              <div
-                className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 ${
-                  selectedBundle === 2
-                    ? "border-orange-500 bg-orange-500 text-white"
-                    : "border-slate-300 dark:border-slate-600"
-                }`}
-              >
-                {selectedBundle === 2 && <span className="h-2 w-2 rounded-full bg-white" />}
-              </div>
-              <div>
-                <p className="text-xs font-bold text-slate-900 dark:text-slate-100">২ সেট (ডেলিভারি ফ্রি)</p>
-                <p className="text-[11px] text-orange-600 dark:text-orange-400 font-semibold">ডেলিভারি চার্জ ০৳</p>
-              </div>
-            </div>
-            <div className="text-right">
-              <span className="block text-xs font-bold text-orange-600 dark:text-orange-400">
-                {formatAmount(comboPrice)}
-              </span>
-              <span className="text-[10px] line-through text-slate-400">
-                {formatAmount(comboOriginalWithDelivery)}
-              </span>
-            </div>
-          </button>
-        </div>
       </div>
 
       {/* The Order Form */}
@@ -383,8 +299,8 @@ export function DirectOrderForm({
                 <span className="block leading-tight">ঢাকার বাইরে</span>
                 <span className="text-[10px] font-normal text-slate-500">২-৩ দিন</span>
               </div>
-              <span className={isBundle ? "text-emerald-600 font-extrabold" : "text-slate-700 dark:text-slate-300"}>
-                {isBundle ? "ফ্রি" : formatAmount(outsideDhakaRate)}
+              <span className="text-slate-700 dark:text-slate-300 font-semibold">
+                {formatAmount(outsideDhakaRate)}
               </span>
             </button>
 
@@ -404,8 +320,8 @@ export function DirectOrderForm({
                 <span className="block leading-tight">ঢাকার ভিতরে</span>
                 <span className="text-[10px] font-normal text-slate-500">১ দিন</span>
               </div>
-              <span className={isBundle ? "text-emerald-600 font-extrabold" : "text-slate-700 dark:text-slate-300"}>
-                {isBundle ? "ফ্রি" : formatAmount(insideDhakaRate)}
+              <span className="text-slate-700 dark:text-slate-300 font-semibold">
+                {formatAmount(insideDhakaRate)}
               </span>
             </button>
           </div>
@@ -436,7 +352,7 @@ export function DirectOrderForm({
         {/* Bill Summary Card */}
         <div className="rounded-xl bg-slate-50/80 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800 p-3 space-y-1.5 text-xs">
           <div className="flex justify-between text-slate-600 dark:text-slate-400">
-            <span>পণ্য ({currentQty} সেট):</span>
+            <span>পণ্য ({currentQty} {currentQty > 1 ? "টি" : "সেট"}):</span>
             <span className="font-semibold text-slate-900 dark:text-slate-100">{formatAmount(rawProductTotal)}</span>
           </div>
 
