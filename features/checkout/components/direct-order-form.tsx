@@ -66,13 +66,15 @@ export function DirectOrderForm({
   const clearGuestCart = useCartStore((state) => state.clearGuestCart);
 
   const currentQty = Math.max(1, quantity);
+  const baseProductTotal = baseDisplayPrice * currentQty;
+  const totalAddOnsPrice = addOnsTotalPerUnit * currentQty;
+  const productTotal = baseProductTotal + totalAddOnsPrice;
   const unitPrice = baseDisplayPrice + addOnsTotalPerUnit;
-
-  const rawProductTotal = unitPrice * currentQty;
-  const productTotal = rawProductTotal;
 
   const deliveryFee = shippingZone === "inside_dhaka" ? insideDhakaRate : outsideDhakaRate;
   const grandTotal = productTotal + deliveryFee;
+
+  const selectedAddOnsList = Object.entries(selectedAddOns).filter(([, qty]) => qty > 0);
 
   // Phone Validation
   const normalizedPhone = normalizeBdPhone(phone);
@@ -113,14 +115,16 @@ export function DirectOrderForm({
     // Clear previous items and put this exact configuration into cart
     clearGuestCart();
 
-    const addOnsSummary = Object.entries(selectedAddOns)
-      .filter(([, qty]) => qty > 0)
-      .map(([name, qty]) => `${name} x${qty}`)
+    const addOnsSummary = selectedAddOnsList
+      .map(([name, qty]) => {
+        const pName = name.includes("পর্দা") ? name : `${name} পর্দা`;
+        return `${pName} x${qty}`;
+      })
       .join(", ");
 
     const finalVariantLabel = [
-      selectedColor,
-      selectedSize,
+      selectedColor ? `ধরণ: ${selectedColor}` : "",
+      selectedSize ? `সাইজ: ${selectedSize}` : "",
       addOnsSummary ? `পর্দা: ${addOnsSummary}` : "",
       currentQty > 1 ? `পরিমাণ: ${currentQty}` : "",
     ]
@@ -188,12 +192,12 @@ export function DirectOrderForm({
         </h2>
 
         {/* Selected Variant Chip Indicator */}
-        {(selectedColor || selectedSize || currentQty > 1) && (
+        {(selectedColor || selectedSize || selectedAddOnsList.length > 0 || currentQty > 1) && (
           <div className="mt-2 flex flex-wrap items-center gap-1.5 text-xs">
             <span className="text-slate-500 dark:text-slate-400 font-medium">নির্বাচিত:</span>
             {selectedColor && (
               <span className="inline-flex items-center rounded-md bg-emerald-100/70 dark:bg-emerald-950/60 px-2 py-0.5 font-semibold text-emerald-800 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-800/60">
-                ডিজাইন: {selectedColor}
+                ধরণ: {selectedColor}
               </span>
             )}
             {selectedSize && (
@@ -201,6 +205,17 @@ export function DirectOrderForm({
                 সাইজ: {selectedSize}
               </span>
             )}
+            {selectedAddOnsList.map(([name, qty]) => {
+              const pName = name.includes("পর্দা") ? name : `${name} পর্দা`;
+              return (
+                <span
+                  key={name}
+                  className="inline-flex items-center rounded-md bg-purple-100/80 dark:bg-purple-950/60 px-2 py-0.5 font-semibold text-purple-800 dark:text-purple-300 border border-purple-200/70 dark:border-purple-800/60"
+                >
+                  পর্দা: {pName} ({qty} পিস)
+                </span>
+              );
+            })}
             {currentQty > 1 && (
               <span className="inline-flex items-center rounded-md bg-slate-100 dark:bg-slate-800 px-2 py-0.5 font-semibold text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
                 পরিমাণ: {currentQty}
@@ -352,9 +367,22 @@ export function DirectOrderForm({
         {/* Bill Summary Card */}
         <div className="rounded-xl bg-slate-50/80 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800 p-3 space-y-1.5 text-xs">
           <div className="flex justify-between text-slate-600 dark:text-slate-400">
-            <span>পণ্য ({currentQty} {currentQty > 1 ? "টি" : "সেট"}):</span>
-            <span className="font-semibold text-slate-900 dark:text-slate-100">{formatAmount(rawProductTotal)}</span>
+            <span>{selectedAddOnsList.length > 0 ? "মূল পণ্য" : "পণ্য"} ({currentQty} {currentQty > 1 ? "টি" : "সেট"}):</span>
+            <span className="font-semibold text-slate-900 dark:text-slate-100">{formatAmount(baseProductTotal)}</span>
           </div>
+
+          {selectedAddOnsList.map(([name, qty]) => {
+            const addOnItem = product.addOns?.find((a) => a.name === name);
+            const itemUnitPrice = addOnItem?.price || 0;
+            const itemTotalPrice = itemUnitPrice * qty * currentQty;
+            const pName = name.includes("পর্দা") ? name : `${name} পর্দা`;
+            return (
+              <div key={name} className="flex justify-between text-slate-600 dark:text-slate-400">
+                <span>পর্দা ({pName} - {qty * currentQty} পিস):</span>
+                <span className="font-semibold text-slate-900 dark:text-slate-100">{formatAmount(itemTotalPrice)}</span>
+              </div>
+            );
+          })}
 
           <div className="flex justify-between text-slate-600 dark:text-slate-400">
             <span>ডেলিভারি চার্জ:</span>

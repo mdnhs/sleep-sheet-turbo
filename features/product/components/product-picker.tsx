@@ -91,7 +91,7 @@ function ProductPicker({ product }: ProductPickerProps) {
 
   const colorWithAddOns = selectedColor
     ? (selectedAddOnsSummary ? `${selectedColor} (+ ${selectedAddOnsSummary})` : selectedColor)
-    : (selectedAddOnsSummary ? `Add-ons: ${selectedAddOnsSummary}` : "");
+    : (selectedAddOnsSummary ? `পর্দা: ${selectedAddOnsSummary}` : "");
 
   const handleQuantityChange = (newQuantity: number) => {
     if (newQuantity > 0 && newQuantity <= product.stock) {
