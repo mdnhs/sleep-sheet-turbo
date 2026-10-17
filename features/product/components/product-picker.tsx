@@ -6,7 +6,6 @@ import { Product } from "@/lib/types";
 import {
   Heart,
   ShoppingBag,
-  Phone,
   MessageCircle,
   ShoppingCart,
   Zap,
@@ -767,30 +766,10 @@ function ProductPicker({ product }: ProductPickerProps) {
           </Button>
         </div>
 
-        {/* Main Actions: Add to Cart (35%) & Order Now (65% Primary CTA) */}
-        <div ref={mainCtaRef} data-order-cta="true" className="flex items-center gap-2 lg:gap-3">
+        {/* Main Action: Order Now (Full-Width Primary CTA) */}
+        <div ref={mainCtaRef} data-order-cta="true">
           <Button
-            variant="outline"
-            className="h-12 lg:h-14 w-[36%] sm:w-[32%] shrink-0 rounded-full text-xs sm:text-sm font-bold tracking-tight border-2 border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:border-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all px-2 cursor-pointer"
-            disabled={!isInStock}
-            onClick={() => {
-              if (
-                (!selectedSize && isSizeAvailable) ||
-                (!selectedColor && isColorAvailable)
-              ) {
-                setDialogAction("cart");
-                setIsDialogOpen(true);
-              } else {
-                handleAddToCart();
-              }
-            }}
-          >
-            <ShoppingCart className="h-4 w-4 mr-1.5 shrink-0" />
-            <span className="truncate">{isInStock ? t("addToCart") : t("outOfStock")}</span>
-          </Button>
-
-          <Button
-            className="animate-cta-wiggle flex-1 h-12 lg:h-14 rounded-full text-sm sm:text-base font-extrabold tracking-wide bg-[linear-gradient(135deg,#FF6FA5,#B8245A)] hover:brightness-110 text-white shadow-lg shadow-[#B8245A]/25 transition-all cursor-pointer"
+            className="animate-cta-wiggle w-full h-12 lg:h-14 rounded-full text-base sm:text-lg font-extrabold tracking-wide bg-[linear-gradient(135deg,#FF6FA5,#B8245A)] hover:brightness-110 text-white shadow-lg shadow-[#B8245A]/25 transition-all cursor-pointer"
             disabled={!isInStock}
             onClick={() => {
               if (
@@ -804,28 +783,21 @@ function ProductPicker({ product }: ProductPickerProps) {
               }
             }}
           >
-            <Zap className="h-4 w-4 mr-1.5 fill-current shrink-0" />
+            <Zap className="h-5 w-5 mr-2 fill-current shrink-0" />
             <span>{language === "bn" ? "অর্ডার করুন" : t("buyNow")}</span>
           </Button>
         </div>
 
-        {/* WhatsApp & Phone Order Buttons */}
-        <div className="grid grid-cols-2 gap-2 sm:gap-3 mt-2 sm:mt-3">
+        {/* WhatsApp Order Button */}
+        <div className="mt-2 sm:mt-3">
           <a
             href={whatsappOrderHref}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center justify-center h-11 sm:h-12 rounded-full font-semibold border-2 border-emerald-500/35 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/20 active:scale-[0.98] transition-all text-xs sm:text-sm shadow-xs"
+            className="flex items-center justify-center w-full h-11 sm:h-12 rounded-full font-semibold border-2 border-emerald-500/35 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/20 active:scale-[0.98] transition-all text-xs sm:text-sm shadow-xs"
           >
-            <MessageCircle className="mr-1.5 sm:mr-2 h-4 w-4 fill-current shrink-0 text-emerald-600 dark:text-emerald-400" />
+            <MessageCircle className="mr-2 h-4 w-4 fill-current shrink-0 text-emerald-600 dark:text-emerald-400" />
             <span>{language === "bn" ? "হোয়াটসঅ্যাপে অর্ডার" : t("whatsappOrder")}</span>
-          </a>
-          <a
-            href={`tel:${footerPhone.replace(/[^0-9+]/g, "")}`}
-            className="flex items-center justify-center h-11 sm:h-12 rounded-full font-medium border border-border bg-background hover:bg-secondary/50 active:scale-[0.98] transition-all text-xs sm:text-sm text-foreground/80"
-          >
-            <Phone className="mr-1.5 sm:mr-2 h-4 w-4 shrink-0" fill="currentColor" />
-            <span>{t("phoneOrder")}</span>
           </a>
         </div>
 
