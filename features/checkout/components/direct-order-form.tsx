@@ -380,9 +380,7 @@ export function DirectOrderForm({
           type="submit"
           data-order-cta="true"
           disabled={isPending}
-          className={`w-full h-13 sm:h-14 rounded-2xl bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-600 hover:from-emerald-700 hover:to-teal-700 text-white font-extrabold text-base sm:text-lg shadow-lg shadow-emerald-600/25 transition-all active:scale-[0.99] cursor-pointer ${
-            !isPending ? "animate-cta-wiggle" : ""
-          }`}
+          className="w-full h-13 sm:h-14 rounded-2xl bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-600 hover:from-emerald-700 hover:to-teal-700 text-white font-extrabold text-base sm:text-lg shadow-lg shadow-emerald-600/25 transition-all active:scale-[0.99] cursor-pointer"
         >
           {isPending ? (
             <span className="flex items-center gap-2">

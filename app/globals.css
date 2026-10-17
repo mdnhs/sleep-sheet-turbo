@@ -179,8 +179,8 @@
 }
 
 .animate-cta-wiggle {
-  animation: cta-wiggle 2.4s ease-in-out infinite;
-  transform-origin: center;
+  /* Wiggle / shake animation turned off */
+  animation: none !important;
 }
 
 /* Tiptap editor table styling (public .prose tables use lib/prose-table-classes.ts) */

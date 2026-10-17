@@ -766,10 +766,20 @@ function ProductPicker({ product }: ProductPickerProps) {
           </Button>
         </div>
 
-        {/* Main Action: Order Now (Full-Width Primary CTA) */}
-        <div ref={mainCtaRef} data-order-cta="true">
+        {/* Main Actions: WhatsApp Order (Compact on left) & Order Now (Primary CTA) */}
+        <div ref={mainCtaRef} data-order-cta="true" className="flex items-center gap-2 lg:gap-3">
+          <a
+            href={whatsappOrderHref}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="h-12 lg:h-14 w-[36%] sm:w-[32%] shrink-0 rounded-full text-xs sm:text-sm font-bold border-2 border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/20 active:scale-[0.98] transition-all px-2 sm:px-3 flex items-center justify-center gap-1.5 shadow-xs cursor-pointer"
+          >
+            <MessageCircle className="h-4 w-4 fill-current shrink-0 text-emerald-600 dark:text-emerald-400" />
+            <span className="truncate">{language === "bn" ? "হোয়াটসঅ্যাপ" : "WhatsApp"}</span>
+          </a>
+
           <Button
-            className="animate-cta-wiggle w-full h-12 lg:h-14 rounded-full text-base sm:text-lg font-extrabold tracking-wide bg-[linear-gradient(135deg,#FF6FA5,#B8245A)] hover:brightness-110 text-white shadow-lg shadow-[#B8245A]/25 transition-all cursor-pointer"
+            className="flex-1 h-12 lg:h-14 rounded-full text-sm sm:text-base font-extrabold tracking-wide bg-[linear-gradient(135deg,#FF6FA5,#B8245A)] hover:brightness-110 text-white shadow-lg shadow-[#B8245A]/25 transition-all cursor-pointer"
             disabled={!isInStock}
             onClick={() => {
               if (
@@ -783,22 +793,9 @@ function ProductPicker({ product }: ProductPickerProps) {
               }
             }}
           >
-            <Zap className="h-5 w-5 mr-2 fill-current shrink-0" />
+            <Zap className="h-4 w-4 mr-1.5 fill-current shrink-0" />
             <span>{language === "bn" ? "অর্ডার করুন" : t("buyNow")}</span>
           </Button>
-        </div>
-
-        {/* WhatsApp Order Button */}
-        <div className="mt-2 sm:mt-3">
-          <a
-            href={whatsappOrderHref}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center justify-center w-full h-11 sm:h-12 rounded-full font-semibold border-2 border-emerald-500/35 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/20 active:scale-[0.98] transition-all text-xs sm:text-sm shadow-xs"
-          >
-            <MessageCircle className="mr-2 h-4 w-4 fill-current shrink-0 text-emerald-600 dark:text-emerald-400" />
-            <span>{language === "bn" ? "হোয়াটসঅ্যাপে অর্ডার" : t("whatsappOrder")}</span>
-          </a>
         </div>
 
         <TrustBadges className="mt-1" />
@@ -855,7 +852,7 @@ function ProductPicker({ product }: ProductPickerProps) {
           
           <div className="flex items-center gap-2 shrink-0">
             <Button
-              className="animate-cta-wiggle h-11 sm:h-12 px-5 sm:px-7 rounded-full text-xs sm:text-sm font-bold bg-[linear-gradient(135deg,#FF6FA5,#B8245A)] hover:brightness-110 text-white shadow-md shadow-[#B8245A]/30 transition-all cursor-pointer whitespace-nowrap"
+              className="h-11 sm:h-12 px-5 sm:px-7 rounded-full text-xs sm:text-sm font-bold bg-[linear-gradient(135deg,#FF6FA5,#B8245A)] hover:brightness-110 text-white shadow-md shadow-[#B8245A]/30 transition-all cursor-pointer whitespace-nowrap"
               disabled={!isInStock}
               onClick={() => {
                 if (
