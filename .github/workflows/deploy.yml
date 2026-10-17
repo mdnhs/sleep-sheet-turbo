@@ -9,8 +9,10 @@ permissions:
   contents: read
   packages: write
 
+# Global concurrency group across all branches (main & preview) so multiple
+# workflows never hit Dokploy simultaneously, preventing VPS RAM exhaustion.
 concurrency:
-  group: deploy-${{ github.ref_name }}
+  group: dokploy-vps-deploy
   cancel-in-progress: false
 
 jobs:
@@ -118,3 +120,9 @@ jobs:
           fi
           curl -fsS --max-time 60 -X POST "$DOKPLOY_WEBHOOK" \
             -H "Content-Type: application/json" -d '{}'
+
+      - name: Cool down for VPS memory stabilization
+        run: |
+          echo "Waiting 30s for Dokploy to pull and restart containers before freeing the concurrency queue..."
+          sleep 30
+
