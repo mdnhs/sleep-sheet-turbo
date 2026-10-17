@@ -809,23 +809,23 @@ function ProductPicker({ product }: ProductPickerProps) {
           </Button>
         </div>
 
-        {/* Phone & WhatsApp Order Buttons (Hidden per request) */}
-        <div className="hidden grid-cols-1 sm:grid-cols-2 gap-3 mt-1">
-          <a
-            href={`tel:${footerPhone.replace(/[^0-9+]/g, "")}`}
-            className="flex items-center justify-center h-12 rounded-full font-medium border border-border bg-background hover:bg-secondary/50 transition-colors text-sm"
-          >
-            <Phone className="mr-2 h-4 w-4" fill="currentColor" />
-            {t("phoneOrder")}
-          </a>
+        {/* WhatsApp & Phone Order Buttons */}
+        <div className="grid grid-cols-2 gap-2 sm:gap-3 mt-2 sm:mt-3">
           <a
             href={whatsappOrderHref}
-            target="_blank" 
+            target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center justify-center h-12 rounded-full font-medium border border-green-500 bg-white dark:bg-slate-900 text-green-700 dark:text-green-500 hover:bg-green-50 dark:hover:bg-green-900/30 transition-colors text-sm"
+            className="flex items-center justify-center h-11 sm:h-12 rounded-full font-semibold border-2 border-emerald-500/35 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/20 active:scale-[0.98] transition-all text-xs sm:text-sm shadow-xs"
           >
-            <MessageCircle className="mr-2 h-4 w-4" fill="currentColor" />
-            {t("whatsappOrder")}
+            <MessageCircle className="mr-1.5 sm:mr-2 h-4 w-4 fill-current shrink-0 text-emerald-600 dark:text-emerald-400" />
+            <span>{language === "bn" ? "হোয়াটসঅ্যাপে অর্ডার" : t("whatsappOrder")}</span>
+          </a>
+          <a
+            href={`tel:${footerPhone.replace(/[^0-9+]/g, "")}`}
+            className="flex items-center justify-center h-11 sm:h-12 rounded-full font-medium border border-border bg-background hover:bg-secondary/50 active:scale-[0.98] transition-all text-xs sm:text-sm text-foreground/80"
+          >
+            <Phone className="mr-1.5 sm:mr-2 h-4 w-4 shrink-0" fill="currentColor" />
+            <span>{t("phoneOrder")}</span>
           </a>
         </div>
 
