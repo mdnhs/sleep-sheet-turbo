@@ -12,6 +12,8 @@ import { isValidBdMobile11, normalizeBdPhone } from "@/features/fraud-checker/ph
 import { useCurrency } from "@/hooks/use-currency";
 import { useWebsiteSettings } from "@/hooks/use-website-settings";
 import { triggerHaptic } from "@/lib/haptics";
+import { capitalizeWords } from "@/lib/capitalize-words";
+import { useCheckoutDraft } from "@/features/web-analytics/lib/checkout-draft";
 import { toast } from "sonner";
 import {
   Truck,
@@ -78,6 +80,32 @@ export function DirectOrderForm({
   // Phone Validation
   const normalizedPhone = normalizeBdPhone(phone);
   const isPhoneValid = isValidBdMobile11(phone);
+
+  // Autosave incomplete checkout drafts so dropped-off customers appear in /dashboard/analytics
+  const draftItems = React.useMemo(() => [
+    {
+      id: `draft-${product.id}`,
+      productId: product.id,
+      name: product.name,
+      price: unitPrice,
+      quantity: currentQty,
+      size: selectedSize || undefined,
+      color: selectedColor || undefined,
+      image: product.images[0] ?? "",
+      description: product.description ?? "",
+      slug: product.slug,
+    }
+  ], [product.id, product.name, product.images, product.description, product.slug, unitPrice, currentQty, selectedSize, selectedColor]);
+
+  const draft = useCheckoutDraft(
+    {
+      fullName: fullName.trim() ? capitalizeWords(fullName.trim()) : undefined,
+      phone,
+      address: address.trim() ? capitalizeWords(address.trim()) : undefined,
+      shippingZone,
+    },
+    draftItems,
+  );
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -150,18 +178,27 @@ export function DirectOrderForm({
       },
     });
 
-    mutate({
-      shippingInfo: {
-        fullName: fullName.trim(),
-        phone: normalizedPhone,
-        email: "",
-        address: address.trim(),
-        shippingZone: shippingZone,
-        notes: finalVariantLabel,
+    draft.pause();
+
+    mutate(
+      {
+        shippingInfo: {
+          fullName: fullName.trim(),
+          phone: normalizedPhone,
+          email: "",
+          address: address.trim(),
+          shippingZone: shippingZone,
+          notes: finalVariantLabel,
+        },
+        paymentMethod: "cod",
+        paymentInfo: { paymentMethod: "cod" },
       },
-      paymentMethod: "cod",
-      paymentInfo: { paymentMethod: "cod" },
-    });
+      {
+        onError: () => {
+          draft.resume();
+        },
+      }
+    );
   };
 
   return (
