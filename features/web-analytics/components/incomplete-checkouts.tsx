@@ -3,8 +3,9 @@
 import { formatDistanceToNow } from "date-fns";
 import { bn } from "date-fns/locale/bn";
 import { useState } from "react";
-import { Check, MessageCircle, Phone, Trash2 } from "lucide-react";
+import { Check, MessageCircle, Phone, Trash2, UserSearch } from "lucide-react";
 import { toast } from "sonner";
+import { FraudCheckDialog } from "@/features/fraud-checker/components/fraud-check-dialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -86,6 +87,7 @@ export function IncompleteCheckouts({ q }: { q: WaQuery }) {
   // Kept after the dialog closes so its text doesn't flip during the exit animation.
   const [pending, setPending] = useState<PendingAction | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [fraudCheckPhone, setFraudCheckPhone] = useState<string | null>(null);
   const { formatAmount } = useCurrency();
   const t = useWaT();
   const { language } = useLanguage();
@@ -172,6 +174,15 @@ export function IncompleteCheckouts({ q }: { q: WaQuery }) {
                       >
                         <MessageCircle className="size-3.5" />
                       </a>
+                      <Button
+                        type="button"
+                        onClick={() => setFraudCheckPhone(row.phone)}
+                        className={`${iconButton} h-7 w-7 bg-indigo-600 p-0 shadow-none hover:bg-indigo-700`}
+                        title="ফ্রড চেক — কুরিয়ার ডেলিভারি হিস্ট্রি"
+                        aria-label="ফ্রড চেক"
+                      >
+                        <UserSearch className="size-3.5" />
+                      </Button>
                       {view === "open" && (
                         <>
                           <Button
@@ -250,6 +261,10 @@ export function IncompleteCheckouts({ q }: { q: WaQuery }) {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+        <FraudCheckDialog
+          phone={fraudCheckPhone}
+          onOpenChange={(open) => !open && setFraudCheckPhone(null)}
+        />
         <CardPager page={page} hasMore={data?.hasMore ?? false} loading={isPlaceholderData} onChange={setPage} />
       </CardContent>
     </Card>
