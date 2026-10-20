@@ -50,6 +50,11 @@ function productToXml(product: CatalogProduct): string {
     lines.push(xmlTag("additional_image_link", img))
   }
 
+  // Sleep Sheet is an online-only e-commerce store delivering nationwide.
+  // Exclude physical store local destinations to eliminate "Missing local inventory data" warnings.
+  lines.push(xmlTag("excluded_destination", "Free_local_listings"))
+  lines.push(xmlTag("excluded_destination", "Local_inventory_ads"))
+
   lines.push("  </item>\n")
   return lines.join("")
 }
@@ -94,6 +99,11 @@ function variantToXml(variant: CatalogVariant): string {
   for (const img of variant.additionalImageLinks) {
     lines.push(xmlTag("additional_image_link", img))
   }
+
+  // Sleep Sheet is an online-only e-commerce store delivering nationwide.
+  // Exclude physical store local destinations to eliminate "Missing local inventory data" warnings.
+  lines.push(xmlTag("excluded_destination", "Free_local_listings"))
+  lines.push(xmlTag("excluded_destination", "Local_inventory_ads"))
 
   lines.push("  </item>\n")
   return lines.join("")
