@@ -134,6 +134,17 @@ export function mapVariants(product: RawProduct): CatalogVariant[] {
     for (let j = 0; j < safeSizes.length; j++) {
       const size = safeSizes[j]
       const variantPrice = variant.price ?? basePrice
+
+      // In Google Merchant Center and Meta Catalog, every feed item's price must match
+      // the price rendered on its landing page and declared in schema.org JSON-LD Offer.
+      // Since product landing pages default to basePrice (e.g. 3,190 BDT for 5-piece comforter
+      // or 1,200 BDT for 4-piece bedsheet), sub-variants with a different price (like single
+      // comforter 2,250 BDT or 3-piece bedsheet 1,050 BDT) get flagged and disapproved for
+      // "Mismatched price". Only export variants whose price matches basePrice.
+      if (variantPrice !== basePrice) {
+        continue
+      }
+
       const originalPrice = product.discount > 0 
         ? variantPrice / (1 - product.discount / 100) 
         : variantPrice
