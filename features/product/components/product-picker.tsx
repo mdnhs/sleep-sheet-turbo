@@ -350,6 +350,29 @@ function ProductPicker({ product }: ProductPickerProps) {
     triggerHaptic("medium");
     const el = document.getElementById("direct-order-form");
     if (el) {
+      const finalColor = colorWithAddOns || selectedColor;
+
+      trackGtmAddToCart({
+        currency: "BDT",
+        value: displayPrice * quantity,
+        items: [
+          {
+            item_id: product.id,
+            item_name: product.name,
+            item_category: product.category,
+            price: displayPrice,
+            quantity,
+            item_variant: [selectedSize, finalColor].filter(Boolean).join(" / ") || undefined,
+          },
+        ],
+      });
+
+      trackEvent("buy_now", `/shop/${product.slug}`, product.name, {
+        productId: product.id,
+        quantity,
+        price: displayPrice,
+      });
+
       el.scrollIntoView({ behavior: "smooth", block: "start" });
       const input = el.querySelector<HTMLInputElement>("input");
       if (input) {

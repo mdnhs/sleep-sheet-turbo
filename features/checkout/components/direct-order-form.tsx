@@ -14,6 +14,9 @@ import { useWebsiteSettings } from "@/hooks/use-website-settings";
 import { triggerHaptic } from "@/lib/haptics";
 import { capitalizeWords } from "@/lib/capitalize-words";
 import { useCheckoutDraft } from "@/features/web-analytics/lib/checkout-draft";
+import { trackGtmBeginCheckout } from "@/lib/gtm";
+import { trackEvent } from "@/lib/traffic-tracker";
+import { collect } from "@/features/web-analytics/lib/collector";
 import { toast } from "sonner";
 import {
   Truck,
@@ -107,8 +110,43 @@ export function DirectOrderForm({
     draftItems,
   );
 
+  const hasTrackedCheckoutRef = React.useRef(false);
+
+  const trackCheckoutStart = React.useCallback(() => {
+    if (hasTrackedCheckoutRef.current) return;
+    hasTrackedCheckoutRef.current = true;
+
+    trackGtmBeginCheckout({
+      currency: "BDT",
+      value: grandTotal,
+      items: [
+        {
+          item_id: product.id,
+          item_name: product.name,
+          item_category: product.category,
+          price: unitPrice,
+          quantity: currentQty,
+          item_variant: [selectedSize, selectedColor].filter(Boolean).join(" / ") || undefined,
+          index: 1,
+        },
+      ],
+    });
+
+    trackEvent("buy_now", `/shop/${product.slug}`, product.name, {
+      productId: product.id,
+      quantity: currentQty,
+      price: unitPrice,
+    });
+
+    collect("checkout_start", "/checkout", {
+      value: grandTotal,
+      productId: product.id,
+    });
+  }, [grandTotal, product, unitPrice, currentQty, selectedSize, selectedColor]);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    trackCheckoutStart();
 
     if (!fullName.trim() || fullName.trim().length < 2) {
       triggerHaptic("error");
@@ -262,7 +300,12 @@ export function DirectOrderForm({
       </div>
 
       {/* The Order Form */}
-      <form onSubmit={handleSubmit} className="space-y-3">
+      <form
+        onSubmit={handleSubmit}
+        onFocusCapture={trackCheckoutStart}
+        onClickCapture={trackCheckoutStart}
+        className="space-y-3"
+      >
         {/* Full Name */}
         <div>
           <label htmlFor={nameInputId} className="mb-1 flex items-center gap-1.5 text-xs font-bold text-slate-700 dark:text-slate-300">
