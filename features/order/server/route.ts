@@ -14,6 +14,7 @@ import { totalAfterSubtotalChange } from "@/lib/order-totals";
 import { sameOrderNumber, toOrderSummary } from "@/features/order/server/track-order";
 import { toCustomerOrder } from "@/features/order/server/customer-order";
 import { setActivityMeta, summarizeNames, titleCase, type ActivityChange } from "@/features/activity/server/log-activity";
+import { retractGoogleAdsConversion } from "@/lib/google-ads/retract-order";
 import {
   isPendingSql,
   isConfirmedSql,
@@ -965,6 +966,13 @@ const app = new Hono()
           name: `#${order.orderNumber}`,
           changes: buildOrderContext(order),
         });
+
+        // Retract conversion in Google Ads if this was a website order (ORD-)
+        if (order.orderNumber && order.orderNumber.toUpperCase().startsWith("ORD-")) {
+          void retractGoogleAdsConversion(order.orderNumber).catch((err) => {
+            console.error(`[google-ads] Retraction failed for order ${order.orderNumber}:`, err);
+          });
+        }
       }
 
     return c.json({ success: true });
@@ -1006,6 +1014,18 @@ const app = new Hono()
     setActivityMeta(c, {
       name: `${targetOrders.length} orders: ${summarizeNames(targetOrders.map((o) => `#${o.orderNumber}`))}`,
     });
+
+    // Retract conversions in Google Ads for any website orders (ORD-)
+    const ordNumbers = targetOrders
+      .map((o) => o.orderNumber)
+      .filter((num) => typeof num === "string" && num.toUpperCase().startsWith("ORD-"));
+
+    if (ordNumbers.length > 0) {
+      void retractGoogleAdsConversion(ordNumbers).catch((err) => {
+        console.error("[google-ads] Bulk conversion retraction failed:", err);
+      });
+    }
+
     return c.json({ success: true });
   } catch (error) {
     console.error("Failed to bulk delete orders:", error);
