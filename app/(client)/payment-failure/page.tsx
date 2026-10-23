@@ -96,10 +96,10 @@ function PaymentFailureContent() {
 
           {/* Action buttons */}
           <div className="flex flex-col sm:flex-row w-full gap-3 mb-6">
-            <Link href="/checkout" className="flex-1">
+            <Link href="/shop" className="flex-1">
               <Button className="w-full h-11 rounded-full font-bold text-sm bg-primary text-primary-foreground hover:bg-primary/90 shadow-md">
                 <RefreshCw className="h-4 w-4 mr-2" />
-                {language === "bn" ? "পুনরায় চেষ্টা করুন" : "Try Again at Checkout"}
+                {language === "bn" ? "পুনরায় অর্ডার করুন" : "Shop to Retry"}
               </Button>
             </Link>
 

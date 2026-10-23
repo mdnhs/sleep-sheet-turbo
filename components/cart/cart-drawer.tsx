@@ -62,7 +62,7 @@ const CartDrawer = ({ isOpen, onClose }: CartDrawerProps) => {
   );
   const total = subtotal;
 
-  const handleProceedToCheckout = () => {
+  const handleProceedToCheckout = (e: React.MouseEvent) => {
     trackGtmBeginCheckout({
       currency: "BDT",
       value: total,
@@ -76,6 +76,20 @@ const CartDrawer = ({ isOpen, onClose }: CartDrawerProps) => {
       })),
     });
     onClose();
+
+    const targetSlug = cartItems[0]?.slug;
+    if (typeof window !== "undefined") {
+      const isCurrentProductPage = targetSlug && window.location.pathname === `/shop/${targetSlug}`;
+      if (isCurrentProductPage) {
+        e.preventDefault();
+        const formEl = document.getElementById("direct-order-form");
+        if (formEl) {
+          formEl.scrollIntoView({ behavior: "smooth", block: "start" });
+          const input = formEl.querySelector<HTMLInputElement>("input");
+          if (input) setTimeout(() => input.focus(), 300);
+        }
+      }
+    }
   };
 
   return (
@@ -118,7 +132,13 @@ const CartDrawer = ({ isOpen, onClose }: CartDrawerProps) => {
               <Button
                 className="w-full py-6"
                 nativeButton={false}
-                render={<Link href="/checkout" onClick={handleProceedToCheckout} />}
+                render={
+                  <Link
+                    href={cartItems[0]?.slug ? `/shop/${cartItems[0].slug}#direct-order-form` : "/shop"}
+                    prefetch={false}
+                    onClick={handleProceedToCheckout}
+                  />
+                }
               >
                 {t("proceedToCheckout")}
               </Button>

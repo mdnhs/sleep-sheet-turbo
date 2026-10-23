@@ -1,7 +1,5 @@
 import type { Metadata } from "next";
-import React from "react";
-import CheckoutClient from "./checkout-client";
-import { getPublicSettings } from "@/lib/prefetch-home";
+import { redirect } from "next/navigation";
 
 // Private, per-session page — never indexable.
 export const metadata: Metadata = {
@@ -9,9 +7,6 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-async function CheckoutPage() {
-  const settings = await getPublicSettings().catch(() => null);
-  return <CheckoutClient initialSettings={settings} />;
+export default function CheckoutPage() {
+  redirect("/shop");
 }
-
-export default CheckoutPage;

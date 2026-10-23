@@ -433,16 +433,6 @@ function Navbar() {
   });
   const [inputVal, setInputVal] = useState(searchQuery);
 
-  // Warm the checkout route's JS chunk as soon as the cart drawer opens,
-  // since that's the strongest signal the user is about to head there —
-  // avoids waiting for the <Link> hover/viewport prefetch after they click
-  // "Proceed to Checkout".
-  React.useEffect(() => {
-    if (isCartOpen) {
-      router.prefetch("/checkout");
-    }
-  }, [isCartOpen, router]);
-
   // Sync local input value if url changes (e.g. from page transition or clear)
   React.useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- inputVal is also user-typed between URL changes, so it can't be purely derived from searchQuery.

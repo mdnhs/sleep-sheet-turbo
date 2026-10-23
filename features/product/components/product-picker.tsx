@@ -100,18 +100,20 @@ function ProductPicker({ product }: ProductPickerProps) {
     }
   };
 
-  // Order Now goes to /checkout, and nothing on a phone's product page
-  // prefetched it, so the tap waited on the route's payload and JS. Warm it
-  // once the browser is idle: /checkout is static and edge-cached, so this
-  // costs a little data and no server work.
+  // Auto-scroll to direct order form if navigated with #direct-order-form hash
   React.useEffect(() => {
-    if (typeof window.requestIdleCallback !== "function") {
-      const id = window.setTimeout(() => router.prefetch("/checkout"), 3000);
-      return () => window.clearTimeout(id);
+    if (typeof window !== "undefined" && window.location.hash === "#direct-order-form") {
+      const el = document.getElementById("direct-order-form");
+      if (el) {
+        const timer = setTimeout(() => {
+          el.scrollIntoView({ behavior: "smooth", block: "start" });
+          const input = el.querySelector<HTMLInputElement>("input");
+          if (input) input.focus();
+        }, 300);
+        return () => clearTimeout(timer);
+      }
     }
-    const id = window.requestIdleCallback(() => router.prefetch("/checkout"), { timeout: 5000 });
-    return () => window.cancelIdleCallback(id);
-  }, [router]);
+  }, []);
 
   React.useEffect(() => {
     let rafId: number | null = null;
@@ -339,11 +341,14 @@ function ProductPicker({ product }: ProductPickerProps) {
       price: displayPrice,
     });
 
-    // Through the same after-paint queue as the tracking pushes above, so
-    // they reach GTM first — while the URL is still this product's. A
-    // prefetched /checkout could otherwise commit (and change the URL) before
-    // they flush, reporting add_to_cart/begin_checkout as /checkout.
-    afterNextPaint(() => router.push("/checkout"));
+    afterNextPaint(() => {
+      const el = document.getElementById("direct-order-form");
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "start" });
+        const input = el.querySelector<HTMLInputElement>("input");
+        if (input) setTimeout(() => input.focus(), 350);
+      }
+    });
   };
 
   const scrollToOrderForm = () => {

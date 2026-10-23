@@ -137,13 +137,8 @@ const ProductCard = ({ product, priority = false }: ProductCardProps) => {
         quantity,
         price: displayPrice,
       });
-      // The toast (sonner mounts it with flushSync) and the navigation go
-      // through the same after-paint queue as the tracking pushes above: the
-      // tap paints first, and the pushes reach GTM while the URL is still
-      // this page's, before /checkout commits.
       afterNextPaint(() => {
-        toast.success("Added to cart successfully");
-        router.push("/checkout");
+        router.push(`/shop/${product.slug}#direct-order-form`);
       });
     }
   };
@@ -200,10 +195,8 @@ const ProductCard = ({ product, priority = false }: ProductCardProps) => {
       price: displayPrice,
     });
     setIsDrawerOpen(false);
-    // After the tracking pushes, as in the quick-buy handler above.
     afterNextPaint(() => {
-      toast.success("Added to cart successfully");
-      router.push("/checkout");
+      router.push(`/shop/${product.slug}#direct-order-form`);
     });
   };
 
