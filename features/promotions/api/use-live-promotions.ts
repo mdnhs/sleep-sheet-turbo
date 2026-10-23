@@ -14,13 +14,12 @@ export const useLivePromotions = () =>
   useQuery({
     queryKey: ["promotions", "live"],
     queryFn: async () => {
-      const res = await client.api.promotions.live.$get({ query: { visitor: getVisitorId() } });
+      const res = await client.api.promotions.live.$get({ query: {} });
       if (!res.ok) return [];
       return ((await res.json()) as { promotions: Promotion[] }).promotions;
     },
-    // Fresh on every checkout visit and tab focus, so a promotion created or
-    // switched off a moment ago shows the right delivery charge. Cheap: the
-    // server serves this list from cache (features/promotions/server).
-    staleTime: 0,
-    refetchOnWindowFocus: true,
+    // Shared live promotions cached at Cloudflare edge (1-2 min).
+    // Stale time prevents window focus spamming.
+    staleTime: 60_000,
+    refetchOnWindowFocus: false,
   });

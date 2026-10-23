@@ -12,17 +12,30 @@ const pool =
   globalForDb.pgPool ??
   new Pool({
     connectionString: process.env.DATABASE_URL!,
-    // One long-lived container on the VPS serves every request (storefront,
-    // checkout, dashboard, /api/t beacons), so it needs more than the 5 a
-    // Vercel function instance got. Postgres allows 100; DB_POOL_MAX overrides.
+    // On a 1-core VPS, 15 connections multiplexes thousands of async queries
+    // without overloading the single CPU with context-switching overhead.
     max: Number(process.env.DB_POOL_MAX) || 15,
-    // Close idle connections quickly so a suspended function doesn't hold
-    // slots it no longer uses.
-    idleTimeoutMillis: 5_000,
-    connectionTimeoutMillis: 10_000,
+    // Keep idle connections warm for 30s to eliminate connection setup churn.
+    idleTimeoutMillis: 30_000,
+    // Fail fast if pool is saturated instead of hanging request for 10s.
+    connectionTimeoutMillis: 5_000,
+    // Statement timeout: terminate runaway queries after 10s to prevent pool starvation.
+    statement_timeout: 10_000,
+    query_timeout: 10_000,
   });
 
-if (process.env.NODE_ENV !== "production") globalForDb.pgPool = pool;
+// Catch idle client errors so unexpected connection drops don't crash the server.
+pool.on("error", (err) => {
+  console.error("Unexpected error on idle database client:", err);
+});
+
+// Guard against idle transactions holding row/table locks indefinitely.
+pool.on("connect", (client) => {
+  client.query("SET idle_in_transaction_session_timeout = '10s'").catch(() => {});
+});
+
+// Singleton pool across all environments (production & dev) to prevent duplicate pools.
+globalForDb.pgPool = pool;
 
 // Lets Vercel's Fluid compute release idle connections before an instance is
 // suspended, instead of leaving them open until Postgres times them out.

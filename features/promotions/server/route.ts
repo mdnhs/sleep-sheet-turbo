@@ -28,10 +28,13 @@ const app = new Hono()
   .get("/live", zValidator("query", z.object({ visitor: visitorIdSchema.optional().catch(undefined) })), async (c) => {
     const { visitor } = c.req.valid("query");
     const shared = await getLivePromotions();
-    const live = visitor ? await personalizePromotions(shared, visitor) : shared;
+    const hasPersonal = shared.some((p) => p.personalWindowMinutes);
+    const live = visitor && hasPersonal ? await personalizePromotions(shared, visitor) : shared;
     c.header(
       "Cache-Control",
-      visitor ? "private, no-store" : "public, s-maxage=60, stale-while-revalidate=300",
+      hasPersonal && visitor
+        ? "private, no-store"
+        : "public, s-maxage=60, stale-while-revalidate=120",
     );
     // The product page ad runs in a sandboxed (opaque-origin) iframe and reads
     // this list to stay truthful; public data, no credentials, so * is safe.
