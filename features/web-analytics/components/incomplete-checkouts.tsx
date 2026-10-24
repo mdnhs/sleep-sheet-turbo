@@ -147,9 +147,9 @@ export function IncompleteCheckouts({ q }: { q: WaQuery }) {
             <TableHeader>
               <TableRow>
                 <TableHead>{t("colCustomer")}</TableHead>
+                <TableHead>{t("colCart")}</TableHead>
                 <TableHead>{view === "open" ? t("colLastActive") : t("colCompletedAt")}</TableHead>
                 <TableHead>{t("colAddress")}</TableHead>
-                <TableHead>{t("colCart")}</TableHead>
                 <TableHead className="text-right">{t("colValue")}</TableHead>
               </TableRow>
             </TableHeader>
@@ -209,12 +209,6 @@ export function IncompleteCheckouts({ q }: { q: WaQuery }) {
                       )}
                     </div>
                   </TableCell>
-                  <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
-                    {formatDistanceToNow(new Date(row.updatedAt), { addSuffix: true, locale: language === "bn" ? bn : undefined })}
-                  </TableCell>
-                  <TableCell className="max-w-48 truncate text-xs text-muted-foreground" title={row.address ?? undefined}>
-                    {row.address || "—"}
-                  </TableCell>
                   <TableCell className="max-w-64">
                     <div className="flex items-center gap-2" title={itemsSummary(row.items)}>
                       <div className="flex shrink-0 -space-x-2">
@@ -236,6 +230,12 @@ export function IncompleteCheckouts({ q }: { q: WaQuery }) {
                         {itemsSummary(row.items)}
                       </span>
                     </div>
+                  </TableCell>
+                  <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
+                    {formatDistanceToNow(new Date(row.updatedAt), { addSuffix: true, locale: language === "bn" ? bn : undefined })}
+                  </TableCell>
+                  <TableCell className="max-w-48 truncate text-xs text-muted-foreground" title={row.address ?? undefined}>
+                    {row.address || "—"}
                   </TableCell>
                   <TableCell className="text-right tabular-nums">{formatAmount(row.value)}</TableCell>
                 </TableRow>

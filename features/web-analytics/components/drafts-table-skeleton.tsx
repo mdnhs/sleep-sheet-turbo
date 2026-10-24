@@ -32,12 +32,12 @@ export function DraftsTableSkeleton({ rows }: { rows?: number }) {
                 ))}
               </div>
             </div>
-            <Skeleton className="h-3 flex-1 rounded-md" />
-            <Skeleton className="h-3 flex-1 rounded-md" />
             <div className="flex flex-1 items-center gap-2">
               <Skeleton className="size-6 shrink-0 rounded" />
               <Skeleton className="h-3 w-full rounded-md" />
             </div>
+            <Skeleton className="h-3 flex-1 rounded-md" />
+            <Skeleton className="h-3 flex-1 rounded-md" />
             <Skeleton className="h-4 max-w-12 flex-1 ml-auto rounded-md" />
           </div>
         ))}
