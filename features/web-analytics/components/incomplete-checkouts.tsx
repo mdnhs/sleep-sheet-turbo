@@ -156,8 +156,10 @@ export function IncompleteCheckouts({ q }: { q: WaQuery }) {
             <TableBody>
               {rows.map((row) => (
                 <TableRow key={row.id}>
-                  <TableCell>
-                    <div className="font-medium">{row.fullName || "—"}</div>
+                  <TableCell className="max-w-44">
+                    <div className="max-w-44 truncate font-medium" title={row.fullName ?? undefined}>
+                      {row.fullName || "—"}
+                    </div>
                     <a href={`tel:${row.phone}`} className="text-xs text-muted-foreground tabular-nums hover:underline">
                       {row.phone}
                     </a>
