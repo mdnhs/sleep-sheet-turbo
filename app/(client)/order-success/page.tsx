@@ -11,7 +11,7 @@ import { toast } from "sonner";
 import { useLanguage } from "@/hooks/use-language";
 import { useWebsiteSettings } from "@/hooks/use-website-settings";
 import { trackEvent } from "@/lib/traffic-tracker";
-import { trackGtmPurchase, splitFullName, hashIdentifiers } from "@/lib/gtm";
+import { trackGtmPurchase, trackGtmContact, splitFullName, hashIdentifiers } from "@/lib/gtm";
 import { getCapturedFbc } from "@/lib/meta-fbc";
 import { OrderSuccessSkeleton } from "./order-success-skeleton";
 import { useCartStore } from "@/features/cart/state/use-cart-store";
@@ -286,6 +286,7 @@ function OrderSuccessContent() {
               )}`}
               target="_blank"
               rel="noopener noreferrer"
+              onClick={() => trackGtmContact({ method: "whatsapp", label: "Order Confirmation WhatsApp Button" })}
               className="w-full mb-4"
             >
               <Button className="w-full h-12 rounded-full font-bold text-sm bg-[#25D366] text-white hover:bg-[#20bd5a] shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2">

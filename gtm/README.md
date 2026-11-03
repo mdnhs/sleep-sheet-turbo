@@ -36,10 +36,10 @@ populated.
 `All GA4 Events` matches `.*` and feeds the GA4 tag, which should keep seeing
 everything.
 
-`Meta CAPI - Allowed Events` matches only the six events the browser also
-fires as Pixel events:
+`Meta CAPI - Allowed Events` matches only the events the browser also
+fires as Pixel/ecommerce events:
 
-    ^(page_view|view_item|add_to_cart|begin_checkout|purchase|search)$
+    ^(page_view|view_item|add_to_cart|begin_checkout|purchase|search|contact|add_to_wishlist|view_item_list)$
 
 Meta needs a browser twin for each server event to deduplicate against.
 Pointing the Conversions API tag at `.*` sent GA4's enhanced-measurement

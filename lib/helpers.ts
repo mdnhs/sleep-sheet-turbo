@@ -2,6 +2,7 @@
 import { useAddWishList } from "@/features/wishlist/api/use-add-wishlist";
 import { useDeleteFromWishlist } from "@/features/wishlist/api/use-delete-from-wishlist";
 import { useWishlist } from "@/features/wishlist/api/use-wishlist";
+import { trackGtmAddToWishlist } from "@/lib/gtm";
 
 interface UseWishlistToggleProps {
   productId: string;
@@ -22,6 +23,9 @@ export const useWishlistToggle = ({ productId }: UseWishlistToggleProps) => {
       deleteFromWishlist({ productId });
     } else {
       addToWishlist({ productId });
+      trackGtmAddToWishlist({
+        items: [{ item_id: productId, item_name: "Product" }],
+      });
     }
   };
 

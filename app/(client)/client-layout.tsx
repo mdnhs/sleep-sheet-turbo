@@ -13,6 +13,7 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 import CookieConsentBanner from "@/components/cookie-consent-banner";
 import { WhenVisible } from "@/components/when-visible";
+import { trackGtmContact } from "@/lib/gtm";
 
 // Below-fold, storefront-home-only sections — kept out of the initial JS
 // bundle for every other page since they're conditionally rendered anyway.
@@ -218,6 +219,7 @@ function ClientLayout({ children }: ClientLayoutProps) {
         href={`https://wa.me/${footerPhone.replace(/\D/g, "")}`}
         target="_blank"
         rel="noopener noreferrer"
+        onClick={() => trackGtmContact({ method: "whatsapp", label: "Floating WhatsApp Button" })}
         className={cn(
           // Same diagonal gradient treatment as the Filter/Shop buttons
           // (products-sidebar.tsx, nav-bar.tsx), but built from WhatsApp's
