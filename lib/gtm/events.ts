@@ -84,3 +84,24 @@ export interface GtmViewItemPayload {
   items: GtmEcommerceItem[];
   user_data?: GtmUserData;
 }
+
+export interface GtmContactPayload {
+  method?: "whatsapp" | "phone";
+  label?: string;
+  value?: number;
+  currency?: string;
+  user_data?: GtmUserData;
+}
+
+export interface GtmAddToWishlistPayload {
+  value?: number;
+  currency?: string;
+  items: GtmEcommerceItem[];
+  user_data?: GtmUserData;
+}
+
+export interface GtmViewItemListPayload {
+  item_list_id?: string;
+  item_list_name?: string;
+  items: GtmEcommerceItem[];
+}

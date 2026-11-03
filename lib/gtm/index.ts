@@ -1,10 +1,13 @@
 import type {
   GtmAddToCartPayload,
+  GtmAddToWishlistPayload,
   GtmBeginCheckoutPayload,
+  GtmContactPayload,
   GtmEcommerceItem,
   GtmPurchasePayload,
   GtmRemoveFromCartPayload,
   GtmUserData,
+  GtmViewItemListPayload,
   GtmViewItemPayload,
 } from "./events";
 
@@ -495,5 +498,91 @@ export function trackGtmSearch(searchTerm: string): void {
     event_id: randomEventId("search"),
     search_term: term,
   });
+}
+
+/**
+ * Track Contact event (WhatsApp / Phone click) in GA4 and Meta.
+ */
+export function trackGtmContact(payload?: GtmContactPayload): void {
+  const method = payload?.method || "whatsapp";
+  const label = payload?.label || "WhatsApp Click";
+  const eventId = randomEventId("contact");
+
+  const data: Record<string, unknown> = {
+    event: "contact",
+    event_id: eventId,
+    contact_method: method,
+    contact_label: label,
+    ...(payload?.value ? { value: payload.value, currency: payload.currency || "BDT" } : {}),
+  };
+
+  const extra = payload?.user_data ? { user_data: payload.user_data } : undefined;
+  pushToDataLayer({
+    ...withIdentity(extra),
+    ...data,
+  });
+}
+
+/**
+ * Track GA4 & Meta Add To Wishlist event.
+ */
+export function trackGtmAddToWishlist(payload: GtmAddToWishlistPayload): void {
+  if (!payload || !payload.items?.length) return;
+
+  const currency =
+    (payload.currency || "BDT")
+      .trim()
+      .toUpperCase()
+      .replace(/[^A-Z]/g, "")
+      .slice(0, 3) || "BDT";
+  const rawValue = payload.value !== undefined ? Number(payload.value) : undefined;
+  const safeValue =
+    rawValue !== undefined && !isNaN(rawValue) && rawValue > 0
+      ? Number(rawValue.toFixed(2))
+      : undefined;
+
+  const ecommerceData = {
+    value: safeValue,
+    currency,
+    items: payload.items.map((item, idx) => ({
+      item_id: String(item.item_id),
+      item_name: item.item_name,
+      currency: item.currency || currency,
+      price: item.price !== undefined ? Number(item.price) : 0,
+      quantity: item.quantity !== undefined ? Number(item.quantity) : 1,
+      item_variant: item.item_variant,
+      item_category: item.item_category,
+      index: item.index ?? idx + 1,
+    })),
+  };
+
+  trackGtmEcommerce(
+    "add_to_wishlist",
+    ecommerceData,
+    payload.user_data ? { user_data: payload.user_data } : undefined,
+  );
+}
+
+/**
+ * Track GA4 View Item List (Category / Catalog page view) event.
+ */
+export function trackGtmViewItemList(payload: GtmViewItemListPayload): void {
+  if (!payload || !payload.items?.length) return;
+
+  const ecommerceData = {
+    item_list_id: payload.item_list_id,
+    item_list_name: payload.item_list_name,
+    items: payload.items.map((item, idx) => ({
+      item_id: String(item.item_id),
+      item_name: item.item_name,
+      price: item.price !== undefined ? Number(item.price) : 0,
+      quantity: item.quantity !== undefined ? Number(item.quantity) : 1,
+      item_variant: item.item_variant,
+      item_category: item.item_category,
+      index: item.index ?? idx + 1,
+    })),
+  };
+
+  trackGtmEcommerce("view_item_list", ecommerceData);
 }
 

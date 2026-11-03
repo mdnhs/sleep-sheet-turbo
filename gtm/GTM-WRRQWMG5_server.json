@@ -235,7 +235,7 @@
               {
                 "type": "TEMPLATE",
                 "key": "arg1",
-                "value": "^(page_view|view_item|add_to_cart|begin_checkout|purchase|search)$"
+                "value": "^(page_view|view_item|add_to_cart|begin_checkout|purchase|search|contact|add_to_wishlist|view_item_list)$"
               }
             ]
           }
