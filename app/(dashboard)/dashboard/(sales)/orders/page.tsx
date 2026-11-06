@@ -1926,6 +1926,16 @@ function OrdersPageContent() {
             {(permRefund || permDelete || permBlockIp || !!phone) && (
               <div className="flex items-center gap-2 pt-1" onClick={(e) => e.stopPropagation()}>
                 {!!phone && (
+                  <a
+                    href={`tel:${phone}`}
+                    className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-sky-600 hover:bg-sky-700 text-white shadow-none transition-transform active:scale-95"
+                    title="Call customer"
+                    aria-label="Call customer"
+                  >
+                    <Phone className="h-3.5 w-3.5" />
+                  </a>
+                )}
+                {!!phone && (
                   <Button
                     type="button"
                     onClick={() => setFraudCheckPhone(phone)}
