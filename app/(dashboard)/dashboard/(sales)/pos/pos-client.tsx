@@ -129,6 +129,7 @@ export default function PosClientPage() {
   ]
   const enabledMethods = paymentMethods.filter(m => m.enabled)
   const [cart, setCart] = useState<CartItem[]>([])
+  const [mobileCartOpen, setMobileCartOpen] = useState(false)
   const [customerName, setCustomerName] = useState("")
   const [customerPhone, setCustomerPhone] = useState("")
   const [customerAddress, setCustomerAddress] = useState("")
@@ -651,6 +652,7 @@ export default function PosClientPage() {
                     key={product.id}
                     product={product}
                     onAdd={addToCart}
+                    onGoToCart={() => setMobileCartOpen(true)}
                     onViewDetails={(p) => { setActiveImage(0); setDetailsProduct(p) }}
                   />
                 ))}
@@ -691,7 +693,7 @@ export default function PosClientPage() {
           <span className="text-sm font-semibold text-muted-foreground">{cart.length} item(s)</span>
           <span className="text-lg font-bold text-foreground">৳{totalAmount.toLocaleString()}</span>
         </div>
-        <Sheet>
+        <Sheet open={mobileCartOpen} onOpenChange={setMobileCartOpen}>
           <SheetTrigger
             render={
               <Button size="lg" className="px-8 shadow-sm">
@@ -853,10 +855,12 @@ export default function PosClientPage() {
 function ProductCard({
   product,
   onAdd,
+  onGoToCart,
   onViewDetails,
 }: {
   product: POSProduct
   onAdd: (product: POSProduct, variant?: { name: string; price?: number | null }, size?: string, costPrice?: number, shippingCost?: number, quantity?: number) => void
+  onGoToCart?: () => void
   onViewDetails: (product: POSProduct) => void
 }) {
   const { formatAmount } = useCurrency()
@@ -886,7 +890,7 @@ function ProductCard({
 
   const displayPrice = basePrice + addOnsTotalPerUnit
 
-  const handleAddToCart = () => {
+  const handleAddToCart = (goToCart = false) => {
     if (hasSizes && !selectedSize) { toast.error("Please select a size"); return }
     if (hasColors && !selectedColor) { toast.error("Please select a variant"); return }
     if (isDrawerOpen && costPrice !== "" && isNaN(Number(costPrice))) { toast.error("Bought price must be a number"); return }
@@ -919,6 +923,7 @@ function ProductCard({
     setShippingCost("")
     setSelectedAddOns({})
     setQuantity(1)
+    if (goToCart) onGoToCart?.()
   }
 
   const handleActionClick = (e: React.MouseEvent) => {
@@ -1167,6 +1172,16 @@ function ProductCard({
             >
               <ShoppingCart className="h-4 w-4" />
               Add to Cart — {formatAmount(displayPrice * quantity)}
+            </button>
+          </div>
+          <div className="flex gap-2 w-full lg:hidden">
+            <button
+              onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleAddToCart(true); }}
+              disabled={product.stock === 0 || (hasSizes && !selectedSize) || (hasColors && !selectedColor)}
+              className="w-full flex items-center justify-center gap-2 border-2 border-primary text-primary hover:bg-primary/10 py-3 sm:py-3.5 rounded-[14px] font-bold text-xs sm:text-sm transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <ShoppingCart className="h-4 w-4" />
+              Add &amp; Checkout
             </button>
           </div>
         </DialogContent>
