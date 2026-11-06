@@ -2623,7 +2623,7 @@ function OrdersPageContent() {
                 Sheet ({selectedOrders.length})
               </Button>
             )}
-            {statusFilter === "PENDING" &&
+            {(statusFilter === "PENDING" || statusFilter === "TODAY") &&
               selectedOrders.length > 0 && (
                 <Button
                   type="button"
