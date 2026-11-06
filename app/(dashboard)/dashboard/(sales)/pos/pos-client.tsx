@@ -27,6 +27,7 @@ import { useSettings } from "@/features/settings/api/use-settings"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 import { Badge } from "@/components/ui/badge"
+import { Carousel, CarouselContent, CarouselItem, type CarouselApi } from "@/components/ui/carousel"
 import { getOrCreatePosIdempotencyKey, clearPosIdempotencyKey } from "@/lib/pos-idempotency"
 import { getOptimizedImageUrl, cn } from "@/lib/utils"
 import { toEnglishDigits } from "@/features/fraud-checker/phone";
@@ -416,6 +417,64 @@ export default function PosClientPage() {
     setReference(defaultFbPage || "")
   }
 
+  const renderCartItem = (item: CartItem, index: number) => (
+            <div className="flex gap-3 p-3 rounded-xl bg-muted/50 border">
+              <div className="h-16 w-16 rounded-lg overflow-hidden bg-muted shrink-0">
+                {item.image ? (
+                  <img src={item.image} alt={item.name} className="h-full w-full object-cover" />
+                ) : (
+                  <div className="h-full w-full flex items-center justify-center text-muted-foreground text-xs">
+                    No img
+                  </div>
+                )}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium truncate">{item.name}</p>
+                {item.color && <p className="text-xs text-muted-foreground">Color: {item.color}</p>}
+                {item.size && <p className="text-xs text-muted-foreground">Size: {item.size}</p>}
+                <p className="text-sm font-semibold mt-1">৳{item.price.toLocaleString()}</p>
+                <div className="mt-2 flex items-center gap-1.5">
+                  <span className="text-[10px] font-semibold text-muted-foreground uppercase shrink-0">Ship Cost:</span>
+                  <Input
+                    type="number"
+                    min="0"
+                    placeholder="0"
+                    value={item.shippingCost || ""}
+                    onChange={(e) => {
+                      const val = parseFloat(e.target.value) || 0
+                      updateShippingCost(index, val)
+                    }}
+                    className="h-6 w-20 px-2 text-xs rounded-md shadow-none"
+                  />
+                </div>
+              </div>
+              <div className="flex flex-col items-end justify-between">
+                <button
+                  onClick={() => removeFromCart(index)}
+                  className="text-muted-foreground hover:text-destructive transition-colors"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => updateQuantity(index, -1)}
+                    className="h-7 w-7 rounded-full border flex items-center justify-center hover:bg-muted transition-colors"
+                  >
+                    <Minus className="h-3 w-3" />
+                  </button>
+                  <span className="w-8 text-center text-sm font-medium">{item.quantity}</span>
+                  <button
+                    onClick={() => updateQuantity(index, 1)}
+                    className="h-7 w-7 rounded-full border flex items-center justify-center hover:bg-muted transition-colors"
+                    disabled={item.quantity >= item.stock}
+                  >
+                    <Plus className="h-3 w-3" />
+                  </button>
+                </div>
+              </div>
+            </div>
+  )
+
   // scrollTogether: the mobile sheet scrolls items and the customer form as one
   // page, so every item stays fully visible instead of being squeezed into a
   // small box above a tall form. Desktop keeps the items list scrolling alone.
@@ -442,67 +501,17 @@ export default function PosClientPage() {
             <p className="text-xs">Select products to start a sale</p>
           </div>
         ) : (
-          cart.map((item, index) => (
-            <div key={`${item.productId}-${item.color}-${item.size}`} className="flex items-center gap-2.5 p-2 rounded-xl bg-muted/50 border">
-              <div className="h-12 w-12 rounded-lg overflow-hidden bg-muted shrink-0">
-                {item.image ? (
-                  <img src={item.image} alt={item.name} className="h-full w-full object-cover" />
-                ) : (
-                  <div className="h-full w-full flex items-center justify-center text-muted-foreground text-[10px]">
-                    No img
-                  </div>
-                )}
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium truncate">{item.name}</p>
-                {(item.color || item.size) && (
-                  <p className="text-[11px] text-muted-foreground truncate">
-                    {[item.color, item.size && `Size: ${item.size}`].filter(Boolean).join(" · ")}
-                  </p>
-                )}
-                <div className="mt-0.5 flex items-center gap-2">
-                  <span className="text-sm font-semibold">৳{item.price.toLocaleString()}</span>
-                  <span className="text-[10px] font-semibold text-muted-foreground uppercase shrink-0">Ship</span>
-                  <Input
-                    type="number"
-                    min="0"
-                    placeholder="0"
-                    value={item.shippingCost || ""}
-                    onChange={(e) => {
-                      const val = parseFloat(e.target.value) || 0
-                      updateShippingCost(index, val)
-                    }}
-                    className="h-6 w-16 px-2 text-xs rounded-md shadow-none"
-                  />
-                </div>
-              </div>
-              <div className="flex flex-col items-end gap-1 shrink-0">
-                <button
-                  onClick={() => removeFromCart(index)}
-                  className="text-muted-foreground hover:text-destructive transition-colors"
-                  aria-label="Remove item"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
-                <div className="flex items-center gap-1">
-                  <button
-                    onClick={() => updateQuantity(index, -1)}
-                    className="h-6 w-6 rounded-full border flex items-center justify-center hover:bg-muted transition-colors"
-                  >
-                    <Minus className="h-3 w-3" />
-                  </button>
-                  <span className="w-6 text-center text-sm font-medium">{item.quantity}</span>
-                  <button
-                    onClick={() => updateQuantity(index, 1)}
-                    className="h-6 w-6 rounded-full border flex items-center justify-center hover:bg-muted transition-colors"
-                    disabled={item.quantity >= item.stock}
-                  >
-                    <Plus className="h-3 w-3" />
-                  </button>
-                </div>
-              </div>
-            </div>
-          ))
+          scrollTogether ? (
+            <CartItemsCarousel>
+              {cart.map((item, index) => (
+                <div key={`${item.productId}-${item.color}-${item.size}`}>{renderCartItem(item, index)}</div>
+              ))}
+            </CartItemsCarousel>
+          ) : (
+            cart.map((item, index) => (
+              <div key={`${item.productId}-${item.color}-${item.size}`}>{renderCartItem(item, index)}</div>
+            ))
+          )
         )}
       </div>
 
@@ -1033,6 +1042,63 @@ async function shrinkImage(file: File): Promise<string> {
   ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height)
   bitmap.close()
   return canvas.toDataURL("image/jpeg", 0.8)
+}
+
+// Mobile cart: one item at a time, swipe sideways, so the customer form stays on
+// screen however many products were added.
+function CartItemsCarousel({ children }: { children: React.ReactNode[] }) {
+  const [api, setApi] = useState<CarouselApi>()
+  const [selected, setSelected] = useState(0)
+  const count = children.length
+
+  useEffect(() => {
+    if (!api) return
+    const onSelect = () => setSelected(api.selectedScrollSnap())
+    onSelect()
+    api.on("select", onSelect)
+    api.on("reInit", onSelect)
+    return () => {
+      api.off("select", onSelect)
+      api.off("reInit", onSelect)
+    }
+  }, [api])
+
+  // A newly added product is the one the operator just picked: show it.
+  const [prevCount, setPrevCount] = useState(count)
+  useEffect(() => {
+    if (!api) return
+    if (count > prevCount) api.scrollTo(count - 1)
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- remembers the previous length to tell an add from a remove.
+    setPrevCount(count)
+  }, [api, count, prevCount])
+
+  return (
+    <div className="space-y-2">
+      <Carousel setApi={setApi} opts={{ align: "start" }}>
+        <CarouselContent>
+          {children.map((child, index) => (
+            <CarouselItem key={index}>{child}</CarouselItem>
+          ))}
+        </CarouselContent>
+      </Carousel>
+      {count > 1 && (
+        <div className="flex items-center justify-center gap-2">
+          <span className="text-xs font-medium text-muted-foreground">{Math.min(selected + 1, count)} / {count}</span>
+          <div className="flex gap-1">
+            {children.map((_, index) => (
+              <button
+                key={index}
+                type="button"
+                aria-label={`Item ${index + 1}`}
+                onClick={() => api?.scrollTo(index)}
+                className={cn("h-1.5 rounded-full transition-all", index === selected ? "w-4 bg-primary" : "w-1.5 bg-muted-foreground/30")}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  )
 }
 
 function ProductCard({
