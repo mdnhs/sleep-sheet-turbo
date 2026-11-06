@@ -443,23 +443,26 @@ export default function PosClientPage() {
           </div>
         ) : (
           cart.map((item, index) => (
-            <div key={`${item.productId}-${item.color}-${item.size}`} className="flex gap-3 p-3 rounded-xl bg-muted/50 border">
-              <div className="h-16 w-16 rounded-lg overflow-hidden bg-muted shrink-0">
+            <div key={`${item.productId}-${item.color}-${item.size}`} className="flex items-center gap-2.5 p-2 rounded-xl bg-muted/50 border">
+              <div className="h-12 w-12 rounded-lg overflow-hidden bg-muted shrink-0">
                 {item.image ? (
                   <img src={item.image} alt={item.name} className="h-full w-full object-cover" />
                 ) : (
-                  <div className="h-full w-full flex items-center justify-center text-muted-foreground text-xs">
+                  <div className="h-full w-full flex items-center justify-center text-muted-foreground text-[10px]">
                     No img
                   </div>
                 )}
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium truncate">{item.name}</p>
-                {item.color && <p className="text-xs text-muted-foreground">Color: {item.color}</p>}
-                {item.size && <p className="text-xs text-muted-foreground">Size: {item.size}</p>}
-                <p className="text-sm font-semibold mt-1">৳{item.price.toLocaleString()}</p>
-                <div className="mt-2 flex items-center gap-1.5">
-                  <span className="text-[10px] font-semibold text-muted-foreground uppercase shrink-0">Ship Cost:</span>
+                {(item.color || item.size) && (
+                  <p className="text-[11px] text-muted-foreground truncate">
+                    {[item.color, item.size && `Size: ${item.size}`].filter(Boolean).join(" · ")}
+                  </p>
+                )}
+                <div className="mt-0.5 flex items-center gap-2">
+                  <span className="text-sm font-semibold">৳{item.price.toLocaleString()}</span>
+                  <span className="text-[10px] font-semibold text-muted-foreground uppercase shrink-0">Ship</span>
                   <Input
                     type="number"
                     min="0"
@@ -469,28 +472,29 @@ export default function PosClientPage() {
                       const val = parseFloat(e.target.value) || 0
                       updateShippingCost(index, val)
                     }}
-                    className="h-6 w-20 px-2 text-xs rounded-md shadow-none"
+                    className="h-6 w-16 px-2 text-xs rounded-md shadow-none"
                   />
                 </div>
               </div>
-              <div className="flex flex-col items-end justify-between">
+              <div className="flex flex-col items-end gap-1 shrink-0">
                 <button
                   onClick={() => removeFromCart(index)}
                   className="text-muted-foreground hover:text-destructive transition-colors"
+                  aria-label="Remove item"
                 >
                   <Trash2 className="h-4 w-4" />
                 </button>
                 <div className="flex items-center gap-1">
                   <button
                     onClick={() => updateQuantity(index, -1)}
-                    className="h-7 w-7 rounded-full border flex items-center justify-center hover:bg-muted transition-colors"
+                    className="h-6 w-6 rounded-full border flex items-center justify-center hover:bg-muted transition-colors"
                   >
                     <Minus className="h-3 w-3" />
                   </button>
-                  <span className="w-8 text-center text-sm font-medium">{item.quantity}</span>
+                  <span className="w-6 text-center text-sm font-medium">{item.quantity}</span>
                   <button
                     onClick={() => updateQuantity(index, 1)}
-                    className="h-7 w-7 rounded-full border flex items-center justify-center hover:bg-muted transition-colors"
+                    className="h-6 w-6 rounded-full border flex items-center justify-center hover:bg-muted transition-colors"
                     disabled={item.quantity >= item.stock}
                   >
                     <Plus className="h-3 w-3" />
