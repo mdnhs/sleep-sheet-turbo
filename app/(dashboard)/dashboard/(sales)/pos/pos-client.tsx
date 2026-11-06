@@ -6,7 +6,7 @@ import { useEffect, useState, useCallback, useMemo } from "react"
 import { useGetInfiniteProducts } from "@/features/product/api/use-get-products"
 import { useInView } from "react-intersection-observer"
 import { useQueryState } from "nuqs"
-import { Search, Plus, Minus, Trash2, CreditCard, Banknote, Receipt, X, Package, Loader2, ChevronLeft, ChevronRight, ListFilter, ShoppingCart, ChevronUp, ArrowUpCircle, Tag, Star, Copy, Check } from "lucide-react"
+import { Search, Plus, Minus, Trash2, CreditCard, Banknote, Receipt, X, Package, Loader2, ChevronLeft, ChevronRight, ListFilter, ShoppingCart, ChevronUp, ArrowUpCircle, ImagePlus, Tag, Star, Copy, Check } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import {
@@ -141,7 +141,14 @@ export default function PosClientPage() {
   const setPaymentMethod = (v: string) => { setPaymentMethod_(v) }
   const [isCheckingOut, setIsCheckingOut] = useState(false)
   const [checkoutSuccess, setCheckoutSuccess] = useState(false)
+  const [screenshot, setScreenshot] = useState<string | null>(null)
+  const [isReading, setIsReading] = useState(false)
   const [lastOrder, setLastOrder] = useState<{ id: string; orderNumber: string; totalAmount: number } | null>(null)
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- localStorage is only readable on the client, after hydration.
+    setScreenshot(readStoredScreenshot())
+  }, [])
 
   useEffect(() => {
     if (defaultFbPage && !reference) {
@@ -275,6 +282,45 @@ export default function PosClientPage() {
   const totalShipping = cart.reduce((acc, i) => acc + (i.shippingCost || 0) * i.quantity, 0)
   const totalAmount = subtotal + totalShipping
 
+  const removeScreenshot = () => {
+    clearStoredScreenshot()
+    setScreenshot(null)
+  }
+
+  const handleScreenshotFile = async (file: File) => {
+    if (!file.type.startsWith("image/")) {
+      toast.error("শুধু ছবি আপলোড করুন")
+      return
+    }
+    setIsReading(true)
+    try {
+      const dataUrl = await shrinkImage(file)
+      storeScreenshot(dataUrl)
+      setScreenshot(dataUrl)
+
+      const res = await fetch("/api/pos/extract-customer", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ image: dataUrl.split(",")[1], mimeType: "image/jpeg" }),
+      })
+      const json = await res.json().catch(() => null)
+      if (!res.ok || !json?.customer) {
+        toast.error(json?.error || "ছবি থেকে তথ্য নেওয়া যায়নি")
+        return
+      }
+      const { name, phone, address } = json.customer as { name: string; phone: string; address: string }
+      if (name) setCustomerName(name)
+      if (phone) setCustomerPhone(toEnglishDigits(phone))
+      if (address) setCustomerAddress(address)
+      if (name || phone || address) toast.success("ছবি থেকে তথ্য বসানো হয়েছে, একবার দেখে নিন")
+      else toast.error("ছবিতে নাম, ফোন বা ঠিকানা পাওয়া যায়নি")
+    } catch {
+      toast.error("ছবি থেকে তথ্য নেওয়া যায়নি")
+    } finally {
+      setIsReading(false)
+    }
+  }
+
   const handleCheckout = async () => {
     if (!customerName.trim()) {
       toast.error("Customer name is required")
@@ -327,6 +373,7 @@ export default function PosClientPage() {
       setLastOrder(json.order)
       setCheckoutSuccess(true)
       setCart([])
+      removeScreenshot()
       setMobileCartOpen(false)
       setCustomerName("")
       setCustomerPhone("")
@@ -342,6 +389,7 @@ export default function PosClientPage() {
   }
 
   const newSale = () => {
+    removeScreenshot()
     setCheckoutSuccess(false)
     setLastOrder(null)
     setReference(defaultFbPage || "")
@@ -434,6 +482,43 @@ export default function PosClientPage() {
       {cart.length > 0 && (
         <div className="border-t p-4 space-y-3 shrink-0 bg-background">
           <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <label
+                className={cn(
+                  "flex h-9 flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-input text-xs font-medium text-muted-foreground transition-colors hover:bg-muted/50",
+                  isReading && "pointer-events-none opacity-70"
+                )}
+                title="স্ক্রিনশট থেকে নাম, ফোন ও ঠিকানা পূরণ করুন"
+              >
+                {isReading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ImagePlus className="h-4 w-4" />}
+                {isReading ? "পড়া হচ্ছে..." : "স্ক্রিনশট থেকে পূরণ করুন"}
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  disabled={isReading}
+                  onChange={(e) => {
+                    const file = e.target.files?.[0]
+                    e.target.value = ""
+                    if (file) void handleScreenshotFile(file)
+                  }}
+                />
+              </label>
+              {screenshot && (
+                <div className="relative h-9 w-9 shrink-0">
+                  {/* eslint-disable-next-line @next/next/no-img-element -- a local data: URL; next/image can't optimise it. */}
+                  <img src={screenshot} alt="Customer screenshot" className="h-9 w-9 rounded-lg border object-cover" />
+                  <button
+                    type="button"
+                    onClick={removeScreenshot}
+                    className="absolute -right-1.5 -top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-foreground text-background"
+                    aria-label="Remove screenshot"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              )}
+            </div>
             <Input
               placeholder="Customer name *" className="capitalize"
               value={customerName}
@@ -853,6 +938,35 @@ export default function PosClientPage() {
       </Dialog>
     </div>
   )
+}
+
+// The screenshot lives in localStorage only until the sale is placed (or the
+// user removes it); it is never uploaded anywhere except to Gemini for reading.
+const POS_SCREENSHOT_KEY = "pos-customer-screenshot"
+
+function readStoredScreenshot(): string | null {
+  try { return localStorage.getItem(POS_SCREENSHOT_KEY) } catch { return null }
+}
+function storeScreenshot(dataUrl: string) {
+  try { localStorage.setItem(POS_SCREENSHOT_KEY, dataUrl) } catch { /* quota or private mode: the preview still works for this visit */ }
+}
+function clearStoredScreenshot() {
+  try { localStorage.removeItem(POS_SCREENSHOT_KEY) } catch { /* nothing to clear */ }
+}
+
+// Shrinks a screenshot to at most 1280px and re-encodes it as JPEG, so it fits
+// in localStorage and uploads quickly. Text stays readable at this size.
+async function shrinkImage(file: File): Promise<string> {
+  const bitmap = await createImageBitmap(file)
+  const scale = Math.min(1, 1280 / Math.max(bitmap.width, bitmap.height))
+  const canvas = document.createElement("canvas")
+  canvas.width = Math.round(bitmap.width * scale)
+  canvas.height = Math.round(bitmap.height * scale)
+  const ctx = canvas.getContext("2d")
+  if (!ctx) throw new Error("canvas unavailable")
+  ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height)
+  bitmap.close()
+  return canvas.toDataURL("image/jpeg", 0.8)
 }
 
 function ProductCard({

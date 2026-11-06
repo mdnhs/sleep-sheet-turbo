@@ -2,6 +2,7 @@
 
 import { PosFacebookPages } from "@/features/settings/components/pos-facebook-pages";
 import { PosPaymentMethods } from "@/features/settings/components/pos-payment-methods";
+import { GeminiForm } from "@/features/settings/components/gemini-form";
 import { Store, Share2 } from "lucide-react";
 import { PageTitle } from "@/components/dashboard-page-title";
 
@@ -38,6 +39,9 @@ export function PosSettingsClient() {
           </div>
           <PosPaymentMethods />
         </div>
+
+        {/* Gemini AI (screenshot -> customer details) */}
+        <GeminiForm />
       </div>
     </div>
   );
