@@ -482,48 +482,49 @@ export default function PosClientPage() {
       {cart.length > 0 && (
         <div className="border-t p-4 space-y-3 shrink-0 bg-background">
           <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <label
-                className={cn(
-                  "flex h-9 flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-input text-xs font-medium text-muted-foreground transition-colors hover:bg-muted/50",
-                  isReading && "pointer-events-none opacity-70"
+            <div className="relative">
+              <Input
+                placeholder="Customer name *" className={cn("capitalize", screenshot ? "pr-20" : "pr-11")}
+                value={customerName}
+                onChange={(e) => setCustomerName(e.target.value)}
+              />
+              <div className="absolute right-1.5 top-1/2 flex -translate-y-1/2 items-center gap-1.5">
+                {screenshot && (
+                  <div className="relative h-7 w-7 shrink-0">
+                    {/* eslint-disable-next-line @next/next/no-img-element -- a local data: URL; next/image can't optimise it. */}
+                    <img src={screenshot} alt="Customer screenshot" className="h-7 w-7 rounded-md border object-cover" />
+                    <button
+                      type="button"
+                      onClick={removeScreenshot}
+                      className="absolute -right-1.5 -top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-foreground text-background"
+                      aria-label="Remove screenshot"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
                 )}
-                title="স্ক্রিনশট থেকে নাম, ফোন ও ঠিকানা পূরণ করুন"
-              >
-                {isReading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ImagePlus className="h-4 w-4" />}
-                {isReading ? "পড়া হচ্ছে..." : "স্ক্রিনশট থেকে পূরণ করুন"}
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  disabled={isReading}
-                  onChange={(e) => {
-                    const file = e.target.files?.[0]
-                    e.target.value = ""
-                    if (file) void handleScreenshotFile(file)
-                  }}
-                />
-              </label>
-              {screenshot && (
-                <div className="relative h-9 w-9 shrink-0">
-                  {/* eslint-disable-next-line @next/next/no-img-element -- a local data: URL; next/image can't optimise it. */}
-                  <img src={screenshot} alt="Customer screenshot" className="h-9 w-9 rounded-lg border object-cover" />
-                  <button
-                    type="button"
-                    onClick={removeScreenshot}
-                    className="absolute -right-1.5 -top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-foreground text-background"
-                    aria-label="Remove screenshot"
-                  >
-                    <X className="h-3 w-3" />
-                  </button>
-                </div>
-              )}
+                <label
+                  className={cn(
+                    "flex h-7 w-7 cursor-pointer items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground",
+                    isReading && "pointer-events-none opacity-70"
+                  )}
+                  title="স্ক্রিনশট থেকে নাম, ফোন ও ঠিকানা পূরণ করুন"
+                >
+                  {isReading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ImagePlus className="h-4 w-4" />}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    disabled={isReading}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0]
+                      e.target.value = ""
+                      if (file) void handleScreenshotFile(file)
+                    }}
+                  />
+                </label>
+              </div>
             </div>
-            <Input
-              placeholder="Customer name *" className="capitalize"
-              value={customerName}
-              onChange={(e) => setCustomerName(e.target.value)}
-            />
             <Input
               placeholder="Phone (optional)"
               value={customerPhone}
