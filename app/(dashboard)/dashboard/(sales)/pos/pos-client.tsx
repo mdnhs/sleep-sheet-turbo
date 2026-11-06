@@ -21,6 +21,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { PosProductGridSkeleton } from "./pos-skeleton"
 import { toast } from "sonner"
 import { useRouter } from "next/navigation"
+import { useQueryClient } from "@tanstack/react-query"
 import { useCurrency } from "@/hooks/use-currency"
 import { useSettings } from "@/features/settings/api/use-settings"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
@@ -70,6 +71,7 @@ interface Category {
 
 export default function PosClientPage() {
   const router = useRouter()
+  const queryClient = useQueryClient()
   const { formatAmount } = useCurrency()
   const { data: settings } = useSettings()
   const [categories, setCategories] = useState<Category[]>([])
@@ -384,6 +386,9 @@ export default function PosClientPage() {
       // Sale is placed — retire this key so the next sale starts a fresh
       // idempotency window.
       clearPosIdempotencyKey()
+      // The Orders page reads from the react-query cache, which this raw fetch
+      // bypasses: without this, "View Orders" shows the list from before the sale.
+      void queryClient.invalidateQueries({ queryKey: ["orders"] })
       setLastOrder(json.order)
       setCheckoutSuccess(true)
       setCart([])
