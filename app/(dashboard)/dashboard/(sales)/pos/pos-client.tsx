@@ -1171,17 +1171,15 @@ function ProductCard({
               className="w-full flex items-center justify-center gap-2 bg-primary text-primary-foreground hover:bg-primary/90 py-3 sm:py-3.5 rounded-[14px] font-bold text-xs sm:text-sm transition-all shadow-md active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <ShoppingCart className="h-4 w-4" />
-              Add to Cart — {formatAmount(displayPrice * quantity)}
+              Add — {formatAmount(displayPrice * quantity)}
             </button>
-          </div>
-          <div className="flex gap-2 w-full lg:hidden">
             <button
               onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleAddToCart(true); }}
               disabled={product.stock === 0 || (hasSizes && !selectedSize) || (hasColors && !selectedColor)}
-              className="w-full flex items-center justify-center gap-2 border-2 border-primary text-primary hover:bg-primary/10 py-3 sm:py-3.5 rounded-[14px] font-bold text-xs sm:text-sm transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full lg:hidden flex items-center justify-center gap-2 border-2 border-primary text-primary hover:bg-primary/10 py-3 sm:py-3.5 rounded-[14px] font-bold text-xs sm:text-sm transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <ShoppingCart className="h-4 w-4" />
-              Add &amp; Checkout
+              Checkout
             </button>
           </div>
         </DialogContent>
