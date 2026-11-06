@@ -761,7 +761,7 @@ export default function PosClientPage() {
               </Button>
             }
           />
-          <SheetContent side="bottom" className="h-[90vh] p-0 flex flex-col rounded-t-xl overflow-hidden">
+          <SheetContent side="bottom" initialFocus={false} className="h-[90vh] p-0 flex flex-col rounded-t-xl overflow-hidden">
             <SheetHeader className="sr-only">
               <SheetTitle>Shopping Cart</SheetTitle>
             </SheetHeader>
