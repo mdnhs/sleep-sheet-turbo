@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { toEnglishDigits } from "@/features/fraud-checker/phone";
 import { Package, Search, Calendar, Phone, Download, ChevronLeft, ChevronRight } from "lucide-react";
 import { useCurrency } from "@/hooks/use-currency";
 import { useSearchParams, useRouter } from "next/navigation";
@@ -214,7 +215,7 @@ function TrackOrderContent({ initialOrders, initialPhone }: TrackOrderContentPro
                 type="tel"
                 placeholder={t("phonePlaceholder")}
                 value={phone}
-                onChange={(e) => setPhone(e.target.value)}
+                onChange={(e) => setPhone(toEnglishDigits(e.target.value))}
                 className="h-14 bg-background/50 backdrop-blur-sm border-border/50 rounded-2xl px-5 pl-12 text-base focus-visible:ring-2 focus-visible:ring-primary/50 shadow-inner"
                 required
               />

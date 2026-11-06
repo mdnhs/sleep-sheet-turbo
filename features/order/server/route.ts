@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import { toEnglishDigits } from "@/features/fraud-checker/phone";
 import { batch, db } from "@/db";
 import { orders, orderItems, payments, paymentLogs, orderTimelineEvents, users, products, blockedIps } from "@/db/schema";
 import { eq, ne, and, or, not, ilike, inArray, desc, gte, lte, sql, count } from "drizzle-orm";
@@ -228,7 +229,7 @@ const app = new Hono()
   shippingCost: z.number().min(0).optional(),
   totalAmount: z.number().min(0).optional(),
   guestName: z.string().optional(),
-  guestPhone: z.string().optional(),
+  guestPhone: z.string().transform(toEnglishDigits).optional(),
   shippingAddress: z.string().optional(),
   reference: z.string().nullable().optional(),
   items: z.array(z.object({

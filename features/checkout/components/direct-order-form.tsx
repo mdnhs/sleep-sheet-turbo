@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { useCartStore } from "@/features/cart/state/use-cart-store";
 import { useCurrent } from "@/features/auth/api/use-current";
 import { UseCheckout } from "@/features/checkout/api/use-checkout";
-import { isValidBdMobile11, normalizeBdPhone } from "@/features/fraud-checker/phone";
+import { isValidBdMobile11, normalizeBdPhone, toEnglishDigits } from "@/features/fraud-checker/phone";
 import { useCurrency } from "@/hooks/use-currency";
 import { useWebsiteSettings } from "@/hooks/use-website-settings";
 import { triggerHaptic } from "@/lib/haptics";
@@ -353,7 +353,7 @@ export function DirectOrderForm({
             inputMode="tel"
             placeholder="01XXXXXXXXX"
             value={phone}
-            onChange={(e) => setPhone(e.target.value)}
+            onChange={(e) => setPhone(toEnglishDigits(e.target.value))}
             onBlur={() => setTouched((p) => ({ ...p, phone: true }))}
             className={`h-11 rounded-xl bg-white dark:bg-slate-900 text-sm ${
               touched.phone && !isPhoneValid

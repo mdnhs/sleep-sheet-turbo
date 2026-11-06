@@ -84,6 +84,7 @@ import {
   useSyncBatchOrderStatus,
   useTrackSingleOrder,
 } from "@/features/steadfast/api/use-steadfast";
+import { toEnglishDigits } from "@/features/fraud-checker/phone";
 import { FraudCheckDialog } from "@/features/fraud-checker/components/fraud-check-dialog";
 import { BookCourierDialog } from "@/features/steadfast/components/book-courier-dialog";
 import { BulkBookCourierDialog } from "@/features/steadfast/components/bulk-book-courier-dialog";
@@ -3936,7 +3937,7 @@ function OrdersPageContent() {
                     </label>
                     <Input
                       value={editGuestPhone}
-                      onChange={(e) => setEditGuestPhone(e.target.value)}
+                      onChange={(e) => setEditGuestPhone(toEnglishDigits(e.target.value))}
                       placeholder="017xxxxxxxx"
                       className="h-9 text-xs bg-background"
                     />

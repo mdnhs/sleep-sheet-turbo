@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import { toEnglishDigits } from "@/features/fraud-checker/phone";
 import { zValidator } from "@hono/zod-validator";
 import { LoginSchema, RegisterSchema } from "../schema";
 import { deleteCookie, setCookie } from "hono/cookie";
@@ -182,7 +183,7 @@ const app = new Hono()
     "json",
     z.object({
       name: z.string().min(1).optional(),
-      phone: z.string().optional(),
+      phone: z.string().transform(toEnglishDigits).optional(),
       address: z.string().optional(),
       currentPassword: z.string().optional(),
       newPassword: z.string().min(6).optional(),

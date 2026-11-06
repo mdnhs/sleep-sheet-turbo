@@ -28,6 +28,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/co
 import { Badge } from "@/components/ui/badge"
 import { getOrCreatePosIdempotencyKey, clearPosIdempotencyKey } from "@/lib/pos-idempotency"
 import { getOptimizedImageUrl, cn } from "@/lib/utils"
+import { toEnglishDigits } from "@/features/fraud-checker/phone";
 import { sanitizeRichText } from "@/lib/sanitize"
 
 interface POSProduct {
@@ -441,7 +442,7 @@ export default function PosClientPage() {
             <Input
               placeholder="Phone (optional)"
               value={customerPhone}
-              onChange={(e) => setCustomerPhone(e.target.value)}
+              onChange={(e) => setCustomerPhone(toEnglishDigits(e.target.value))}
               type="tel"
             />
             <Input

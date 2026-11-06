@@ -1,4 +1,5 @@
 import { Hono } from 'hono';
+import { toEnglishDigits } from "@/features/fraud-checker/phone";
 import { db } from '@/db';
 import { orders, orderItems, payments, products, users } from '@/db/schema';
 import { eq, inArray } from 'drizzle-orm';
@@ -21,7 +22,7 @@ const app = new Hono()
 
 .post('/', sessionMiddleware, zValidator('json', z.object({
   customerName: z.string().min(1, 'Customer name is required'),
-  customerPhone: z.string().optional(),
+  customerPhone: z.string().transform(toEnglishDigits).optional(),
   customerAddress: z.string().optional(),
   reference: z.string().optional(),
   note: z.string().optional(),

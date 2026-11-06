@@ -34,7 +34,7 @@ import { UseCheckout } from "../api/use-checkout";
 import { useLanguage } from "@/hooks/use-language";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import { normalizeBdPhone } from "@/features/fraud-checker/phone";
+import { normalizeBdPhone, toEnglishDigits } from "@/features/fraud-checker/phone";
 import { primeGtmIdentity } from "@/lib/gtm";
 import { triggerHaptic } from "@/lib/haptics";
 import { useCheckoutDraft } from "@/features/web-analytics/lib/checkout-draft";
@@ -271,6 +271,7 @@ function ShippingInformationCard({ initialSettings }: ShippingInformationCardPro
                           placeholder={`${t("phoneLabel")} *`}
                           className="h-10 rounded-xl border border-border/40 bg-slate-100 dark:border-slate-600 dark:bg-slate-800 dark:shadow-md dark:shadow-black/40 pt-1 pb-0 pr-3 pl-10 text-sm shadow-inner placeholder:text-muted-foreground/50 focus-visible:bg-white dark:focus-visible:bg-slate-700 dark:focus-visible:border-slate-400 focus-visible:ring-2 focus-visible:ring-primary/20"
                           {...field}
+                          onChange={(e) => field.onChange(toEnglishDigits(e.target.value))}
                           onBlur={(e) => {
                             field.onBlur();
                             const val = e.target.value?.trim();
