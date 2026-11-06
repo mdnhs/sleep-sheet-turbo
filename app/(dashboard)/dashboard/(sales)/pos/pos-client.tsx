@@ -141,14 +141,11 @@ export default function PosClientPage() {
   const setPaymentMethod = (v: string) => { setPaymentMethod_(v) }
   const [isCheckingOut, setIsCheckingOut] = useState(false)
   const [checkoutSuccess, setCheckoutSuccess] = useState(false)
-  const [screenshot, setScreenshot] = useState<string | null>(null)
   const [isReading, setIsReading] = useState(false)
+  // One bar for the whole job: 0-40% uploading, 40-95% Gemini reading, 100% done.
+  const [readProgress, setReadProgress] = useState(0)
+  const [readStage, setReadStage] = useState<"upload" | "gemini">("upload")
   const [lastOrder, setLastOrder] = useState<{ id: string; orderNumber: string; totalAmount: number } | null>(null)
-
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- localStorage is only readable on the client, after hydration.
-    setScreenshot(readStoredScreenshot())
-  }, [])
 
   useEffect(() => {
     if (defaultFbPage && !reference) {
@@ -282,33 +279,37 @@ export default function PosClientPage() {
   const totalShipping = cart.reduce((acc, i) => acc + (i.shippingCost || 0) * i.quantity, 0)
   const totalAmount = subtotal + totalShipping
 
-  const removeScreenshot = () => {
-    clearStoredScreenshot()
-    setScreenshot(null)
-  }
-
   const handleScreenshotFile = async (file: File) => {
     if (!file.type.startsWith("image/")) {
       toast.error("শুধু ছবি আপলোড করুন")
       return
     }
     setIsReading(true)
+    setReadStage("upload")
+    setReadProgress(2)
+    let ticker: ReturnType<typeof setInterval> | undefined
     try {
       const dataUrl = await shrinkImage(file)
       storeScreenshot(dataUrl)
-      setScreenshot(dataUrl)
 
-      const res = await fetch("/api/pos/extract-customer", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ image: dataUrl.split(",")[1], mimeType: "image/jpeg" }),
-      })
-      const json = await res.json().catch(() => null)
-      if (!res.ok || !json?.customer) {
-        toast.error(json?.error || "ছবি থেকে তথ্য নেওয়া যায়নি")
+      const res = await postExtractCustomer(
+        JSON.stringify({ image: dataUrl.split(",")[1], mimeType: "image/jpeg" }),
+        (fraction) => {
+          setReadProgress((p) => Math.max(p, 2 + fraction * 38))
+          // The request body is fully sent: from here we're waiting on Gemini,
+          // whose duration is unknown, so creep towards 95% instead of jumping.
+          if (fraction >= 1) {
+            setReadStage("gemini")
+            ticker ??= setInterval(() => setReadProgress((p) => p + Math.max(0.3, (95 - p) * 0.06)), 300)
+          }
+        },
+      )
+      if (!res.ok || !res.json?.customer) {
+        toast.error(res.json?.error || "ছবি থেকে তথ্য নেওয়া যায়নি")
         return
       }
-      const { name, phone, address } = json.customer as { name: string; phone: string; address: string }
+      setReadProgress(100)
+      const { name, phone, address } = res.json.customer
       if (name) setCustomerName(name)
       if (phone) setCustomerPhone(toEnglishDigits(phone))
       if (address) setCustomerAddress(address)
@@ -317,6 +318,7 @@ export default function PosClientPage() {
     } catch {
       toast.error("ছবি থেকে তথ্য নেওয়া যায়নি")
     } finally {
+      if (ticker) clearInterval(ticker)
       setIsReading(false)
     }
   }
@@ -373,7 +375,7 @@ export default function PosClientPage() {
       setLastOrder(json.order)
       setCheckoutSuccess(true)
       setCart([])
-      removeScreenshot()
+      clearStoredScreenshot()
       setMobileCartOpen(false)
       setCustomerName("")
       setCustomerPhone("")
@@ -389,7 +391,7 @@ export default function PosClientPage() {
   }
 
   const newSale = () => {
-    removeScreenshot()
+    clearStoredScreenshot()
     setCheckoutSuccess(false)
     setLastOrder(null)
     setReference(defaultFbPage || "")
@@ -482,21 +484,16 @@ export default function PosClientPage() {
       {cart.length > 0 && (
         <div className="border-t p-4 space-y-3 shrink-0 bg-background">
           <div className="space-y-2">
-            <div
-              className={cn(
-                "flex h-10 items-center gap-2 rounded-xl border border-input bg-transparent px-3 text-sm shadow-sm",
-                isReading && "opacity-70"
-              )}
-            >
+            <div className="space-y-1.5">
               <label
                 className={cn(
-                  "flex min-w-0 flex-1 cursor-pointer items-center gap-2 text-muted-foreground transition-colors hover:text-foreground",
+                  "flex h-10 cursor-pointer items-center gap-2 rounded-xl border border-input bg-transparent px-3 text-sm text-muted-foreground shadow-sm transition-colors hover:text-foreground",
                   isReading && "pointer-events-none"
                 )}
                 title="স্ক্রিনশট থেকে নাম, ফোন ও ঠিকানা পূরণ করুন"
               >
-                {isReading ? <Loader2 className="h-4 w-4 shrink-0 animate-spin" /> : <ImagePlus className="h-4 w-4 shrink-0" />}
-                <span className="truncate">{isReading ? "পড়া হচ্ছে..." : "স্ক্রিনশট আপলোড করুন (অটো পূরণ)"}</span>
+                <ImagePlus className="h-4 w-4 shrink-0" />
+                <span className="truncate">স্ক্রিনশট আপলোড করুন (অটো পূরণ)</span>
                 <input
                   type="file"
                   accept="image/*"
@@ -509,18 +506,17 @@ export default function PosClientPage() {
                   }}
                 />
               </label>
-              {screenshot && (
-                <div className="relative h-7 w-7 shrink-0">
-                  {/* eslint-disable-next-line @next/next/no-img-element -- a local data: URL; next/image can't optimise it. */}
-                  <img src={screenshot} alt="Customer screenshot" className="h-7 w-7 rounded-md border object-cover" />
-                  <button
-                    type="button"
-                    onClick={removeScreenshot}
-                    className="absolute -right-1.5 -top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-foreground text-background"
-                    aria-label="Remove screenshot"
-                  >
-                    <X className="h-3 w-3" />
-                  </button>
+              {isReading && (
+                <div className="space-y-1">
+                  <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+                    <div
+                      className="h-full rounded-full bg-primary transition-[width] duration-300 ease-out"
+                      style={{ width: `${Math.min(100, Math.round(readProgress))}%` }}
+                    />
+                  </div>
+                  <p className="text-[11px] text-muted-foreground">
+                    {readStage === "upload" ? "ছবি আপলোড হচ্ছে..." : "Gemini পড়ছে..."} {Math.min(100, Math.round(readProgress))}%
+                  </p>
                 </div>
               )}
             </div>
@@ -949,14 +945,31 @@ export default function PosClientPage() {
 // user removes it); it is never uploaded anywhere except to Gemini for reading.
 const POS_SCREENSHOT_KEY = "pos-customer-screenshot"
 
-function readStoredScreenshot(): string | null {
-  try { return localStorage.getItem(POS_SCREENSHOT_KEY) } catch { return null }
-}
 function storeScreenshot(dataUrl: string) {
   try { localStorage.setItem(POS_SCREENSHOT_KEY, dataUrl) } catch { /* quota or private mode: the preview still works for this visit */ }
 }
 function clearStoredScreenshot() {
   try { localStorage.removeItem(POS_SCREENSHOT_KEY) } catch { /* nothing to clear */ }
+}
+
+// fetch() can't report upload progress, XHR can.
+function postExtractCustomer(
+  body: string,
+  onUploadProgress: (fraction: number) => void,
+): Promise<{ ok: boolean; json: { customer?: { name: string; phone: string; address: string }; error?: string } | null }> {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest()
+    xhr.open("POST", "/api/pos/extract-customer")
+    xhr.setRequestHeader("Content-Type", "application/json")
+    xhr.upload.onprogress = (e) => { if (e.lengthComputable) onUploadProgress(e.loaded / e.total) }
+    xhr.onerror = () => reject(new Error("network"))
+    xhr.onload = () => {
+      let json = null
+      try { json = JSON.parse(xhr.responseText) } catch { /* non-JSON error page */ }
+      resolve({ ok: xhr.status >= 200 && xhr.status < 300, json })
+    }
+    xhr.send(body)
+  })
 }
 
 // Shrinks a screenshot to at most 1280px and re-encodes it as JPEG, so it fits
