@@ -180,6 +180,7 @@ export const SETTINGS = {
   steadfast_api_key: secret("integrations"),
   steadfast_secret_key: secret("integrations"),
   bdcourier_api_key: secret("integrations"),
+  gemini_api_key: secret("integrations"),
   google_sheets_client_email: secret("integrations"),
   google_sheets_private_key: secret("integrations"),
   google_sheets_spreadsheet_id: secret("integrations"),

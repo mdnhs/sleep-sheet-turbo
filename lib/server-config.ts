@@ -34,6 +34,11 @@ export async function getBdCourierConfig() {
   return { apiKey: s.bdcourier_api_key };
 }
 
+export async function getGeminiConfig() {
+  const s = await getSettingsGroup("integrations");
+  return { apiKey: s.gemini_api_key };
+}
+
 export async function getGoogleSheetsConfig() {
   const s = await getSettingsGroup("integrations");
   return {

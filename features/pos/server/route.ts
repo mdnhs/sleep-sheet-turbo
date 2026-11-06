@@ -17,6 +17,7 @@ import { withOrderNumber } from '@/lib/order-number';
 import { getSetting } from "@/lib/settings/read";
 import { isUniqueViolation } from '@/lib/db-errors';
 import cuid from 'cuid';
+import { extractCustomerFromImage, GeminiError } from '@/lib/gemini';
 
 const app = new Hono()
 
@@ -230,6 +231,27 @@ const app = new Hono()
     }
     console.error('POS order error:', error);
     return c.json({ success: false, error: 'Failed to create POS order' }, 500);
+  }
+})
+.post('/extract-customer', sessionMiddleware, zValidator('json', z.object({
+  // Base64 only, no data: prefix. ~4MB of base64 is plenty for a resized screenshot.
+  image: z.string().min(1).max(5_500_000),
+  mimeType: z.enum(['image/jpeg', 'image/png', 'image/webp']).default('image/jpeg'),
+})), async (c) => {
+  const user = c.get('user');
+  if (!user || !can(user, "pos", "write")) {
+    return c.json({ success: false, error: 'Unauthorized' }, 403);
+  }
+  const { image, mimeType } = c.req.valid('json');
+  try {
+    const customer = await extractCustomerFromImage(image, mimeType);
+    return c.json({ success: true, customer }, 200);
+  } catch (error) {
+    if (error instanceof GeminiError) {
+      return c.json({ success: false, error: error.message }, error.status as 400 | 429 | 502);
+    }
+    console.error('POS extract-customer error:', error);
+    return c.json({ success: false, error: 'ছবি থেকে তথ্য নেওয়া যায়নি' }, 500);
   }
 });
 

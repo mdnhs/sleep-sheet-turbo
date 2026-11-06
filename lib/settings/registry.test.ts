@@ -35,7 +35,7 @@ const CREDENTIALS: string[] = [
   "steadfast_api_key", "steadfast_secret_key", "bdcourier_api_key", "cloudinary_api_key",
   "cloudinary_api_secret", "google_sheets_client_email", "google_sheets_private_key",
   "google_sheets_spreadsheet_id", "bkash_app_key", "bkash_app_secret", "bkash_username",
-  "bkash_password", "ai_api_key", "r2_account_id", "r2_access_key_id", "r2_secret_access_key",
+  "bkash_password", "ai_api_key", "gemini_api_key", "r2_account_id", "r2_access_key_id", "r2_secret_access_key",
 ];
 
 describe("settings registry", () => {
