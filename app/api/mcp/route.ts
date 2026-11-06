@@ -1,3 +1,4 @@
+import { getPublicOrigin } from "@/lib/request-origin";
 import { NextRequest } from "next/server";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
@@ -28,7 +29,7 @@ function unauthorized(origin: string) {
 }
 
 async function handle(req: NextRequest): Promise<Response> {
-  const origin = req.nextUrl.origin;
+  const origin = getPublicOrigin(req);
   const authHeader = req.headers.get("authorization");
   const user = await authenticate(req);
   if (!user || !authHeader) return unauthorized(origin);

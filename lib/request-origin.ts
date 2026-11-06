@@ -9,11 +9,33 @@ import type { Context } from "hono";
  * addresses such as `0.0.0.0` or `127.0.0.1` (unless in local dev with `localhost`).
  */
 export function getRequestOrigin(c: Context): string {
-  const forwardedHost = c.req.header("x-forwarded-host")?.split(",")[0]?.trim();
-  const hostHeader = c.req.header("host")?.trim();
+  return originFrom((name) => c.req.header(name), c.req.url);
+}
+
+/**
+ * Same as `getRequestOrigin`, for Next.js route handlers (`NextRequest` /
+ * `Request`). Use this instead of `req.nextUrl.origin`: in the standalone
+ * server (HOSTNAME=0.0.0.0) Next builds the request URL from its bind address,
+ * so `nextUrl.origin` is `http://0.0.0.0:3000` behind the reverse proxy.
+ */
+export function getPublicOrigin(req: Request): string {
+  const header = (name: string) => req.headers.get(name) ?? undefined;
+  // In production the app always sits behind the reverse proxy. If it did not
+  // forward the public host, the Host header is the internal one, so trust the
+  // configured public URL rather than guess from it.
+  const envUrl = process.env.NEXT_PUBLIC_APP_URL?.trim();
+  if (process.env.NODE_ENV === "production" && envUrl && !header("x-forwarded-host")) {
+    return envUrl.replace(/\/+$/, "");
+  }
+  return originFrom(header, req.url);
+}
+
+function originFrom(header: (name: string) => string | undefined, requestUrl: string): string {
+  const forwardedHost = header("x-forwarded-host")?.split(",")[0]?.trim();
+  const hostHeader = header("host")?.trim();
   const host = forwardedHost || hostHeader;
 
-  const forwardedProto = c.req.header("x-forwarded-proto")?.split(",")[0]?.trim();
+  const forwardedProto = header("x-forwarded-proto")?.split(",")[0]?.trim();
   const isLocalhost = Boolean(host && (host.startsWith("localhost") || host.startsWith("127.0.0.1")));
   const proto = forwardedProto || (isLocalhost ? "http" : "https");
 
@@ -30,7 +52,7 @@ export function getRequestOrigin(c: Context): string {
 
   // Last resort: extract origin from c.req.url if not 0.0.0.0
   try {
-    const parsed = new URL(c.req.url);
+    const parsed = new URL(requestUrl);
     if (!parsed.hostname.startsWith("0.0.0.0")) {
       return parsed.origin;
     }
