@@ -28,6 +28,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/co
 import { Badge } from "@/components/ui/badge"
 import { getOrCreatePosIdempotencyKey, clearPosIdempotencyKey } from "@/lib/pos-idempotency"
 import { getOptimizedImageUrl, cn } from "@/lib/utils"
+import { toEnglishDigits } from "@/features/fraud-checker/phone";
 import { sanitizeRichText } from "@/lib/sanitize"
 
 interface POSProduct {
@@ -129,6 +130,7 @@ export default function PosClientPage() {
   ]
   const enabledMethods = paymentMethods.filter(m => m.enabled)
   const [cart, setCart] = useState<CartItem[]>([])
+  const [mobileCartOpen, setMobileCartOpen] = useState(false)
   const [customerName, setCustomerName] = useState("")
   const [customerPhone, setCustomerPhone] = useState("")
   const [customerAddress, setCustomerAddress] = useState("")
@@ -325,6 +327,7 @@ export default function PosClientPage() {
       setLastOrder(json.order)
       setCheckoutSuccess(true)
       setCart([])
+      setMobileCartOpen(false)
       setCustomerName("")
       setCustomerPhone("")
       setReference(defaultFbPage || "")
@@ -342,35 +345,6 @@ export default function PosClientPage() {
     setCheckoutSuccess(false)
     setLastOrder(null)
     setReference(defaultFbPage || "")
-  }
-
-  if (checkoutSuccess && lastOrder) {
-    return (
-      <div className="flex items-center justify-center min-h-[80vh]">
-        <div className="text-center space-y-6 max-w-md">
-          <div className="mx-auto w-16 h-16 rounded-full bg-green-100 flex items-center justify-center">
-            <Receipt className="h-8 w-8 text-green-600" />
-          </div>
-          <h1 className="text-2xl font-bold">Sale Complete</h1>
-          <div className="bg-muted rounded-xl p-6 space-y-2">
-            <p className="text-sm text-muted-foreground">Order Number</p>
-            <p className="text-xl font-mono font-bold">{lastOrder.orderNumber}</p>
-            <div className="h-px bg-border my-3" />
-            <p className="text-sm text-muted-foreground">Total Amount</p>
-            <p className="text-3xl font-bold">৳{lastOrder.totalAmount.toLocaleString()}</p>
-          </div>
-          <div className="flex gap-3 justify-center">
-            <Button onClick={newSale}>
-              <Plus className="mr-2 h-4 w-4" />
-              New Sale
-            </Button>
-            <Button variant="outline" onClick={() => router.push(`/dashboard/orders`)}>
-              View Orders
-            </Button>
-          </div>
-        </div>
-      </div>
-    )
   }
 
   const renderCartContents = () => (
@@ -468,7 +442,7 @@ export default function PosClientPage() {
             <Input
               placeholder="Phone (optional)"
               value={customerPhone}
-              onChange={(e) => setCustomerPhone(e.target.value)}
+              onChange={(e) => setCustomerPhone(toEnglishDigits(e.target.value))}
               type="tel"
             />
             <Input
@@ -651,6 +625,7 @@ export default function PosClientPage() {
                     key={product.id}
                     product={product}
                     onAdd={addToCart}
+                    onGoToCart={() => setMobileCartOpen(true)}
                     onViewDetails={(p) => { setActiveImage(0); setDetailsProduct(p) }}
                   />
                 ))}
@@ -691,7 +666,7 @@ export default function PosClientPage() {
           <span className="text-sm font-semibold text-muted-foreground">{cart.length} item(s)</span>
           <span className="text-lg font-bold text-foreground">৳{totalAmount.toLocaleString()}</span>
         </div>
-        <Sheet>
+        <Sheet open={mobileCartOpen} onOpenChange={setMobileCartOpen}>
           <SheetTrigger
             render={
               <Button size="lg" className="px-8 shadow-sm">
@@ -708,6 +683,36 @@ export default function PosClientPage() {
           </SheetContent>
         </Sheet>
       </div>
+
+      <Dialog open={checkoutSuccess && !!lastOrder} onOpenChange={(open) => { if (!open) newSale() }}>
+        <DialogContent className="sm:max-w-md rounded-3xl text-center">
+          <DialogHeader className="items-center">
+            <div className="mx-auto w-16 h-16 rounded-full bg-green-100 flex items-center justify-center">
+              <Receipt className="h-8 w-8 text-green-600" />
+            </div>
+            <DialogTitle className="text-2xl font-bold">Sale Complete</DialogTitle>
+            <DialogDescription className="sr-only">Your order was placed successfully.</DialogDescription>
+          </DialogHeader>
+          {lastOrder && (
+            <div className="bg-muted rounded-xl p-6 space-y-2">
+              <p className="text-sm text-muted-foreground">Order Number</p>
+              <p className="text-xl font-mono font-bold">{lastOrder.orderNumber}</p>
+              <div className="h-px bg-border my-3" />
+              <p className="text-sm text-muted-foreground">Total Amount</p>
+              <p className="text-3xl font-bold">৳{lastOrder.totalAmount.toLocaleString()}</p>
+            </div>
+          )}
+          <div className="flex gap-3 justify-center">
+            <Button onClick={newSale}>
+              <Plus className="mr-2 h-4 w-4" />
+              New Sale
+            </Button>
+            <Button variant="outline" onClick={() => router.push(`/dashboard/orders`)}>
+              View Orders
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={!!detailsProduct} onOpenChange={(open) => !open && setDetailsProduct(null)}>
         <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto rounded-3xl">
@@ -853,10 +858,12 @@ export default function PosClientPage() {
 function ProductCard({
   product,
   onAdd,
+  onGoToCart,
   onViewDetails,
 }: {
   product: POSProduct
   onAdd: (product: POSProduct, variant?: { name: string; price?: number | null }, size?: string, costPrice?: number, shippingCost?: number, quantity?: number) => void
+  onGoToCart?: () => void
   onViewDetails: (product: POSProduct) => void
 }) {
   const { formatAmount } = useCurrency()
@@ -886,7 +893,7 @@ function ProductCard({
 
   const displayPrice = basePrice + addOnsTotalPerUnit
 
-  const handleAddToCart = () => {
+  const handleAddToCart = (goToCart = false) => {
     if (hasSizes && !selectedSize) { toast.error("Please select a size"); return }
     if (hasColors && !selectedColor) { toast.error("Please select a variant"); return }
     if (isDrawerOpen && costPrice !== "" && isNaN(Number(costPrice))) { toast.error("Bought price must be a number"); return }
@@ -919,6 +926,7 @@ function ProductCard({
     setShippingCost("")
     setSelectedAddOns({})
     setQuantity(1)
+    if (goToCart) onGoToCart?.()
   }
 
   const handleActionClick = (e: React.MouseEvent) => {
@@ -1166,7 +1174,15 @@ function ProductCard({
               className="w-full flex items-center justify-center gap-2 bg-primary text-primary-foreground hover:bg-primary/90 py-3 sm:py-3.5 rounded-[14px] font-bold text-xs sm:text-sm transition-all shadow-md active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <ShoppingCart className="h-4 w-4" />
-              Add to Cart — {formatAmount(displayPrice * quantity)}
+              Add — {formatAmount(displayPrice * quantity)}
+            </button>
+            <button
+              onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleAddToCart(true); }}
+              disabled={product.stock === 0 || (hasSizes && !selectedSize) || (hasColors && !selectedColor)}
+              className="w-full lg:hidden flex items-center justify-center gap-2 border-2 border-primary text-primary hover:bg-primary/10 py-3 sm:py-3.5 rounded-[14px] font-bold text-xs sm:text-sm transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <ShoppingCart className="h-4 w-4" />
+              Checkout
             </button>
           </div>
         </DialogContent>

@@ -1,6 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
+import { toEnglishDigits } from "@/features/fraud-checker/phone";
 import { capitalizeWords } from "@/lib/capitalize-words";
 import Link from "next/link";
 import React, { useEffect } from "react";
@@ -566,6 +567,7 @@ function AccountClientPage({ name }: AccountClientPageProps) {
                                     placeholder="01XXXXXXXXX"
                                     className="h-11 rounded-2xl"
                                     {...field}
+                                    onChange={(e) => field.onChange(toEnglishDigits(e.target.value))}
                                   />
                                 </FormControl>
                                 <FormMessage />

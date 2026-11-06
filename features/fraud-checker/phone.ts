@@ -1,3 +1,8 @@
+/** Maps Bengali digits (০-৯) to English (0-9); everything else is left as typed. */
+export function toEnglishDigits(input: string): string {
+  return input.replace(/[০-৯]/g, (d) => String(d.charCodeAt(0) - 0x09e6));
+}
+
 /** "+8801712345678" / "8801712345678" / "01712-345678" / "০১৭১২৩৪৫৬৭৮" -> "01712345678", or null if not a BD mobile. */
 // Lives apart from lib/bdcourier.ts so client components can normalize a
 // number before it becomes a query key — two spellings of one number must
@@ -5,17 +10,13 @@
 // Also used by checkout validation: customers on a Bangla keyboard type
 // Bengali digits (০-৯), which `\d` doesn't match, so they're mapped first.
 export function normalizeBdPhone(input: string): string | null {
-  let digits = input
-    .replace(/[০-৯]/g, (d) => String(d.charCodeAt(0) - 0x09e6))
-    .replace(/\D/g, "");
+  let digits = toEnglishDigits(input).replace(/\D/g, "");
   if (digits.startsWith("880")) digits = digits.slice(2);
   return /^01[3-9]\d{8}$/.test(digits) ? digits : null;
 }
 
 /** True only for an 11-digit BD mobile number (01XXXXXXXXX); separators and Bengali digits are tolerated, a +880 prefix is not. */
 export function isValidBdMobile11(input: string): boolean {
-  const digits = input
-    .replace(/[০-৯]/g, (d) => String(d.charCodeAt(0) - 0x09e6))
-    .replace(/\D/g, "");
+  const digits = toEnglishDigits(input).replace(/\D/g, "");
   return /^01[3-9]\d{8}$/.test(digits);
 }
