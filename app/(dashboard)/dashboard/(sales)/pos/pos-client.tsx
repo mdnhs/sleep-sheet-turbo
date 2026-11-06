@@ -277,7 +277,13 @@ export default function PosClientPage() {
 
   const subtotal = cart.reduce((acc, i) => acc + i.price * i.quantity, 0)
   const totalShipping = cart.reduce((acc, i) => acc + (i.shippingCost || 0) * i.quantity, 0)
-  const totalAmount = subtotal + totalShipping
+  const calculatedTotal = subtotal + totalShipping
+  // A hand-typed total. `base` is the calculated total it was typed against: if
+  // the cart or shipping changes afterwards the override no longer applies and
+  // the total goes back to the calculated amount.
+  const [customTotal, setCustomTotal] = useState<{ value: string; base: number } | null>(null)
+  const activeCustomTotal = customTotal && customTotal.base === calculatedTotal && customTotal.value !== "" ? customTotal : null
+  const totalAmount = activeCustomTotal ? Number(activeCustomTotal.value) : calculatedTotal
 
   const handleScreenshotFile = async (file: File) => {
     if (!file.type.startsWith("image/")) {
@@ -333,6 +339,11 @@ export default function PosClientPage() {
       return
     }
 
+    if (!Number.isFinite(totalAmount) || totalAmount < 0) {
+      toast.error("Total amount must be 0 or more")
+      return
+    }
+
     setIsCheckingOut(true)
     try {
       const res = await fetch("/api/pos", {
@@ -355,6 +366,7 @@ export default function PosClientPage() {
             color: i.color || undefined,
           })),
           shippingCost: totalShipping,
+          totalAmount: activeCustomTotal ? totalAmount : undefined,
           // Same key for every submit of this sale attempt, so a double-click
           // or a retry after a slow response returns the existing sale
           // instead of creating a second one (see lib/pos-idempotency.ts).
@@ -376,6 +388,7 @@ export default function PosClientPage() {
       setCheckoutSuccess(true)
       setCart([])
       clearStoredScreenshot()
+      setCustomTotal(null)
       setMobileCartOpen(false)
       setCustomerName("")
       setCustomerPhone("")
@@ -609,10 +622,30 @@ export default function PosClientPage() {
               <span className="text-muted-foreground">Shipping Cost</span>
               <span>৳{totalShipping.toLocaleString()}</span>
             </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Total</span>
-              <span className="text-lg font-bold">৳{totalAmount.toLocaleString()}</span>
+            <div className="flex items-center justify-between gap-3 text-sm">
+              <label htmlFor="pos-total-amount" className="text-muted-foreground">Total</label>
+              <div className="relative w-40">
+                <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-base font-bold text-muted-foreground">৳</span>
+                <Input
+                  id="pos-total-amount"
+                  type="number"
+                  inputMode="decimal"
+                  min="0"
+                  className="h-10 pl-7 text-right text-lg font-bold"
+                  value={customTotal && customTotal.base === calculatedTotal ? customTotal.value : String(calculatedTotal)}
+                  onChange={(e) => setCustomTotal({ value: e.target.value, base: calculatedTotal })}
+                />
+              </div>
             </div>
+            {activeCustomTotal && totalAmount !== calculatedTotal && (
+              <button
+                type="button"
+                onClick={() => setCustomTotal(null)}
+                className="ml-auto block text-[11px] text-muted-foreground underline"
+              >
+                Reset to ৳{calculatedTotal.toLocaleString()}
+              </button>
+            )}
           </div>
 
           <Button

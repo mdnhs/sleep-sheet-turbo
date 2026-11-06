@@ -38,6 +38,8 @@ const app = new Hono()
     color: z.string().optional(),
   })).min(1, 'At least one item is required'),
   shippingCost: z.number().optional(),
+  // Final amount the operator typed in (e.g. after bargaining). Omitted = subtotal + shipping.
+  totalAmount: z.number().min(0).optional(),
   // One UUID per sale attempt, generated client-side (lib/pos-idempotency.ts)
   // — a double-click or slow-network re-click on "Complete Sale" reuses the
   // same key. Checkout has had this since launch; POS didn't (BAD-9, audit
@@ -60,7 +62,7 @@ const app = new Hono()
 
   try {
     const body = c.req.valid('json');
-    const { customerName, customerPhone, customerAddress, paymentMethod, reference, note, shippingType, shippingCost } = body;
+    const { customerName, customerPhone, customerAddress, paymentMethod, reference, note, shippingType, shippingCost, totalAmount: totalAmountOverride } = body;
     items = body.items;
 
     idempotencyKey =
@@ -100,7 +102,7 @@ const app = new Hono()
     }
 
     const subtotal = items.reduce((acc, i) => acc + i.price * i.quantity, 0);
-    const totalAmount = subtotal + (shippingCost || 0);
+    const totalAmount = totalAmountOverride ?? subtotal + (shippingCost || 0);
 
     let finalUserId: string | null = null;
     
