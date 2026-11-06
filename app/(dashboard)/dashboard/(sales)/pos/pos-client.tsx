@@ -392,6 +392,7 @@ export default function PosClientPage() {
       setMobileCartOpen(false)
       setCustomerName("")
       setCustomerPhone("")
+      setCustomerAddress("")
       setReference(defaultFbPage || "")
       setNote("")
       setShippingType("online")
