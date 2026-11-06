@@ -21,11 +21,13 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { PosProductGridSkeleton } from "./pos-skeleton"
 import { toast } from "sonner"
 import { useRouter } from "next/navigation"
+import { useQueryClient } from "@tanstack/react-query"
 import { useCurrency } from "@/hooks/use-currency"
 import { useSettings } from "@/features/settings/api/use-settings"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 import { Badge } from "@/components/ui/badge"
+import { Carousel, CarouselContent, CarouselItem, type CarouselApi } from "@/components/ui/carousel"
 import { getOrCreatePosIdempotencyKey, clearPosIdempotencyKey } from "@/lib/pos-idempotency"
 import { getOptimizedImageUrl, cn } from "@/lib/utils"
 import { toEnglishDigits } from "@/features/fraud-checker/phone";
@@ -70,6 +72,7 @@ interface Category {
 
 export default function PosClientPage() {
   const router = useRouter()
+  const queryClient = useQueryClient()
   const { formatAmount } = useCurrency()
   const { data: settings } = useSettings()
   const [categories, setCategories] = useState<Category[]>([])
@@ -277,7 +280,13 @@ export default function PosClientPage() {
 
   const subtotal = cart.reduce((acc, i) => acc + i.price * i.quantity, 0)
   const totalShipping = cart.reduce((acc, i) => acc + (i.shippingCost || 0) * i.quantity, 0)
-  const totalAmount = subtotal + totalShipping
+  const calculatedTotal = subtotal + totalShipping
+  // A hand-typed total. `base` is the calculated total it was typed against: if
+  // the cart or shipping changes afterwards the override no longer applies and
+  // the total goes back to the calculated amount.
+  const [customTotal, setCustomTotal] = useState<{ value: string; base: number } | null>(null)
+  const activeCustomTotal = customTotal && customTotal.base === calculatedTotal && customTotal.value !== "" ? customTotal : null
+  const totalAmount = activeCustomTotal ? Number(activeCustomTotal.value) : calculatedTotal
 
   const handleScreenshotFile = async (file: File) => {
     if (!file.type.startsWith("image/")) {
@@ -333,6 +342,11 @@ export default function PosClientPage() {
       return
     }
 
+    if (!Number.isFinite(totalAmount) || totalAmount < 0) {
+      toast.error("Total amount must be 0 or more")
+      return
+    }
+
     setIsCheckingOut(true)
     try {
       const res = await fetch("/api/pos", {
@@ -355,6 +369,7 @@ export default function PosClientPage() {
             color: i.color || undefined,
           })),
           shippingCost: totalShipping,
+          totalAmount: activeCustomTotal ? totalAmount : undefined,
           // Same key for every submit of this sale attempt, so a double-click
           // or a retry after a slow response returns the existing sale
           // instead of creating a second one (see lib/pos-idempotency.ts).
@@ -372,13 +387,18 @@ export default function PosClientPage() {
       // Sale is placed — retire this key so the next sale starts a fresh
       // idempotency window.
       clearPosIdempotencyKey()
+      // The Orders page reads from the react-query cache, which this raw fetch
+      // bypasses: without this, "View Orders" shows the list from before the sale.
+      void queryClient.invalidateQueries({ queryKey: ["orders"] })
       setLastOrder(json.order)
       setCheckoutSuccess(true)
       setCart([])
       clearStoredScreenshot()
+      setCustomTotal(null)
       setMobileCartOpen(false)
       setCustomerName("")
       setCustomerPhone("")
+      setCustomerAddress("")
       setReference(defaultFbPage || "")
       setNote("")
       setShippingType("online")
@@ -397,34 +417,8 @@ export default function PosClientPage() {
     setReference(defaultFbPage || "")
   }
 
-  // scrollTogether: the mobile sheet scrolls items and the customer form as one
-  // page, so every item stays fully visible instead of being squeezed into a
-  // small box above a tall form. Desktop keeps the items list scrolling alone.
-  const renderCartContents = (scrollTogether = false) => (
-    <>
-      <div className="p-4 border-b">
-        <h2 className="font-semibold flex items-center gap-2">
-          <Receipt className="h-4 w-4" />
-          Current Sale
-          {cart.length > 0 && (
-            <span className="text-sm font-normal text-muted-foreground">
-              ({cart.length} item{cart.length !== 1 ? "s" : ""})
-            </span>
-          )}
-        </h2>
-      </div>
-
-      {/* Cart Items */}
-      <div className={cn("p-4 space-y-2", !scrollTogether && "flex-1 overflow-y-auto")}>
-        {cart.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-muted-foreground text-center">
-            <Package className="h-10 w-10 mb-2" />
-            <p className="text-sm">Cart is empty</p>
-            <p className="text-xs">Select products to start a sale</p>
-          </div>
-        ) : (
-          cart.map((item, index) => (
-            <div key={`${item.productId}-${item.color}-${item.size}`} className="flex gap-3 p-3 rounded-xl bg-muted/50 border">
+  const renderCartItem = (item: CartItem, index: number) => (
+            <div className="flex gap-3 p-3 rounded-xl bg-muted/50 border">
               <div className="h-16 w-16 rounded-lg overflow-hidden bg-muted shrink-0">
                 {item.image ? (
                   <img src={item.image} alt={item.name} className="h-full w-full object-cover" />
@@ -479,7 +473,45 @@ export default function PosClientPage() {
                 </div>
               </div>
             </div>
-          ))
+  )
+
+  // scrollTogether: the mobile sheet scrolls items and the customer form as one
+  // page, so every item stays fully visible instead of being squeezed into a
+  // small box above a tall form. Desktop keeps the items list scrolling alone.
+  const renderCartContents = (scrollTogether = false) => (
+    <>
+      <div className="p-4 border-b">
+        <h2 className="font-semibold flex items-center gap-2">
+          <Receipt className="h-4 w-4" />
+          Current Sale
+          {cart.length > 0 && (
+            <span className="text-sm font-normal text-muted-foreground">
+              ({cart.length} item{cart.length !== 1 ? "s" : ""})
+            </span>
+          )}
+        </h2>
+      </div>
+
+      {/* Cart Items */}
+      <div className={cn("p-4 space-y-2", !scrollTogether && "flex-1 overflow-y-auto")}>
+        {cart.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-full text-muted-foreground text-center">
+            <Package className="h-10 w-10 mb-2" />
+            <p className="text-sm">Cart is empty</p>
+            <p className="text-xs">Select products to start a sale</p>
+          </div>
+        ) : (
+          scrollTogether ? (
+            <CartItemsCarousel>
+              {cart.map((item, index) => (
+                <div key={`${item.productId}-${item.color}-${item.size}`}>{renderCartItem(item, index)}</div>
+              ))}
+            </CartItemsCarousel>
+          ) : (
+            cart.map((item, index) => (
+              <div key={`${item.productId}-${item.color}-${item.size}`}>{renderCartItem(item, index)}</div>
+            ))
+          )
         )}
       </div>
 
@@ -609,10 +641,30 @@ export default function PosClientPage() {
               <span className="text-muted-foreground">Shipping Cost</span>
               <span>৳{totalShipping.toLocaleString()}</span>
             </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Total</span>
-              <span className="text-lg font-bold">৳{totalAmount.toLocaleString()}</span>
+            <div className="flex items-center justify-between gap-3 text-sm">
+              <label htmlFor="pos-total-amount" className="text-muted-foreground">Total</label>
+              <div className="relative w-40">
+                <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-base font-bold text-muted-foreground">৳</span>
+                <Input
+                  id="pos-total-amount"
+                  type="number"
+                  inputMode="decimal"
+                  min="0"
+                  className="h-10 pl-7 text-right text-lg font-bold"
+                  value={customTotal && customTotal.base === calculatedTotal ? customTotal.value : String(calculatedTotal)}
+                  onChange={(e) => setCustomTotal({ value: e.target.value, base: calculatedTotal })}
+                />
+              </div>
             </div>
+            {activeCustomTotal && totalAmount !== calculatedTotal && (
+              <button
+                type="button"
+                onClick={() => setCustomTotal(null)}
+                className="ml-auto block text-[11px] text-muted-foreground underline"
+              >
+                Reset to ৳{calculatedTotal.toLocaleString()}
+              </button>
+            )}
           </div>
 
           <Button
@@ -990,6 +1042,63 @@ async function shrinkImage(file: File): Promise<string> {
   ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height)
   bitmap.close()
   return canvas.toDataURL("image/jpeg", 0.8)
+}
+
+// Mobile cart: one item at a time, swipe sideways, so the customer form stays on
+// screen however many products were added.
+function CartItemsCarousel({ children }: { children: React.ReactNode[] }) {
+  const [api, setApi] = useState<CarouselApi>()
+  const [selected, setSelected] = useState(0)
+  const count = children.length
+
+  useEffect(() => {
+    if (!api) return
+    const onSelect = () => setSelected(api.selectedScrollSnap())
+    onSelect()
+    api.on("select", onSelect)
+    api.on("reInit", onSelect)
+    return () => {
+      api.off("select", onSelect)
+      api.off("reInit", onSelect)
+    }
+  }, [api])
+
+  // A newly added product is the one the operator just picked: show it.
+  const [prevCount, setPrevCount] = useState(count)
+  useEffect(() => {
+    if (!api) return
+    if (count > prevCount) api.scrollTo(count - 1)
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- remembers the previous length to tell an add from a remove.
+    setPrevCount(count)
+  }, [api, count, prevCount])
+
+  return (
+    <div className="space-y-2">
+      <Carousel setApi={setApi} opts={{ align: "start" }}>
+        <CarouselContent>
+          {children.map((child, index) => (
+            <CarouselItem key={index}>{child}</CarouselItem>
+          ))}
+        </CarouselContent>
+      </Carousel>
+      {count > 1 && (
+        <div className="flex items-center justify-center gap-2">
+          <span className="text-xs font-medium text-muted-foreground">{Math.min(selected + 1, count)} / {count}</span>
+          <div className="flex gap-1">
+            {children.map((_, index) => (
+              <button
+                key={index}
+                type="button"
+                aria-label={`Item ${index + 1}`}
+                onClick={() => api?.scrollTo(index)}
+                className={cn("h-1.5 rounded-full transition-all", index === selected ? "w-4 bg-primary" : "w-1.5 bg-muted-foreground/30")}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  )
 }
 
 function ProductCard({

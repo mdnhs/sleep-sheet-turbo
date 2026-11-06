@@ -1,9 +1,10 @@
+import { getPublicOrigin } from "@/lib/request-origin";
 import { NextRequest, NextResponse } from "next/server";
 
 // RFC 8414 — lets an OAuth/MCP client discover this server's endpoints
 // instead of having them hardcoded.
 export async function GET(req: NextRequest) {
-  const origin = req.nextUrl.origin;
+  const origin = getPublicOrigin(req);
 
   return NextResponse.json({
     issuer: origin,

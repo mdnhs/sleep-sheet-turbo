@@ -1,6 +1,6 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { Hono } from "hono";
-import { getRequestOrigin } from "@/lib/request-origin";
+import { getPublicOrigin, getRequestOrigin } from "@/lib/request-origin";
 
 describe("getRequestOrigin", () => {
   it("uses x-forwarded-host and x-forwarded-proto when present", async () => {
@@ -75,5 +75,27 @@ describe("getRequestOrigin", () => {
     });
 
     expect(result).toBe("http://localhost:3001");
+  });
+});
+
+describe("getPublicOrigin", () => {
+  it("ignores the 0.0.0.0 bind address Next puts in req.url and uses x-forwarded-host", () => {
+    const req = new Request("http://0.0.0.0:3000/.well-known/oauth-protected-resource", {
+      headers: { "x-forwarded-host": "sleepsheetbd.com", "x-forwarded-proto": "https" },
+    });
+    expect(getPublicOrigin(req)).toBe("https://sleepsheetbd.com");
+  });
+
+  it("falls back to NEXT_PUBLIC_APP_URL in production when the proxy forwards no host", () => {
+    const originalUrl = process.env.NEXT_PUBLIC_APP_URL;
+    vi.stubEnv("NODE_ENV", "production");
+    process.env.NEXT_PUBLIC_APP_URL = "https://sleepsheetbd.com/";
+    try {
+      expect(getPublicOrigin(new Request("http://0.0.0.0:3000/api/mcp"))).toBe("https://sleepsheetbd.com");
+    } finally {
+      vi.unstubAllEnvs();
+      if (originalUrl === undefined) delete process.env.NEXT_PUBLIC_APP_URL;
+      else process.env.NEXT_PUBLIC_APP_URL = originalUrl;
+    }
   });
 });
