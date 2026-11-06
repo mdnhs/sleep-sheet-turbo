@@ -326,6 +326,7 @@ export default function PosClientPage() {
       setLastOrder(json.order)
       setCheckoutSuccess(true)
       setCart([])
+      setMobileCartOpen(false)
       setCustomerName("")
       setCustomerPhone("")
       setReference(defaultFbPage || "")
@@ -343,35 +344,6 @@ export default function PosClientPage() {
     setCheckoutSuccess(false)
     setLastOrder(null)
     setReference(defaultFbPage || "")
-  }
-
-  if (checkoutSuccess && lastOrder) {
-    return (
-      <div className="flex items-center justify-center min-h-[80vh]">
-        <div className="text-center space-y-6 max-w-md">
-          <div className="mx-auto w-16 h-16 rounded-full bg-green-100 flex items-center justify-center">
-            <Receipt className="h-8 w-8 text-green-600" />
-          </div>
-          <h1 className="text-2xl font-bold">Sale Complete</h1>
-          <div className="bg-muted rounded-xl p-6 space-y-2">
-            <p className="text-sm text-muted-foreground">Order Number</p>
-            <p className="text-xl font-mono font-bold">{lastOrder.orderNumber}</p>
-            <div className="h-px bg-border my-3" />
-            <p className="text-sm text-muted-foreground">Total Amount</p>
-            <p className="text-3xl font-bold">৳{lastOrder.totalAmount.toLocaleString()}</p>
-          </div>
-          <div className="flex gap-3 justify-center">
-            <Button onClick={newSale}>
-              <Plus className="mr-2 h-4 w-4" />
-              New Sale
-            </Button>
-            <Button variant="outline" onClick={() => router.push(`/dashboard/orders`)}>
-              View Orders
-            </Button>
-          </div>
-        </div>
-      </div>
-    )
   }
 
   const renderCartContents = () => (
@@ -710,6 +682,36 @@ export default function PosClientPage() {
           </SheetContent>
         </Sheet>
       </div>
+
+      <Dialog open={checkoutSuccess && !!lastOrder} onOpenChange={(open) => { if (!open) newSale() }}>
+        <DialogContent className="sm:max-w-md rounded-3xl text-center">
+          <DialogHeader className="items-center">
+            <div className="mx-auto w-16 h-16 rounded-full bg-green-100 flex items-center justify-center">
+              <Receipt className="h-8 w-8 text-green-600" />
+            </div>
+            <DialogTitle className="text-2xl font-bold">Sale Complete</DialogTitle>
+            <DialogDescription className="sr-only">Your order was placed successfully.</DialogDescription>
+          </DialogHeader>
+          {lastOrder && (
+            <div className="bg-muted rounded-xl p-6 space-y-2">
+              <p className="text-sm text-muted-foreground">Order Number</p>
+              <p className="text-xl font-mono font-bold">{lastOrder.orderNumber}</p>
+              <div className="h-px bg-border my-3" />
+              <p className="text-sm text-muted-foreground">Total Amount</p>
+              <p className="text-3xl font-bold">৳{lastOrder.totalAmount.toLocaleString()}</p>
+            </div>
+          )}
+          <div className="flex gap-3 justify-center">
+            <Button onClick={newSale}>
+              <Plus className="mr-2 h-4 w-4" />
+              New Sale
+            </Button>
+            <Button variant="outline" onClick={() => router.push(`/dashboard/orders`)}>
+              View Orders
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={!!detailsProduct} onOpenChange={(open) => !open && setDetailsProduct(null)}>
         <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto rounded-3xl">
