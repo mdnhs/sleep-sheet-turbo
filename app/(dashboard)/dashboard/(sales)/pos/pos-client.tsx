@@ -397,7 +397,10 @@ export default function PosClientPage() {
     setReference(defaultFbPage || "")
   }
 
-  const renderCartContents = () => (
+  // scrollTogether: the mobile sheet scrolls items and the customer form as one
+  // page, so every item stays fully visible instead of being squeezed into a
+  // small box above a tall form. Desktop keeps the items list scrolling alone.
+  const renderCartContents = (scrollTogether = false) => (
     <>
       <div className="p-4 border-b">
         <h2 className="font-semibold flex items-center gap-2">
@@ -412,7 +415,7 @@ export default function PosClientPage() {
       </div>
 
       {/* Cart Items */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-2">
+      <div className={cn("p-4 space-y-2", !scrollTogether && "flex-1 overflow-y-auto")}>
         {cart.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-muted-foreground text-center">
             <Package className="h-10 w-10 mb-2" />
@@ -765,7 +768,9 @@ export default function PosClientPage() {
             <SheetHeader className="sr-only">
               <SheetTitle>Shopping Cart</SheetTitle>
             </SheetHeader>
-            {renderCartContents()}
+            <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
+              {renderCartContents(true)}
+            </div>
           </SheetContent>
         </Sheet>
       </div>
