@@ -17,7 +17,7 @@ import { notifyNewOrder } from "@/lib/n8n-notify";
 import { findOrCreateCustomerByPhone } from "@/lib/customers";
 import { withOrderNumber } from "@/lib/order-number";
 import { purchaseEventId } from "@/lib/meta-purchase-event";
-import { deriveLandingSource } from "@/lib/traffic-source";
+import { deriveLandingSource, isBlockedTrafficSource } from "@/lib/traffic-source";
 import { clientIpFromHeaders, isIpBlocked } from "@/lib/blocked-ip";
 import { isUniqueViolation } from "@/lib/db-errors";
 import { isBkashAvailable } from "@/lib/bkash";
@@ -144,6 +144,19 @@ const app = new Hono()
   const requestIp = clientIpFromHeaders(c.req.raw.headers);
   if (await isIpBlocked(requestIp)) {
     return c.json({ message: "Order could not be placed" }, 403);
+  }
+
+  // Orders arriving through Meta's Audience Network placement (utm_source=an)
+  // have been fake, so they are refused here, server-side, whatever the form
+  // sent. The landing signals are stored client-side for 90 days, so this also
+  // catches the same visitor coming back directly later.
+  if (isBlockedTrafficSource(utmSource)) {
+    console.warn("[checkout] blocked order from utm_source=%s ip=%s", utmSource, requestIp);
+    const phone = await getTypedSetting("footer_phone").catch(() => "");
+    return c.json(
+      { message: phone ? `এই মুহূর্তে অর্ডার নেওয়া যাচ্ছে না। দয়া করে আমাদের কল করুন: ${phone}` : "এই মুহূর্তে অর্ডার নেওয়া যাচ্ছে না।" },
+      403,
+    );
   }
 
   // One label, computed once, used by both order-creation branches below —

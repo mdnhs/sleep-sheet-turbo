@@ -33,6 +33,16 @@ export const LANDING_SOURCE_LABELS: Record<LandingSource, string> = {
   referral: "Referral",
 };
 
+// Meta's Audience Network placement (`utm_source=an`, from the `{{site_source_name}}`
+// macro): ads shown inside third-party apps. Orders from it have been fake, so
+// checkout refuses them outright rather than just labelling them.
+const BLOCKED_UTM_SOURCES = new Set(["an", "audience_network", "audience-network", "audiencenetwork"]);
+
+/** True when the landing `utm_source` is one checkout must not accept orders from. */
+export function isBlockedTrafficSource(utmSource?: string | null): boolean {
+  return BLOCKED_UTM_SOURCES.has(utmSource?.trim().toLowerCase() || "");
+}
+
 export interface LandingSignals {
   gclid?: string | null;
   utmSource?: string | null;

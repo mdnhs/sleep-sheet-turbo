@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { deriveLandingSource } from "./traffic-source";
+import { deriveLandingSource, isBlockedTrafficSource } from "./traffic-source";
 
 describe("deriveLandingSource", () => {
   describe("explicit UTM tagging wins", () => {
@@ -92,5 +92,19 @@ describe("deriveLandingSource", () => {
     it("an unparseable referrer is treated as no referrer", () => {
       expect(deriveLandingSource({ referrer: "not-a-url" })).toBe("direct");
     });
+  });
+});
+
+describe("isBlockedTrafficSource", () => {
+  it("blocks Meta's Audience Network source, whatever the case or spacing", () => {
+    for (const source of ["an", "AN", " an ", "audience_network", "Audience-Network"]) {
+      expect(isBlockedTrafficSource(source)).toBe(true);
+    }
+  });
+
+  it("lets every other source through", () => {
+    for (const source of ["fb", "ig", "facebook", "youtube", "google", "ant", "", null, undefined]) {
+      expect(isBlockedTrafficSource(source)).toBe(false);
+    }
   });
 });
