@@ -11,6 +11,8 @@ import { UseCheckout } from "@/features/checkout/api/use-checkout";
 import { isValidBdMobile11, normalizeBdPhone, toEnglishDigits } from "@/features/fraud-checker/phone";
 import { useCurrency } from "@/hooks/use-currency";
 import { useWebsiteSettings } from "@/hooks/use-website-settings";
+import { useLivePromotions } from "@/features/promotions/api/use-live-promotions";
+import { findFreeDelivery } from "@/lib/promotions";
 import { triggerHaptic } from "@/lib/haptics";
 import { capitalizeWords } from "@/lib/capitalize-words";
 import { useCheckoutDraft } from "@/features/web-analytics/lib/checkout-draft";
@@ -75,7 +77,12 @@ export function DirectOrderForm({
   const productTotal = baseProductTotal + totalAddOnsPrice;
   const unitPrice = baseDisplayPrice + addOnsTotalPerUnit;
 
-  const deliveryFee = shippingZone === "inside_dhaka" ? insideDhakaRate : outsideDhakaRate;
+  // This form always pays by cash on delivery. A live free-delivery promotion
+  // applies with the same rule the server uses when the order is placed.
+  const { data: livePromotions } = useLivePromotions();
+  const deliveryIsFree =
+    findFreeDelivery(livePromotions ?? [], { paymentMethod: "cod", zone: shippingZone, subtotal: productTotal }) !== null;
+  const deliveryFee = deliveryIsFree ? 0 : shippingZone === "inside_dhaka" ? insideDhakaRate : outsideDhakaRate;
   const grandTotal = productTotal + deliveryFee;
 
   const selectedAddOnsList = Object.entries(selectedAddOns).filter(([, qty]) => qty > 0);

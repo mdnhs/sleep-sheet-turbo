@@ -171,14 +171,17 @@ export const SAMPLE_AD = `<link rel="preconnect" href="https://fonts.gstatic.com
     // when this product alone doesn't reach it.
     var price = Number(document.documentElement.getAttribute("data-price")) || 0;
 
-    $("how").textContent = how;
+    // A "11:11 SALE" offer (named in its title) gets sale copy: the big line is
+    // the sale itself, free delivery on the line below.
+    var sale = /(\\d\\d)\\s*[.:]\\s*(\\d\\d)\\s*sale/i.test(promo.title || "");
+    $("how").textContent = sale ? "১১:১১ SALE" : how;
     $("what").innerHTML = 'ডেলিভারি <span class="free">ফ্রি!</span>';
     var short = promo.minOrderAmount && price < promo.minOrderAmount;
-    $("cond").textContent = short ? taka(promo.minOrderAmount) + "+ অর্ডারে" : "";
-    $("cond").hidden = !short;
+    $("cond").textContent = short ? taka(promo.minOrderAmount) + "+ অর্ডারে" : sale ? "সব ৫ পিস কমফোর্টার সেটে" : "";
+    $("cond").hidden = !(short || sale);
     var personal = !!promo.personalWindowMinutes;
-    $("tagW").textContent = personal ? "শুধু আপনার জন্য" : promo.endsAt ? "সীমিত সময়ের অফার" : "চলমান অফার";
-    $("tagN").textContent = personal ? "শুধু আপনার জন্য" : promo.endsAt ? "সীমিত সময়" : "চলমান অফার";
+    $("tagW").textContent = sale ? "১১.১১ মেগা ফ্ল্যাশ সেল" : personal ? "শুধু আপনার জন্য" : promo.endsAt ? "সীমিত সময়ের অফার" : "চলমান অফার";
+    $("tagN").textContent = sale ? "১১.১১ সেল" : personal ? "শুধু আপনার জন্য" : promo.endsAt ? "সীমিত সময়" : "চলমান অফার";
     if (personal) $("cdl").textContent = "আপনার অফার শেষ হতে বাকি";
 
     var end = promo.endsAt ? new Date(promo.endsAt).getTime() : null;
